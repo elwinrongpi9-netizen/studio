@@ -1,0 +1,60 @@
+
+{
+  "entities": {
+    "Restaurant": {
+      "title": "Restaurant",
+      "description": "A food establishment in the Karbi Anglong area.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "cuisine": { "type": "string" },
+        "rating": { "type": "number" },
+        "deliveryTime": { "type": "string" },
+        "image": { "type": "string" },
+        "priceRange": { "type": "string" }
+      },
+      "required": ["name", "cuisine", "image"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A food delivery order placed by a user.",
+      "type": "object",
+      "properties": {
+        "restaurantName": { "type": "string" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["Preparing", "Out for delivery", "Delivered"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "items": { "type": "array" }
+      },
+      "required": ["restaurantName", "total", "status", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Information about the authenticated user.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "address": { "type": "string" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/restaurants/{restaurantId}": {
+      "schema": "#/entities/Restaurant",
+      "description": "Global collection of restaurants."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": "#/entities/Order",
+      "description": "User-specific order history."
+    },
+    "/users/{userId}": {
+      "schema": "#/entities/UserProfile",
+      "description": "User profile data."
+    }
+  }
+}
