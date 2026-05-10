@@ -4,7 +4,7 @@ import { Restaurant } from './types';
 export const RESTAURANTS: Restaurant[] = [
   {
     id: '1',
-    name: 'Tomato Italiano',
+    name: 'Zomato Italiano',
     cuisine: 'Italian, Pizza',
     rating: 4.5,
     deliveryTime: '25-35 min',

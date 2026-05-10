@@ -18,7 +18,7 @@ export function Navbar() {
             <UtensilsCrossed className="w-6 h-6 text-white" />
           </div>
           <span className="text-xl font-bold text-primary tracking-tight">
-            Karbi <span className="text-foreground">Tomato</span>
+            Karbi <span className="text-foreground">Zomato</span>
           </span>
         </Link>
 

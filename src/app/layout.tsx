@@ -4,7 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Karbi Tomato | Fresh Food Delivered',
+  title: 'Karbi Zomato | Fresh Food Delivered',
   description: 'Your favorite local food discovery and delivery app.',
 };
 

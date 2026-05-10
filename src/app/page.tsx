@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -76,7 +77,7 @@ export default function Home() {
               <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
                 <span className="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded mb-2 inline-block">Flash Deal</span>
                 <p className="font-bold text-lg mb-1">50% OFF</p>
-                <p className="text-xs text-muted-foreground">On your first order from Tomato Italiano</p>
+                <p className="text-xs text-muted-foreground">On your first order from Zomato Italiano</p>
               </div>
               <div className="p-4 bg-accent/5 rounded-xl border border-accent/10">
                 <span className="text-[10px] font-bold text-accent uppercase bg-accent/10 px-2 py-0.5 rounded mb-2 inline-block">Limited Time</span>
@@ -91,10 +92,10 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
              <UtensilsCrossed className="w-6 h-6 text-primary" />
-             <span className="text-xl font-bold">Karbi Tomato</span>
+             <span className="text-xl font-bold">Karbi Zomato</span>
           </div>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-            Karbi Tomato is your companion for discovering delicious meals around you. Fast delivery, fresh food, and best service.
+            Karbi Zomato is your companion for discovering delicious meals around you. Fast delivery, fresh food, and best service.
           </p>
           <div className="flex justify-center gap-8 text-xs text-muted-foreground font-medium uppercase tracking-widest">
             <a href="#" className="hover:text-primary transition-colors">About Us</a>
