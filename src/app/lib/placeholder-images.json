@@ -1,0 +1,59 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "res-1",
+      "description": "Italian Pasta Restaurant",
+      "imageUrl": "https://picsum.photos/seed/res1/600/400",
+      "imageHint": "italian pasta"
+    },
+    {
+      "id": "res-2",
+      "description": "Juicy Burger Joint",
+      "imageUrl": "https://picsum.photos/seed/res2/600/400",
+      "imageHint": "gourmet burger"
+    },
+    {
+      "id": "res-3",
+      "description": "Sushi Palace",
+      "imageUrl": "https://picsum.photos/seed/res3/600/400",
+      "imageHint": "sushi platter"
+    },
+    {
+      "id": "res-4",
+      "description": "Spicy Indian Curry",
+      "imageUrl": "https://picsum.photos/seed/res4/600/400",
+      "imageHint": "indian curry"
+    },
+    {
+      "id": "dish-1",
+      "description": "Classic Margherita Pizza",
+      "imageUrl": "https://picsum.photos/seed/dish1/400/300",
+      "imageHint": "margherita pizza"
+    },
+    {
+      "id": "dish-2",
+      "description": "Truffle Mushroom Risotto",
+      "imageUrl": "https://picsum.photos/seed/dish2/400/300",
+      "imageHint": "mushroom risotto"
+    },
+    {
+      "id": "dish-3",
+      "description": "Bacon Cheeseburger",
+      "imageUrl": "https://picsum.photos/seed/dish3/400/300",
+      "imageHint": "cheese burger"
+    },
+    {
+      "id": "dish-4",
+      "description": "Salmon Nigiri Set",
+      "imageUrl": "https://picsum.photos/seed/dish4/400/300",
+      "imageHint": "salmon sushi"
+    },
+    {
+      "id": "dish-5",
+      "description": "Butter Chicken with Naan",
+      "imageUrl": "https://picsum.photos/seed/dish5/400/300",
+      "imageHint": "butter chicken"
+    }
+  ]
+}
