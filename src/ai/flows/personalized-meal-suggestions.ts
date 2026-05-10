@@ -55,6 +55,34 @@ const personalizeMealSuggestionsFlow = ai.defineFlow(
   }
 );
 
+/**
+ * Fallback suggestions to use if the AI service fails (e.g., invalid API key).
+ */
+const fallbackSuggestions: PersonalizedMealSuggestionsOutput = {
+  suggestions: [
+    {
+      mealName: "Signature Violet Risotto",
+      description: "A vibrant, creamy risotto infused with roasted beets and goat cheese, matching our theme colors.",
+      cuisine: "Italian Fusion"
+    },
+    {
+      mealName: "Blue Ocean Sushi Platter",
+      description: "Fresh Atlantic salmon and tuna rolls served with butterfly pea flower infused rice.",
+      cuisine: "Japanese"
+    },
+    {
+      mealName: "Karbi Tandoori Platter",
+      description: "A spicy selection of local favorites prepared in a traditional tandoor oven.",
+      cuisine: "North Indian"
+    }
+  ]
+};
+
 export async function personalizeMealSuggestions(input: PersonalizedMealSuggestionsInput): Promise<PersonalizedMealSuggestionsOutput> {
-  return personalizeMealSuggestionsFlow(input);
+  try {
+    return await personalizeMealSuggestionsFlow(input);
+  } catch (error) {
+    console.error("GenAI Error: Falling back to static suggestions.", error);
+    return fallbackSuggestions;
+  }
 }

@@ -57,14 +57,16 @@ export default function Home() {
 
   const filteredRestaurants = useMemo(() => {
     if (!restaurants) return [];
-    return restaurants.filter((res) => {
-      const matchesSearch = 
-        res.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        res.cuisine.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        res.dishes?.some(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
-        
-      return matchesSearch;
-    });
+    return restaurants
+      .filter((res) => {
+        const matchesSearch = 
+          res.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          res.cuisine.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          res.dishes?.some(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
+          
+        return matchesSearch;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name)); // Alphabetical sorting (A-Z)
   }, [restaurants, searchQuery]);
 
   return (
