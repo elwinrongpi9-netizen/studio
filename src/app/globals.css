@@ -1,40 +1,38 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Dark Theme */
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
+    --background: 240 20% 98%;
+    --foreground: 240 10% 4%;
     
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
     
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
     
-    /* Primary: #CF2617 (Tomato Red) */
-    --primary: 5 79% 45%;
+    /* Primary: Violet (HSL: 262 83% 58%) */
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
     
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
     
-    /* Accent: #E085B3 (Berry Pink) */
-    --accent: 330 58% 70%;
+    /* Accent: Blue (HSL: 217 91% 60%) */
+    --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 5 79% 45%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 262 83% 58%;
     
     --radius: 1rem;
   }

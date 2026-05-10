@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -6,7 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { RestaurantCard } from "@/components/restaurant-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, ChevronRight, Loader2 } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, ChevronRight, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
@@ -32,7 +31,6 @@ const LOCALITIES = [
 ];
 
 export default function Home() {
-  const [filter, setFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("Delivery");
   const firestore = useFirestore();
@@ -44,7 +42,6 @@ export default function Home() {
 
   const { data: restaurants, loading } = useCollection<Restaurant>(restaurantsQuery);
 
-  // Auto-seed data if the collection is empty
   useEffect(() => {
     const seedData = async () => {
       if (!firestore || loading || (restaurants && restaurants.length > 0)) return;
@@ -74,20 +71,20 @@ export default function Home() {
     <>
       <Navbar />
       <main className="flex-1 pb-20">
-        <section className="bg-card py-16 border-b relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-             <Image src="https://picsum.photos/seed/foodbg/1920/400" alt="background" fill className="object-cover" />
+        <section className="bg-white py-16 border-b relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none bg-gradient-to-br from-primary/20 to-accent/20">
+             <Image src="https://picsum.photos/seed/foodbg/1920/400" alt="background" fill className="object-cover grayscale" />
            </div>
           <div className="container mx-auto px-4 max-w-5xl relative z-10">
             <div className="flex flex-col items-center mb-8">
-               <h1 className="text-5xl md:text-6xl font-black mb-6 text-center">
-                Karbi <span className="text-primary italic">Zomato</span>
+               <h1 className="text-5xl md:text-6xl font-black mb-6 text-center tracking-tight">
+                Karbi <span className="text-primary">Zomato</span>
               </h1>
-              <p className="text-muted-foreground text-center text-xl mb-10 max-w-2xl">
-                Discover the best food & drinks in <span className="font-bold text-foreground">Diphu, Karbi Anglong</span>
+              <p className="text-muted-foreground text-center text-xl mb-10 max-w-2xl font-medium">
+                Find the best food in <span className="font-bold text-foreground underline decoration-accent/30 underline-offset-4">Diphu, Karbi Anglong</span>
               </p>
 
-              <div className="flex flex-col md:flex-row w-full max-w-3xl bg-background rounded-2xl border shadow-2xl overflow-hidden ring-1 ring-border">
+              <div className="flex flex-col md:flex-row w-full max-w-3xl bg-background rounded-2xl border shadow-xl overflow-hidden ring-1 ring-border">
                 <div className="flex items-center px-5 py-5 md:border-r border-b md:border-b-0 min-w-[200px] cursor-pointer hover:bg-muted/50 transition-colors">
                   <MapPin className="w-5 h-5 text-primary mr-3" />
                   <span className="text-sm font-bold truncate">Diphu, Assam</span>
@@ -111,7 +108,7 @@ export default function Home() {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`flex flex-col items-center gap-3 transition-all group ${
-                    activeTab === tab ? "opacity-100" : "opacity-50 grayscale hover:opacity-80"
+                    activeTab === tab ? "opacity-100" : "opacity-40 grayscale hover:opacity-80"
                   }`}
                 >
                   <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
@@ -121,7 +118,7 @@ export default function Home() {
                     {tab === "Dining Out" && <UtensilsCrossed className={`w-7 h-7 ${activeTab === tab ? "text-primary" : ""}`} />}
                     {tab === "Nightlife" && <Star className={`w-7 h-7 ${activeTab === tab ? "text-primary" : ""}`} />}
                   </div>
-                  <span className={`text-base font-black ${activeTab === tab ? "text-primary" : ""}`}>{tab}</span>
+                  <span className={`text-sm font-bold tracking-wide uppercase ${activeTab === tab ? "text-primary" : "text-muted-foreground"}`}>{tab}</span>
                 </button>
               ))}
             </div>
@@ -130,7 +127,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 py-16 max-w-6xl">
           <section className="mb-16">
-            <h2 className="text-3xl font-bold mb-8">Inspiration for your first order</h2>
+            <h2 className="text-3xl font-black mb-8">Inspiration for your first order</h2>
             <div className="flex gap-8 md:gap-12 overflow-x-auto no-scrollbar pb-4">
               {INSPIRATIONS.map((item) => (
                 <div 
@@ -138,10 +135,10 @@ export default function Home() {
                   className="flex flex-col items-center gap-4 cursor-pointer group flex-shrink-0"
                   onClick={() => setSearchQuery(item.name)}
                 >
-                  <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden shadow-xl border-4 border-transparent group-hover:border-primary transition-all">
+                  <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden shadow-lg border-2 border-transparent group-hover:border-primary transition-all">
                     <Image src={item.img} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                   </div>
-                  <span className="text-base font-bold text-muted-foreground group-hover:text-primary transition-colors">{item.name}</span>
+                  <span className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors">{item.name}</span>
                 </div>
               ))}
             </div>
@@ -150,7 +147,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             <div className="lg:col-span-8">
               <div className="flex items-center justify-between mb-10">
-                <h2 className="text-3xl font-bold">
+                <h2 className="text-3xl font-black">
                   {searchQuery ? `Results for "${searchQuery}"` : `Best ${activeTab} Restaurants in Diphu`}
                 </h2>
               </div>
@@ -177,15 +174,17 @@ export default function Home() {
               )}
 
               <section className="mt-20">
-                <h2 className="text-3xl font-bold mb-8">Popular localities in and around Diphu</h2>
+                <h2 className="text-3xl font-black mb-8">Popular localities in Diphu</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {LOCALITIES.map((loc) => (
-                    <div key={loc.name} className="p-4 bg-card border rounded-xl flex items-center justify-between group cursor-pointer hover:shadow-md transition-shadow">
+                    <div key={loc.name} className="p-5 bg-card border rounded-2xl flex items-center justify-between group cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
                       <div>
                         <h4 className="font-bold text-lg">{loc.name}</h4>
                         <p className="text-sm text-muted-foreground">{loc.count}</p>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -194,13 +193,13 @@ export default function Home() {
             
             <aside className="lg:col-span-4 space-y-10">
               <AIRecommendations />
-              <div className="bg-card p-8 rounded-3xl shadow-lg border space-y-6">
-                <h3 className="text-xl font-bold">Exclusive Collections</h3>
-                <div className="relative rounded-2xl overflow-hidden h-48 group cursor-pointer shadow-md">
-                  <Image src="https://picsum.photos/seed/coll1/600/300" alt="New in Town" fill className="object-cover transition-transform group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6">
+              <div className="bg-gradient-to-br from-primary to-accent p-8 rounded-3xl shadow-lg border-none text-white space-y-6">
+                <h3 className="text-xl font-black">Exclusive Collections</h3>
+                <div className="relative rounded-2xl overflow-hidden h-48 group cursor-pointer shadow-inner">
+                  <Image src="https://picsum.photos/seed/coll1/600/300" alt="New in Town" fill className="object-cover transition-transform group-hover:scale-110 opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
                     <p className="text-white text-lg font-black">New in Town</p>
-                    <p className="text-white/80 text-sm font-bold">9 Places <ChevronRight className="w-4 h-4 inline" /></p>
+                    <p className="text-white/80 text-sm font-bold flex items-center gap-1">9 Places <ChevronRight className="w-4 h-4" /></p>
                   </div>
                 </div>
               </div>
@@ -216,8 +215,8 @@ export default function Home() {
                <span className="text-3xl font-black tracking-tighter">Karbi Zomato</span>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground/50 border-t border-border/50 pt-10">
-            © {new Date().getFullYear()} Karbi Zomato™ Ltd. All rights reserved.
+          <p className="text-xs text-muted-foreground font-medium border-t border-border pt-10">
+            © {new Date().getFullYear()} Karbi Zomato™ Ltd. All rights reserved. Diphu, Karbi Anglong, Assam.
           </p>
         </div>
       </footer>
