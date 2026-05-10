@@ -1,13 +1,17 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Navbar } from "@/components/navbar";
-import { RESTAURANTS } from "@/lib/mock-data";
 import { RestaurantCard } from "@/components/restaurant-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, ChevronRight } from "lucide-react";
+import { Search, SlidersHorizontal, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, ChevronRight, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useCollection, useFirestore } from "@/firebase";
+import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
+import { RESTAURANTS as MOCK_RESTAURANTS } from "@/lib/mock-data";
+import { Restaurant } from "@/lib/types";
 
 const INSPIRATIONS = [
   { name: "Biryani", img: "https://picsum.photos/seed/biryani/200/200" },
@@ -31,30 +35,45 @@ export default function Home() {
   const [filter, setFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("Delivery");
+  const firestore = useFirestore();
 
-  const filteredAndSortedRestaurants = useMemo(() => {
-    return RESTAURANTS
-      .filter((res) => {
-        const matchesCategory = 
-          filter === "All" || 
-          res.cuisine.toLowerCase().includes(filter.toLowerCase()) ||
-          res.dishes.some(d => d.category.toLowerCase() === filter.toLowerCase());
+  const restaurantsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "restaurants"), orderBy("name"));
+  }, [firestore]);
+
+  const { data: restaurants, loading } = useCollection<Restaurant>(restaurantsQuery);
+
+  // Auto-seed data if the collection is empty
+  useEffect(() => {
+    const seedData = async () => {
+      if (!firestore || loading || (restaurants && restaurants.length > 0)) return;
+      const snapshot = await getDocs(collection(firestore, "restaurants"));
+      if (snapshot.empty) {
+        MOCK_RESTAURANTS.forEach(res => {
+          setDoc(doc(firestore, "restaurants", res.id), res);
+        });
+      }
+    };
+    seedData();
+  }, [firestore, loading, restaurants]);
+
+  const filteredRestaurants = useMemo(() => {
+    if (!restaurants) return [];
+    return restaurants.filter((res) => {
+      const matchesSearch = 
+        res.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        res.cuisine.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        res.dishes?.some(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
         
-        const matchesSearch = 
-          res.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          res.cuisine.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          res.dishes.some(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
-          
-        return matchesCategory && matchesSearch;
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [filter, searchQuery]);
+      return matchesSearch;
+    });
+  }, [restaurants, searchQuery]);
 
   return (
     <>
       <Navbar />
       <main className="flex-1 pb-20">
-        {/* Zomato-style Hero Search Section */}
         <section className="bg-card py-16 border-b relative overflow-hidden">
            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
              <Image src="https://picsum.photos/seed/foodbg/1920/400" alt="background" fill className="object-cover" />
@@ -110,7 +129,6 @@ export default function Home() {
         </section>
 
         <div className="container mx-auto px-4 py-16 max-w-6xl">
-          {/* Inspiration Section */}
           <section className="mb-16">
             <h2 className="text-3xl font-bold mb-8">Inspiration for your first order</h2>
             <div className="flex gap-8 md:gap-12 overflow-x-auto no-scrollbar pb-4">
@@ -118,7 +136,7 @@ export default function Home() {
                 <div 
                   key={item.name} 
                   className="flex flex-col items-center gap-4 cursor-pointer group flex-shrink-0"
-                  onClick={() => {setSearchQuery(item.name); setFilter("All");}}
+                  onClick={() => setSearchQuery(item.name)}
                 >
                   <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden shadow-xl border-4 border-transparent group-hover:border-primary transition-all">
                     <Image src={item.img} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -131,25 +149,20 @@ export default function Home() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             <div className="lg:col-span-8">
-              {/* Filter Chips */}
-              <div className="flex items-center gap-3 mb-10 overflow-x-auto pb-4 no-scrollbar">
-                <Button variant="outline" className="rounded-xl h-10 px-4 gap-2 font-bold border-border shadow-sm">
-                  <SlidersHorizontal className="w-4 h-4" /> Filters
-                </Button>
-                <Button variant="outline" className="rounded-xl h-10 px-4 font-bold border-border shadow-sm">Rating: 4.0+</Button>
-                <Button variant="outline" className="rounded-xl h-10 px-4 font-bold border-border shadow-sm">Pure Veg</Button>
-                <Button variant="outline" className="rounded-xl h-10 px-4 font-bold border-border shadow-sm">Cuisine <ChevronDown className="w-3 h-3 ml-1" /></Button>
-              </div>
-
               <div className="flex items-center justify-between mb-10">
                 <h2 className="text-3xl font-bold">
                   {searchQuery ? `Results for "${searchQuery}"` : `Best ${activeTab} Restaurants in Diphu`}
                 </h2>
               </div>
               
-              {filteredAndSortedRestaurants.length > 0 ? (
+              {loading ? (
+                <div className="flex flex-col items-center py-24 gap-4">
+                  <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                  <p className="font-bold text-muted-foreground">Finding restaurants...</p>
+                </div>
+              ) : filteredRestaurants.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
-                  {filteredAndSortedRestaurants.map((res) => (
+                  {filteredRestaurants.map((res) => (
                     <RestaurantCard key={res.id} restaurant={res} />
                   ))}
                 </div>
@@ -157,13 +170,12 @@ export default function Home() {
                 <div className="text-center py-24 bg-card rounded-3xl border border-dashed border-border/50">
                   <UtensilsCrossed className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
                   <p className="text-xl font-bold text-muted-foreground">No restaurants found matching your criteria.</p>
-                  <Button variant="link" onClick={() => {setSearchQuery(""); setFilter("All");}} className="mt-4 text-primary font-bold">
+                  <Button variant="link" onClick={() => setSearchQuery("")} className="mt-4 text-primary font-bold">
                     Show all restaurants
                   </Button>
                 </div>
               )}
 
-              {/* Localities Section */}
               <section className="mt-20">
                 <h2 className="text-3xl font-bold mb-8">Popular localities in and around Diphu</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -191,13 +203,6 @@ export default function Home() {
                     <p className="text-white/80 text-sm font-bold">9 Places <ChevronRight className="w-4 h-4 inline" /></p>
                   </div>
                 </div>
-                <div className="relative rounded-2xl overflow-hidden h-48 group cursor-pointer shadow-md">
-                  <Image src="https://picsum.photos/seed/coll2/600/300" alt="Trending" fill className="object-cover transition-transform group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6">
-                    <p className="text-white text-lg font-black">Trending this week</p>
-                    <p className="text-white/80 text-sm font-bold">12 Places <ChevronRight className="w-4 h-4 inline" /></p>
-                  </div>
-                </div>
               </div>
             </aside>
           </div>
@@ -210,42 +215,9 @@ export default function Home() {
                <UtensilsCrossed className="w-10 h-10 text-primary" />
                <span className="text-3xl font-black tracking-tighter">Karbi Zomato</span>
             </div>
-            <div className="flex gap-4">
-              <Button variant="outline" className="rounded-xl font-black border-border px-6">India</Button>
-              <Button variant="outline" className="rounded-xl font-black border-border px-6">English</Button>
-            </div>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
-            <div className="space-y-4">
-              <p className="font-black tracking-widest text-xs uppercase text-muted-foreground mb-6">About Zomato</p>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Who We Are</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Blog</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Work With Us</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Contact Us</a>
-            </div>
-            <div className="space-y-4">
-              <p className="font-black tracking-widest text-xs uppercase text-muted-foreground mb-6">Zomaverse</p>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Zomato</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Blinkit</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Feeding India</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Hyperpure</a>
-            </div>
-            <div className="space-y-4">
-              <p className="font-black tracking-widest text-xs uppercase text-muted-foreground mb-6">For Restaurants</p>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Partner With Us</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Apps For You</a>
-            </div>
-            <div className="space-y-4">
-              <p className="font-black tracking-widest text-xs uppercase text-muted-foreground mb-6">Learn More</p>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Privacy</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Security</a>
-              <a href="#" className="block text-muted-foreground hover:text-foreground font-medium transition-colors">Terms</a>
-            </div>
-          </div>
-          
           <p className="text-xs text-muted-foreground/50 border-t border-border/50 pt-10">
-            By continuing past this page, you agree to our Terms of Service, Cookie Policy, Privacy Policy and Content Policies. All trademarks are properties of their respective owners. 2008-{new Date().getFullYear()} © Karbi Zomato™ Ltd. All rights reserved.
+            © {new Date().getFullYear()} Karbi Zomato™ Ltd. All rights reserved.
           </p>
         </div>
       </footer>

@@ -4,16 +4,24 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, CreditCard, MapPin } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth, useFirestore, useUser } from "@/firebase";
+import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { useState } from "react";
 
 export default function CartPage() {
-  const { cart, removeFromCart, addToCart, placeOrder, isHydrated } = useAppStore();
+  const { cart, removeFromCart, addToCart, clearCart, isHydrated } = useAppStore();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   if (!isHydrated) return null;
 
@@ -22,15 +30,50 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        description: "You need to be logged in to place an order.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (cart.length === 0) return;
-    const restaurantName = cart[0].restaurantName;
-    const orderId = placeOrder(restaurantName);
-    toast({
-      title: "Order Placed Successfully!",
-      description: `Order #${orderId} has been confirmed.`,
-    });
-    router.push("/orders");
+    setIsPlacingOrder(true);
+
+    const orderId = Math.random().toString(36).substr(2, 9);
+    const orderData = {
+      id: orderId,
+      restaurantName: cart[0].restaurantName,
+      total: total,
+      status: "Preparing",
+      createdAt: new Date().toISOString(),
+      items: cart,
+      userId: user.uid,
+    };
+
+    const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
+
+    setDoc(orderRef, orderData)
+      .then(() => {
+        clearCart();
+        toast({
+          title: "Order Placed Successfully!",
+          description: `Order #${orderId} has been confirmed.`,
+        });
+        router.push("/orders");
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: orderRef.path,
+          operation: "create",
+          requestResourceData: orderData,
+        });
+        errorEmitter.emit("permission-error", permissionError);
+        setIsPlacingOrder(false);
+      });
   };
 
   return (
@@ -57,27 +100,21 @@ export default function CartPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 space-y-6">
-                {/* Delivery Address Section */}
                 <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold flex items-center gap-2">
                       <MapPin className="w-5 h-5 text-primary" />
                       Delivery Address
                     </h3>
-                    <Button variant="link" className="text-primary font-bold">Change</Button>
                   </div>
                   <div className="pl-7">
                     <p className="font-bold">Home</p>
-                    <p className="text-sm text-muted-foreground">123 Karbi St, Diphu, Assam - 782462</p>
+                    <p className="text-sm text-muted-foreground">{user?.email || "123 Karbi St, Diphu, Assam - 782462"}</p>
                   </div>
                 </div>
 
-                {/* Items Section */}
                 <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-6">
-                  <h3 className="font-bold flex items-center gap-2">
-                    <UtensilsIcon className="w-5 h-5 text-primary" />
-                    Items from {cart[0].restaurantName}
-                  </h3>
+                  <h3 className="font-bold">Items from {cart[0].restaurantName}</h3>
                   <div className="space-y-4">
                     {cart.map((item) => (
                       <div key={item.id} className="flex gap-4 items-center border-b pb-4 last:border-0 last:pb-0">
@@ -114,7 +151,6 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Payment Option */}
                 <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-4">
                   <h3 className="font-bold flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-primary" />
@@ -125,7 +161,6 @@ export default function CartPage() {
                       <div className="w-4 h-4 rounded-full border-4 border-primary" />
                       <div>
                         <p className="text-sm font-bold">Cash on Delivery</p>
-                        <p className="text-xs text-muted-foreground">Pay when your food arrives</p>
                       </div>
                     </div>
                   </div>
@@ -138,15 +173,11 @@ export default function CartPage() {
                   <div className="space-y-3 text-sm border-b pb-4 mb-4">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-medium">₹{subtotal.toFixed(0)}</span>
+                      <span>₹{subtotal.toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Delivery Fee</span>
-                      <span className="font-medium text-green-500">₹{deliveryFee.toFixed(0)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Platform Fee</span>
-                      <span className="font-medium">₹{platformFee.toFixed(0)}</span>
+                      <span className="text-green-500">₹{deliveryFee.toFixed(0)}</span>
                     </div>
                   </div>
                   <div className="flex justify-between font-bold text-lg mb-6">
@@ -156,12 +187,10 @@ export default function CartPage() {
                   <Button 
                     className="w-full py-6 rounded-xl font-bold shadow-lg"
                     onClick={handleCheckout}
+                    disabled={isPlacingOrder}
                   >
-                    Place Order
+                    {isPlacingOrder ? <Loader2 className="animate-spin mr-2" /> : "Place Order"}
                   </Button>
-                  <p className="text-[10px] text-center mt-4 text-muted-foreground">
-                    By placing this order, you agree to our Terms and Conditions.
-                  </p>
                 </div>
               </div>
             </div>
@@ -169,26 +198,5 @@ export default function CartPage() {
         </div>
       </main>
     </>
-  );
-}
-
-function UtensilsIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
-      <path d="M7 2v20" />
-      <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
-    </svg>
   );
 }
