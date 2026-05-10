@@ -16,6 +16,7 @@ export interface Restaurant {
   deliveryTime: string;
   image: string;
   priceRange: string;
+  priceForTwo?: number;
   dishes: Dish[];
 }
 
