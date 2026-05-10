@@ -1,31 +1,62 @@
+
 "use client";
 
 import Link from "next/link";
 import { ShoppingBag, UtensilsCrossed, Smartphone, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export function Navbar() {
   const { cart } = useAppStore();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, loading } = useUser();
+  const { toast } = useToast();
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  useEffect(() => {
+    if (user && firestore) {
+      const userRef = doc(firestore, "users", user.uid);
+      setDoc(userRef, {
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        lastLogin: serverTimestamp(),
+      }, { merge: true });
+    }
+  }, [user, firestore]);
 
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+      toast({
+        title: "Welcome back!",
+        description: "Successfully signed in with Google.",
+      });
+    } catch (error: any) {
       console.error("Login failed", error);
+      toast({
+        title: "Login Failed",
+        description: error.message || "Could not sign in with Google. Ensure it's enabled in Firebase Console.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully logged out.",
+      });
     } catch (error) {
       console.error("Logout failed", error);
     }
