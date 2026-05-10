@@ -14,7 +14,7 @@ interface RestaurantCardProps {
 export function RestaurantCard({ restaurant }: RestaurantCardProps) {
   return (
     <Link href={`/restaurant/${restaurant.id}`}>
-      <Card className="group overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl">
+      <Card className="group overflow-hidden border border-border bg-card shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl">
         <div className="relative aspect-[16/10] overflow-hidden">
           <Image
             src={restaurant.image}
@@ -23,7 +23,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
             className="object-cover group-hover:scale-105 transition-transform duration-500"
             data-ai-hint="restaurant food"
           />
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+          <div className="absolute top-3 right-3 bg-card/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm border border-border">
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
             {restaurant.rating}
           </div>
@@ -40,7 +40,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
               {restaurant.deliveryTime}
             </div>
             <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-            <div>Free Delivery</div>
+            <div className="text-green-400">Free Delivery</div>
           </div>
         </CardContent>
       </Card>

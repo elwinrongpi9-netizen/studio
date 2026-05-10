@@ -44,8 +44,8 @@ export default function CartPage() {
           </h1>
 
           {cart.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-3xl border shadow-sm">
-              <div className="bg-primary/5 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="text-center py-20 bg-card rounded-3xl border shadow-sm">
+              <div className="bg-primary/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                 <ShoppingBag className="w-12 h-12 text-primary" />
               </div>
               <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
@@ -58,7 +58,7 @@ export default function CartPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 space-y-6">
                 {/* Delivery Address Section */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold flex items-center gap-2">
                       <MapPin className="w-5 h-5 text-primary" />
@@ -73,7 +73,7 @@ export default function CartPage() {
                 </div>
 
                 {/* Items Section */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
+                <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-6">
                   <h3 className="font-bold flex items-center gap-2">
                     <UtensilsIcon className="w-5 h-5 text-primary" />
                     Items from {cart[0].restaurantName}
@@ -115,13 +115,13 @@ export default function CartPage() {
                 </div>
 
                 {/* Payment Option */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-4">
                   <h3 className="font-bold flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-primary" />
                     Payment Mode
                   </h3>
                   <div className="pl-7 space-y-3">
-                    <div className="flex items-center gap-3 p-3 border rounded-xl bg-primary/5 border-primary/20">
+                    <div className="flex items-center gap-3 p-3 border rounded-xl bg-primary/10 border-primary/20">
                       <div className="w-4 h-4 rounded-full border-4 border-primary" />
                       <div>
                         <p className="text-sm font-bold">Cash on Delivery</p>
@@ -133,7 +133,7 @@ export default function CartPage() {
               </div>
 
               <div className="lg:col-span-4">
-                <div className="bg-white p-6 rounded-2xl shadow-lg border sticky top-24">
+                <div className="bg-card p-6 rounded-2xl shadow-lg border sticky top-24">
                   <h3 className="font-bold mb-4">Summary</h3>
                   <div className="space-y-3 text-sm border-b pb-4 mb-4">
                     <div className="flex justify-between">
@@ -142,7 +142,7 @@ export default function CartPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Delivery Fee</span>
-                      <span className="font-medium text-green-600">₹{deliveryFee.toFixed(0)}</span>
+                      <span className="font-medium text-green-500">₹{deliveryFee.toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Platform Fee</span>

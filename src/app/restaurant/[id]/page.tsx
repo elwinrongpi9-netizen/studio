@@ -50,7 +50,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
             className="object-cover" 
             priority
           />
-          <div className="absolute inset-0 bg-black/40 flex items-end">
+          <div className="absolute inset-0 bg-black/60 flex items-end">
             <div className="container mx-auto px-4 py-8">
               <Link href="/">
                 <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 mb-4 rounded-full">
@@ -62,7 +62,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                   <h1 className="text-3xl md:text-5xl font-bold mb-2">{restaurant.name}</h1>
                   <p className="text-white/80 font-medium mb-2">{restaurant.cuisine}</p>
                   <div className="flex items-center gap-4 text-sm font-bold">
-                    <div className="flex items-center gap-1.5 bg-green-500 px-2 py-0.5 rounded">
+                    <div className="flex items-center gap-1.5 bg-green-600 px-2 py-0.5 rounded shadow-sm">
                       <Star className="w-3.5 h-3.5 fill-white text-white" />
                       {restaurant.rating}
                     </div>
@@ -94,7 +94,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input 
                     placeholder="Search menu..." 
-                    className="w-full pl-10 pr-4 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -104,7 +104,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
                       className={`w-full text-left px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                        activeCategory === cat ? "bg-primary text-white shadow-md" : "hover:bg-primary/5 hover:text-primary"
+                        activeCategory === cat ? "bg-primary text-white shadow-md" : "hover:bg-primary/10 hover:text-primary"
                       }`}
                     >
                       {cat}
@@ -118,14 +118,14 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
               <div className="space-y-12">
                 {categories.filter(c => c !== "All" && (activeCategory === "All" || activeCategory === c)).map((cat) => (
                   <div key={cat}>
-                    <h2 className="text-2xl font-bold mb-6 border-b pb-2">{cat}</h2>
+                    <h2 className="text-2xl font-bold mb-6 border-b border-border pb-2">{cat}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {restaurant.dishes.filter(d => d.category === cat).map((dish) => (
-                        <div key={dish.id} className="bg-white rounded-2xl p-4 shadow-sm border flex gap-4 group hover:shadow-md transition-shadow">
+                        <div key={dish.id} className="bg-card rounded-2xl p-4 shadow-sm border border-border flex gap-4 group hover:shadow-md transition-shadow">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                               <div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center p-0.5">
-                                  <div className="w-full h-full bg-green-600 rounded-full" />
+                               <div className="w-3 h-3 border-2 border-green-500 flex items-center justify-center p-0.5">
+                                  <div className="w-full h-full bg-green-500 rounded-full" />
                                </div>
                                <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{dish.name}</h4>
                             </div>

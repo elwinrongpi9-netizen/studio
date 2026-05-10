@@ -53,7 +53,7 @@ export default function Home() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for Burgers, Pizza, or Restaurants..." 
-                className="w-full pl-12 pr-4 py-4 rounded-2xl border bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base shadow-lg"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base shadow-lg"
               />
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-white rounded-3xl border border-dashed">
+              <div className="text-center py-20 bg-card rounded-3xl border border-dashed">
                 <UtensilsCrossed className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
                 <p className="text-lg font-medium text-muted-foreground">No restaurants found matching your search.</p>
                 <Button variant="link" onClick={() => {setSearchQuery(""); setFilter("All");}} className="mt-2">
@@ -108,15 +108,15 @@ export default function Home() {
           
           <aside className="lg:col-span-4 space-y-8">
             <AIRecommendations />
-            <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+            <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-4">
               <h3 className="font-bold">Exclusive Offers</h3>
-              <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                <span className="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded mb-2 inline-block">Flash Deal</span>
+              <div className="p-4 bg-primary/10 rounded-xl border border-primary/20">
+                <span className="text-[10px] font-bold text-primary uppercase bg-primary/20 px-2 py-0.5 rounded mb-2 inline-block">Flash Deal</span>
                 <p className="font-bold text-lg mb-1">50% OFF</p>
                 <p className="text-xs text-muted-foreground">On your first order from Zomato Italiano</p>
               </div>
-              <div className="p-4 bg-accent/5 rounded-xl border border-accent/10">
-                <span className="text-[10px] font-bold text-accent uppercase bg-accent/10 px-2 py-0.5 rounded mb-2 inline-block">Limited Time</span>
+              <div className="p-4 bg-accent/10 rounded-xl border border-accent/20">
+                <span className="text-[10px] font-bold text-accent uppercase bg-accent/20 px-2 py-0.5 rounded mb-2 inline-block">Limited Time</span>
                 <p className="font-bold text-lg mb-1">Free Delivery</p>
                 <p className="text-xs text-muted-foreground">For all orders above ₹499</p>
               </div>
@@ -124,7 +124,7 @@ export default function Home() {
           </aside>
         </div>
       </main>
-      <footer className="bg-white border-t py-12">
+      <footer className="bg-card border-t py-12">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
              <UtensilsCrossed className="w-6 h-6 text-primary" />

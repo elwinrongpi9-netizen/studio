@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, Loader2, Utensils } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { personalizeMealSuggestions, PersonalizedMealSuggestionsOutput } from "@/ai/flows/personalized-meal-suggestions";
 import { Button } from "@/components/ui/button";
@@ -32,27 +32,27 @@ export function AIRecommendations() {
   }, []);
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-accent/10 border-none shadow-lg overflow-hidden relative">
-      <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+    <Card className="bg-card border border-border shadow-lg overflow-hidden relative">
+      <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
         <Sparkles className="w-24 h-24" />
       </div>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-primary">
           <Sparkles className="w-5 h-5" />
-          AI-Powered Suggestions
+          AI Suggestions
         </CardTitle>
-        <p className="text-sm text-muted-foreground">Based on your cravings and local favorites</p>
+        <p className="text-sm text-muted-foreground">Based on your cravings</p>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-8 gap-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-medium animate-pulse">Analyzing your tastes...</p>
+            <p className="text-sm font-medium animate-pulse">Analyzing cravings...</p>
           </div>
         ) : (
           <div className="space-y-4">
             {suggestions?.suggestions.map((item, idx) => (
-              <div key={idx} className="bg-white/60 p-3 rounded-xl hover:bg-white transition-colors cursor-pointer group">
+              <div key={idx} className="bg-muted/30 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer group border border-border/50">
                 <div className="flex items-center justify-between mb-1">
                   <h4 className="font-bold text-sm group-hover:text-primary">{item.mealName}</h4>
                   {item.cuisine && (
@@ -69,7 +69,7 @@ export function AIRecommendations() {
               className="w-full rounded-xl border-primary/20 hover:bg-primary/10 hover:text-primary transition-all text-sm font-bold"
               onClick={fetchSuggestions}
             >
-              Refresh Recommendations
+              Refresh
             </Button>
           </div>
         )}
