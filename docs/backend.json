@@ -41,6 +41,7 @@
         "photoURL": { "type": "string" },
         "address": { "type": "string" },
         "role": { "type": "string", "enum": ["user", "admin"] },
+        "walletBalance": { "type": "number", "description": "The current balance of Karbi Coins." },
         "lastLogin": { "type": "object" }
       }
     }

@@ -44,4 +44,5 @@ export interface UserProfile {
   photoURL?: string;
   address?: string;
   role: 'user' | 'admin';
+  walletBalance?: number;
 }
