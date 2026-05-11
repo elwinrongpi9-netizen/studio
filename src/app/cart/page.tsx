@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2, Smartphone, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, X, Info } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2, Smartphone, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, X, Info, Timer } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,7 @@ import { useFirestore, useUser } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
@@ -45,6 +45,7 @@ export default function CartPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showQrModal, setShowQrModal] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
 
   // Subtotal calculation
   const subtotal = useMemo(() => {
@@ -55,12 +56,42 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Optimized UPI URI for maximum compatibility with PhonePe/GPay
-  // Format: upi://pay?pa=VPA&pn=NAME&am=AMOUNT&cu=INR
+  // Timer logic
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showQrModal && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setShowQrModal(false);
+      toast({
+        title: "Session Expired",
+        description: "Payment window timed out. Please try again.",
+        variant: "destructive"
+      });
+    }
+
+    return () => clearInterval(timer);
+  }, [showQrModal, timeLeft, toast]);
+
+  // Reset timer when modal opens
+  useEffect(() => {
+    if (showQrModal) {
+      setTimeLeft(300);
+    }
+  }, [showQrModal]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Optimized UPI URI for maximum compatibility
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
-    // Note: We use raw spaces for the name here, which will be encoded by the outer encodeURIComponent
-    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${MERCHANT_NAME}&am=${amount}&cu=INR`;
+    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amount}&cu=INR`;
   }, [total]);
 
   // QR API requires the entire data string to be URL encoded once
@@ -289,6 +320,11 @@ export default function CartPage() {
           </DialogHeader>
           
           <div className="flex flex-col items-center gap-6">
+            <div className="flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-sm animate-pulse">
+              <Timer className="w-4 h-4" />
+              <span>Payment expires in: {formatTime(timeLeft)}</span>
+            </div>
+
             <Alert className="bg-primary/5 border-primary/20 rounded-2xl py-2">
               <Info className="h-4 w-4 text-primary" />
               <AlertTitle className="text-xs font-black uppercase">Payment Tip</AlertTitle>
