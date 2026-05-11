@@ -46,3 +46,13 @@ export interface UserProfile {
   role: 'user' | 'admin';
   walletBalance?: number;
 }
+
+export interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  amount: number;
+  upiId: string;
+  status: 'Pending' | 'Completed' | 'Rejected';
+  createdAt: string;
+}

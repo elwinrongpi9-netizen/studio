@@ -44,6 +44,20 @@
         "walletBalance": { "type": "number", "description": "The current balance of Karbi Coins." },
         "lastLogin": { "type": "object" }
       }
+    },
+    "WithdrawalRequest": {
+      "title": "Withdrawal Request",
+      "description": "A request by a user to withdraw wallet balance to their bank via UPI.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "amount": { "type": "number" },
+        "upiId": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Completed", "Rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "upiId", "status", "createdAt"]
     }
   },
   "auth": {
@@ -61,6 +75,10 @@
     "/users/{userId}": {
       "schema": "#/backend/entities/UserProfile",
       "description": "User profile data."
+    },
+    "/withdrawalRequests/{requestId}": {
+      "schema": "#/backend/entities/WithdrawalRequest",
+      "description": "Global collection of withdrawal requests for admin review."
     }
   }
 }
