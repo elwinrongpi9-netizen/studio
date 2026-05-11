@@ -42,10 +42,9 @@ export default function CartPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showQrModal, setShowQrModal] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(300);
 
   // Subtotal calculation
   const subtotal = useMemo(() => {
@@ -56,19 +55,16 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Optimized UPI URI for maximum compatibility
+  // Optimized UPI URI
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
-    // Standard UPI URI format: upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR
     return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amount}&cu=INR`;
   }, [total]);
 
-  // QR API requires the entire data string to be URL encoded
   const qrCodeUrl = useMemo(() => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=${encodeURIComponent(upiUrl)}`;
   }, [upiUrl]);
 
-  // Timer logic for QR Modal
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (showQrModal && timeLeft > 0) {
@@ -77,21 +73,12 @@ export default function CartPage() {
       }, 1000);
     } else if (timeLeft === 0) {
       setShowQrModal(false);
-      toast({
-        title: "Session Expired",
-        description: "Payment window timed out. Please try again.",
-        variant: "destructive"
-      });
     }
-
     return () => clearInterval(timer);
-  }, [showQrModal, timeLeft, toast]);
+  }, [showQrModal, timeLeft]);
 
-  // Reset timer when modal opens
   useEffect(() => {
-    if (showQrModal) {
-      setTimeLeft(300);
-    }
+    if (showQrModal) setTimeLeft(300);
   }, [showQrModal]);
 
   const formatTime = (seconds: number) => {
@@ -102,15 +89,13 @@ export default function CartPage() {
 
   if (!isHydrated) return null;
 
-  const processOrder = async (confirmedPayment = false) => {
+  const processOrder = (confirmedPayment = false) => {
     if (!user) {
       toast({ title: "Please Sign In", variant: "destructive" });
       return;
     }
 
-    setIsPlacingOrder(true);
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
-    
     const paymentStatus = (paymentMethod === 'cod') ? 'Pending' : (confirmedPayment ? 'Paid' : 'Pending');
 
     const orderData = {
@@ -127,17 +112,8 @@ export default function CartPage() {
 
     const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
 
+    // Fast order processing - initiate and immediately proceed
     setDoc(orderRef, orderData)
-      .then(() => {
-        clearCart();
-        toast({
-          title: "Order Placed Successfully!",
-          description: paymentMethod === 'cod' 
-            ? `Order #${orderId} has been placed via Cash on Delivery.` 
-            : `Your order #${orderId} has been received.`,
-        });
-        router.push("/orders");
-      })
       .catch(async (error) => {
         const permissionError = new FirestorePermissionError({
           path: orderRef.path,
@@ -145,11 +121,18 @@ export default function CartPage() {
           requestResourceData: orderData,
         });
         errorEmitter.emit("permission-error", permissionError);
-        setIsPlacingOrder(false);
       });
+
+    // Optimistic success
+    clearCart();
+    toast({
+      title: "Order Placed!",
+      description: `Your order #${orderId} has been successfully placed.`,
+    });
+    router.push("/orders");
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (!user) {
       toast({ title: "Please Sign In", variant: "destructive" });
       return;
@@ -159,7 +142,6 @@ export default function CartPage() {
     if (paymentMethod === 'upi') {
       setShowQrModal(true);
     } else {
-      // Direct success for COD and other methods, skipping simulated delay
       processOrder(false);
     }
   };
@@ -294,16 +276,8 @@ export default function CartPage() {
                   <Button 
                     className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     onClick={handleCheckout}
-                    disabled={isPlacingOrder}
                   >
-                    {isPlacingOrder ? (
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="animate-spin w-6 h-6" />
-                        <span>Placing Order...</span>
-                      </div>
-                    ) : (
-                      paymentMethod === 'upi' ? 'Scan & Pay Now' : 'Place Order'
-                    )}
+                    {paymentMethod === 'upi' ? 'Scan & Pay Now' : 'Place Order'}
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-6 text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center">
                     <ShieldCheck className="w-3 h-3 text-primary" />
@@ -316,7 +290,6 @@ export default function CartPage() {
         </div>
       </main>
 
-      {/* UPI QR Modal */}
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
         <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] p-8 overflow-hidden">
           <DialogHeader className="mb-4">
@@ -329,16 +302,8 @@ export default function CartPage() {
           <div className="flex flex-col items-center gap-6">
             <div className="flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-sm animate-pulse">
               <Timer className="w-4 h-4" />
-              <span>Payment expires in: {formatTime(timeLeft)}</span>
+              <span>Expires in: {formatTime(timeLeft)}</span>
             </div>
-
-            <Alert className="bg-primary/5 border-primary/20 rounded-2xl py-2">
-              <Info className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-xs font-black uppercase">Payment Tip</AlertTitle>
-              <AlertDescription className="text-[10px] font-medium">
-                Scan using PhonePe, Google Pay, or Paytm to complete payment.
-              </AlertDescription>
-            </Alert>
 
             <div className="relative w-72 h-72 bg-white p-6 rounded-3xl shadow-2xl border-4 border-primary/10">
               <Image 
@@ -367,13 +332,6 @@ export default function CartPage() {
                 }}
               >
                 I have paid ₹{total.toFixed(0)}
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full rounded-2xl text-muted-foreground font-bold hover:bg-transparent"
-                onClick={() => setShowQrModal(false)}
-              >
-                Cancel Payment
               </Button>
             </div>
           </div>
