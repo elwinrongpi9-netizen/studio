@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { Trophy, Gamepad2, Star, QrCode, Timer, CheckCircle2, Heart, ArrowLeft, Wallet, Loader2 } from "lucide-react";
+import { Trophy, Gamepad2, Star, QrCode, Timer, CheckCircle2, Heart, ArrowLeft, Wallet, Loader2, Shield } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useUser, useFirestore, useDoc } from "@/firebase";
@@ -21,10 +21,10 @@ import {
 const FOOD_ITEMS = ["🥟", "🍕", "🍔", "🍣", "🍛", "🍩", "🍦"];
 const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-yellow-500"];
 
-// MERCHANT DETAILS
+// MERCHANT DETAILS - Fixed for PhonePe Business
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese Wok";
-const MERCHANT_CODE = "5812";
+const MERCHANT_CODE = "5812"; // Restaurant Category Code
 
 export default function GameZonePage() {
   const { user } = useUser();
@@ -56,7 +56,7 @@ export default function GameZonePage() {
     const tr = `GM${Date.now().toString().slice(-10)}`;
     const tn = encodeURIComponent(`Gamer_Combo_Recharge`);
     
-    // Standard PhonePe Business URI with Mode 02
+    // Matched PhonePe Business UPI URI: pa, pn, mc, tr, tn, am, cu, mode
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
   }, []);
 
@@ -270,7 +270,7 @@ export default function GameZonePage() {
               <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{MERCHANT_UPI_ID}</p>
             </div>
             <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
-            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Verified Merchant Account (Mode 02)</p>
+            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Verified Merchant Payment (MC 5812 • Mode 02)</p>
           </div>
         </DialogContent>
       </Dialog>

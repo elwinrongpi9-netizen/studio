@@ -69,17 +69,17 @@ export default function CartPage() {
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    // Simple unique transaction ID required for Business Dashboard
+    // Standard PhonePe Business Transaction Reference
     const tr = `ZK${Date.now().toString().slice(-10)}`; 
     const tn = encodeURIComponent(`Order_from_zomatokarbi`);
     
-    // Optimized for PhonePe Business (pa, pn, mc, tr, tn, am, cu, mode)
-    // mode=02 is essential for secure business settlements
+    // Optimized UPI URI: pa, pn, mc, tr, tn, am, cu, mode
+    // mode=02 tells PhonePe app that this is a verified merchant account
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
-    // High quality QR encoding for clear scanning using standard Google Chart API
+    // High clarity QR encoding for Business Dashboard verification
     return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=M|2`;
   }, [upiUrl]);
 
@@ -273,7 +273,7 @@ export default function CartPage() {
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-6 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                     <ShieldCheck className="w-3 h-3 text-primary" />
-                    Secure Merchant Gateway
+                    Secure Merchant Gateway (Mode 02)
                   </div>
                 </div>
               </div>
@@ -309,7 +309,7 @@ export default function CartPage() {
             <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => { setShowQrModal(false); processOrder(true); }}>
               I have paid ₹{total.toFixed(0)}
             </Button>
-            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified Merchant Payment (Mode 02)</p>
+            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified Merchant Payment (MC 5812 • Mode 02)</p>
           </div>
         </DialogContent>
       </Dialog>

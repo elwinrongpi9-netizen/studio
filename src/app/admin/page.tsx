@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink, CheckCircle2, AlertCircle, CreditCard, Shield } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink, CheckCircle2, AlertCircle, CreditCard, Shield } from "lucide-center";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { ShieldAlert } from "lucide-react";
 
 const ADMIN_EMAIL = "zomatokarbi@gmail.com";
 
@@ -56,7 +57,7 @@ export default function AdminPage() {
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
         <div className="flex-1 container mx-auto px-4 py-20 text-center">
-          <ShieldCheck className="w-20 h-20 text-destructive mx-auto mb-6" />
+          <ShieldAlert className="w-20 h-20 text-destructive mx-auto mb-6" />
           <h1 className="text-4xl font-black mb-4">Access Denied</h1>
           <p className="text-muted-foreground text-lg mb-8">This area is restricted to authorized administrators only.</p>
           <Button onClick={() => router.push("/")} className="rounded-xl px-8 font-bold">Return Home</Button>
@@ -130,7 +131,7 @@ export default function AdminPage() {
                 </div>
                 <div className="bg-white/50 p-4 rounded-2xl border border-dashed border-primary/20 flex flex-col justify-center">
                   <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" /> Secure Mode Active
+                    <Shield className="w-4 h-4 text-primary" /> Secure Mode 02 Active
                   </h4>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
                     App ab official **Merchant Category Code (5812)** aur **Secure Mode 02** use kar raha hai PhonePe Business settlements ke liye.
@@ -163,7 +164,7 @@ export default function AdminPage() {
                 </div>
                 <div className="pt-4 border-t border-green-600/10">
                    <p className="text-[10px] text-green-600 font-bold leading-tight italic">
-                     *1 Coin = ₹1 conversion active. Transactions reflect real-time in merchant dashboard.
+                     *MC 5812 Match Active. Transactions reflect real-time in merchant dashboard.
                    </p>
                 </div>
               </div>
