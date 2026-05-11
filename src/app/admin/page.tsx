@@ -3,14 +3,14 @@
 
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { collection, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { Restaurant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -41,19 +41,19 @@ export default function AdminPage() {
 
   if (userLoading || resLoading) {
     return (
-      <>
+      <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
           <p className="font-bold text-muted-foreground">Accessing Admin Panel...</p>
         </div>
-      </>
+      </div>
     );
   }
 
   if (!user || user.email !== ADMIN_EMAIL) {
     return (
-      <>
+      <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
         <div className="flex-1 container mx-auto px-4 py-20 text-center">
           <ShieldCheck className="w-20 h-20 text-destructive mx-auto mb-6" />
@@ -61,7 +61,7 @@ export default function AdminPage() {
           <p className="text-muted-foreground text-lg mb-8">This area is restricted to authorized administrators only.</p>
           <Button onClick={() => router.push("/")} className="rounded-xl px-8 font-bold">Return Home</Button>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -92,7 +92,7 @@ export default function AdminPage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
@@ -104,57 +104,95 @@ export default function AdminPage() {
             <p className="text-muted-foreground font-medium mt-2">Manage zomatokarbi.com restaurant network</p>
           </div>
           <div className="flex gap-4">
-            <Button className="rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20">
+            <Button className="rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
               <Plus className="w-4 h-4" /> Add Restaurant
             </Button>
           </div>
         </div>
 
-        {/* Site Config Card */}
-        <Card className="mb-12 border-primary/20 bg-primary/5 rounded-3xl overflow-hidden">
-          <CardHeader className="bg-primary/10 border-b border-primary/10">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary" />
-              Site Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-xs font-black uppercase text-muted-foreground">Main Website URL</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="bg-white px-3 py-2 rounded-lg border flex-1 text-sm font-bold">https://zomatokarbi.com</code>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {/* Site Config Card */}
+          <Card className="lg:col-span-2 border-primary/20 bg-primary/5 rounded-3xl overflow-hidden shadow-sm">
+            <CardHeader className="bg-primary/10 border-b border-primary/10 py-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Globe className="w-5 h-5 text-primary" />
+                Live Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Main Website URL</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <code className="bg-white px-3 py-2 rounded-lg border flex-1 text-xs font-bold text-primary">https://zomatokarbi.com</code>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Deployment Hostname</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <code className="bg-white px-3 py-2 rounded-lg border flex-1 text-xs font-bold">{currentHostname || "loading..."}</code>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-xs font-black uppercase text-muted-foreground">Authorized Domain (For Payment Gateway)</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="bg-white px-3 py-2 rounded-lg border flex-1 text-sm font-bold">{currentHostname || "loading..."}</code>
-                  </div>
+                <div className="bg-white/50 p-4 rounded-2xl border border-dashed border-primary/20 flex flex-col justify-center">
+                  <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-accent" /> Payment Gateway Tip
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Razorpay ya Stripe dashboard mein **Webhook URL** aur **Authorized Domain** ke liye upar wala Hostname copy karke paste karein.
+                  </p>
+                  <Button variant="link" size="sm" className="p-0 h-auto text-[10px] mt-2 font-bold justify-start" asChild>
+                    <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">
+                      Go to Firebase Console <ExternalLink className="w-3 h-3 ml-1" />
+                    </a>
+                  </Button>
                 </div>
               </div>
-              <div className="bg-white/50 p-4 rounded-2xl border border-dashed border-primary/20">
-                <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <Settings className="w-4 h-4" /> Developer Note
-                </h4>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Use the domain above for <strong>Firebase Auth Whitelisting</strong> and <strong>Payment Gateway Whitelisting</strong> (Razorpay, Stripe, etc.). This ensures secure transactions and valid login popups.
-                </p>
-                <Button variant="link" size="sm" className="p-0 h-auto text-[10px] mt-2 font-bold" asChild>
-                  <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">
-                    Go to Firebase Console <ExternalLink className="w-3 h-3 ml-1" />
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <h2 className="text-2xl font-black mb-6">Manage Restaurants ({restaurants.length})</h2>
+          {/* Launch Checklist */}
+          <Card className="border-accent/20 bg-accent/5 rounded-3xl overflow-hidden shadow-sm">
+            <CardHeader className="bg-accent/10 border-b border-accent/10 py-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-accent">
+                <CheckCircle2 className="w-5 h-5" />
+                Launch Checklist
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ul className="space-y-3">
+                {[
+                  { label: "Firebase Auth Enabled", done: true },
+                  { label: "Firestore DB Ready", done: true },
+                  { label: "Google Login Provider", done: false },
+                  { label: "Real Payment Keys", done: false },
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center justify-between text-xs font-bold">
+                    <span className={item.done ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
+                    {item.done ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <span className="w-4 h-4 rounded-full border-2 border-muted" />
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[10px] text-muted-foreground mt-6 leading-tight italic">
+                *Done items represent code readiness. Manual setup needed in Firebase Console.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-black">Restaurant Network ({restaurants.length})</h2>
+          <div className="h-px flex-1 mx-6 bg-border" />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {restaurants.map((res) => (
-            <Card key={res.id} className="overflow-hidden border-2 hover:border-primary/20 transition-all group rounded-3xl">
+            <Card key={res.id} className="overflow-hidden border-2 hover:border-primary/20 transition-all group rounded-3xl bg-white shadow-sm">
               <div className="relative h-48">
                 <Image src={res.image} alt={res.name} fill className="object-cover" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
@@ -171,11 +209,11 @@ export default function AdminPage() {
                   <div className="space-y-4">
                     <div className="space-y-1">
                       <Label className="text-xs font-black uppercase">Name</Label>
-                      <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                      <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="rounded-xl" />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs font-black uppercase">Cuisine</Label>
-                      <Input value={editForm.cuisine} onChange={e => setEditForm({...editForm, cuisine: e.target.value})} />
+                      <Input value={editForm.cuisine} onChange={e => setEditForm({...editForm, cuisine: e.target.value})} className="rounded-xl" />
                     </div>
                     <div className="flex gap-2 pt-2">
                       <Button onClick={() => handleSave(res.id)} className="flex-1 rounded-xl h-10 font-bold gap-2">
@@ -190,7 +228,7 @@ export default function AdminPage() {
                   <>
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-black text-xl truncate pr-4">{res.name}</h3>
-                      <span className="bg-green-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <span className="bg-green-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 flex-shrink-0">
                         {res.rating}★
                       </span>
                     </div>
@@ -206,6 +244,6 @@ export default function AdminPage() {
           ))}
         </div>
       </main>
-    </>
+    </div>
   );
 }
