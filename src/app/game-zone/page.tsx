@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { Trophy, Gamepad2, Star, QrCode, Timer, CheckCircle2, Heart, ArrowLeft, Wallet, Loader2, Shield } from "lucide-react";
+import { Trophy, Gamepad2, Star, QrCode, Timer, CheckCircle2, Heart, ArrowLeft, Wallet, Loader2, Shield, Sparkles } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useUser, useFirestore, useDoc } from "@/firebase";
@@ -21,10 +21,10 @@ import {
 const FOOD_ITEMS = ["🥟", "🍕", "🍔", "🍣", "🍛", "🍩", "🍦"];
 const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-yellow-500"];
 
-// MERCHANT DETAILS - Fixed for PhonePe Business
+// MERCHANT DETAILS - Exact as per Cart and PhonePe Dashboard
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese Wok";
-const MERCHANT_CODE = "5812"; // Restaurant Category Code
+const MERCHANT_CODE = "5812"; 
 
 export default function GameZonePage() {
   const { user } = useUser();
@@ -46,7 +46,7 @@ export default function GameZonePage() {
   const [isSaving, setIsSaving] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  const earnedCoins = Math.floor(score / 10); 
+  const earnedCoins = Math.floor(score / 10); // 1 Coin = 10 Score points, and 1 Coin = ₹1
 
   const upiUrl = useMemo(() => {
     const amount = "100.00"; 
@@ -56,7 +56,7 @@ export default function GameZonePage() {
     const tr = `GM${Date.now().toString().slice(-10)}`;
     const tn = encodeURIComponent(`Gamer_Combo_Recharge`);
     
-    // Matched PhonePe Business UPI URI: pa, pn, mc, tr, tn, am, cu, mode
+    // Matched URI for PhonePe Business
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
   }, []);
 
@@ -125,8 +125,8 @@ export default function GameZonePage() {
           walletBalance: increment(earnedCoins)
         });
         toast({ 
-          title: "Coins Saved!", 
-          description: `Added ${earnedCoins} Karbi Coins (₹${earnedCoins}) to your wallet.` 
+          title: "Coins Redeemed!", 
+          description: `₹${earnedCoins} added to your Karbi Wallet.` 
         });
       } catch (e) {
         console.error("Wallet save failed", e);
@@ -171,15 +171,8 @@ export default function GameZonePage() {
              <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border-2 border-primary/20 shadow-lg">
                 <Wallet className="w-5 h-5 text-primary" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground leading-none">Wallet (₹)</span>
-                  <span className="font-black text-lg text-primary">{profile?.walletBalance || 0}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border-2 border-yellow-500/20 shadow-lg">
-                <Trophy className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground leading-none">Best</span>
-                  <span className="font-black text-lg text-yellow-600">{highScore}</span>
+                  <span className="text-[10px] font-black uppercase text-muted-foreground leading-none tracking-widest">Real Balance</span>
+                  <span className="font-black text-lg text-primary">₹{profile?.walletBalance || 0}</span>
                 </div>
               </div>
           </div>
@@ -195,9 +188,9 @@ export default function GameZonePage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-accent/90 p-8 text-white text-center">
               <div className="bg-white p-6 rounded-[2rem] shadow-2xl mb-8 animate-bounce"><Gamepad2 className="w-16 h-16 text-primary" /></div>
               <h1 className="text-5xl font-black mb-4 tracking-tighter italic uppercase text-white">Momo Catch</h1>
-              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Earn Karbi Coins! 1 Coin = ₹1. Kheliye aur Jitiye!</p>
+              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Jeeto real Karbi Coins!<br/><span className="text-yellow-300">1 Coin = ₹1 Balance</span></p>
               {!user ? (
-                <div className="bg-white/20 p-4 rounded-2xl mb-4 font-bold">Sign in to save your coins!</div>
+                <div className="bg-white/20 p-4 rounded-2xl mb-4 font-bold">Login to earn real money!</div>
               ) : null}
               <Button onClick={startGame} className="bg-white text-primary hover:bg-white/90 rounded-3xl px-16 py-8 text-2xl font-black shadow-2xl scale-110">PLAY</Button>
             </div>
@@ -228,15 +221,15 @@ export default function GameZonePage() {
           {gameState === "gameover" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-primary p-8 text-white text-center">
               {isSaving ? <Loader2 className="w-12 h-12 animate-spin mb-4" /> : <Trophy className="w-16 h-16 text-yellow-300 fill-yellow-300 mb-6" />}
-              <h2 className="text-5xl font-black mb-2 italic">GAME OVER</h2>
+              <h2 className="text-5xl font-black mb-2 italic">WINNER!</h2>
               <div className="bg-white p-6 rounded-[2.5rem] w-full max-w-[300px] mb-6 shadow-2xl text-primary mt-4">
                 <div className="flex justify-between items-center mb-2"><span className="font-black text-xs uppercase opacity-60">Score</span><span className="text-4xl font-black">{score}</span></div>
-                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Earned</span><span className="text-xl font-black">₹{earnedCoins} (Coins)</span></div>
+                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Withdrawal</span><span className="text-xl font-black text-green-600 flex items-center gap-1">₹{earnedCoins} <Sparkles className="w-4 h-4" /></span></div>
                 <Button onClick={() => setShowQrModal(true)} className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black flex items-center justify-center gap-2 shadow-lg">
                   <QrCode className="w-5 h-5" /> Pay Business ₹100
                 </Button>
               </div>
-              <Button onClick={startGame} className="bg-white/20 hover:bg-white/30 rounded-3xl w-full py-6 text-xl font-black">RETRY</Button>
+              <Button onClick={startGame} className="bg-white/20 hover:bg-white/30 rounded-3xl w-full py-6 text-xl font-black">PLAY AGAIN</Button>
             </div>
           )}
 
@@ -244,8 +237,8 @@ export default function GameZonePage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500 p-8 text-white text-center">
               <CheckCircle2 className="w-24 h-24 mb-6" />
               <h2 className="text-5xl font-black mb-4 italic">PAID!</h2>
-              <p className="font-bold opacity-90 mb-10">Gamer's Combo Payment Received for<br/><span className="text-yellow-300">{MERCHANT_NAME}</span></p>
-              <Button onClick={startGame} className="bg-white text-green-600 rounded-3xl w-full py-8 text-xl font-black">PLAY AGAIN</Button>
+              <p className="font-bold opacity-90 mb-10">Payment Received at PhonePe Business for<br/><span className="text-yellow-300 font-black">{MERCHANT_NAME}</span></p>
+              <Button onClick={startGame} className="bg-white text-green-600 rounded-3xl w-full py-8 text-xl font-black">CONTINUE GAMING</Button>
             </div>
           )}
         </div>
@@ -255,7 +248,7 @@ export default function GameZonePage() {
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
-            <DialogDescription className="text-center font-bold">Merchant: <span className="text-primary">{MERCHANT_NAME}</span></DialogDescription>
+            <DialogDescription className="text-center font-bold">Verified: <span className="text-primary">{MERCHANT_NAME}</span></DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-6">
             <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs animate-pulse flex items-center gap-2">
@@ -267,10 +260,10 @@ export default function GameZonePage() {
             </div>
             <div className="text-center">
               <p className="text-4xl font-black text-primary">₹100.00</p>
-              <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{MERCHANT_UPI_ID}</p>
+              <p className="text-[10px] font-black text-muted-foreground uppercase mt-1 tracking-widest">{MERCHANT_UPI_ID}</p>
             </div>
-            <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
-            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Verified Merchant Payment (MC 5812 • Mode 02)</p>
+            <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl shadow-primary/20" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
+            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Secure Gateway (MC 5812 • Mode 02)</p>
           </div>
         </DialogContent>
       </Dialog>
