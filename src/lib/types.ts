@@ -56,3 +56,9 @@ export interface WithdrawalRequest {
   status: 'Pending' | 'Completed' | 'Rejected';
   createdAt: string;
 }
+
+export interface WingoConfig {
+  id: string;
+  periodId: string;
+  number: number;
+}

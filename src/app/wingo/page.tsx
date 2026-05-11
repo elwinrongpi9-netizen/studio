@@ -13,11 +13,12 @@ import {
   Sparkles,
   Zap,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc } from "@/firebase";
-import { doc, increment, updateDoc } from "firebase/firestore";
+import { doc, increment, updateDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -91,7 +92,25 @@ export default function WingoPage() {
   }, [timeLeft, activeBets, periodId]);
 
   const handleRoundEnd = async () => {
-    const winNumber = Math.floor(Math.random() * 10);
+    if (!firestore) return;
+
+    let winNumber = Math.floor(Math.random() * 10);
+    
+    // Check for Admin Control
+    try {
+      const controlRef = doc(firestore, "wingoConfig", periodId);
+      const controlSnap = await getDoc(controlRef);
+      if (controlSnap.exists()) {
+        const controlledData = controlSnap.data();
+        if (controlledData && typeof controlledData.number === 'number') {
+          winNumber = controlledData.number;
+          console.log("Admin Control Active: Fixed Result to", winNumber);
+        }
+      }
+    } catch (e) {
+      console.warn("Wingo Control check failed, falling back to random", e);
+    }
+
     const winColors = getColorsForNumber(winNumber);
     const winSize = getSizeForNumber(winNumber);
 
@@ -170,7 +189,7 @@ export default function WingoPage() {
         walletBalance: increment(-betAmount)
       });
       setActiveBets(prev => [...prev, { type, amount: betAmount }]);
-      toast({ title: "Bet Placed!", description: `₹${betAmount} on ${typeof type === 'string' ? type.toUpperCase() : `Number ${type}`}` });
+      toast({ title: "Bet Placed!", description: `₹${betAmount} on ${typeof type === 'string' ? type.toUpperCase() : `No. ${type}`}` });
     } catch (e) {
       console.error(e);
       toast({ title: "Bet Failed", variant: "destructive" });

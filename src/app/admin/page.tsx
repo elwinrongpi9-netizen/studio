@@ -3,14 +3,14 @@
 
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import { collection, doc, updateDoc, query, orderBy, setDoc } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { Restaurant, WithdrawalRequest } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap, TrendingUp, Info } from "lucide-react";
+import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap, TrendingUp, Info, Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -42,6 +42,11 @@ export default function AdminPage() {
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Restaurant>>({});
+
+  // Wingo Controller State
+  const [wingoPeriod, setWingoPeriod] = useState("");
+  const [wingoNumber, setWingoNumber] = useState("");
+  const [isWingoLoading, setIsWingoLoading] = useState(false);
 
   const pendingAmount = useMemo(() => {
     return withdrawals.filter(w => w.status === 'Pending').reduce((acc, curr) => acc + curr.amount, 0);
@@ -117,6 +122,31 @@ export default function AdminPage() {
       });
   };
 
+  const handleSetWingoResult = async () => {
+    if (!firestore || !wingoPeriod || wingoNumber === "") return;
+    const num = parseInt(wingoNumber);
+    if (isNaN(num) || num < 0 || num > 9) {
+      toast({ title: "Invalid Number", description: "Please enter a number between 0-9", variant: "destructive" });
+      return;
+    }
+
+    setIsWingoLoading(true);
+    const configRef = doc(firestore, "wingoConfig", wingoPeriod);
+    setDoc(configRef, {
+      periodId: wingoPeriod,
+      number: num
+    })
+    .then(() => {
+      toast({ title: "Wingo Controller Set!", description: `Period ${wingoPeriod} result will be ${num}.` });
+      setWingoPeriod("");
+      setWingoNumber("");
+    })
+    .catch((err) => {
+       console.error(err);
+    })
+    .finally(() => setIsWingoLoading(false));
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: "UPI Copied!", description: "Paste it in your UPI app to pay the user now." });
@@ -143,7 +173,7 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="withdrawals" className="space-y-8">
-          <TabsList className="bg-muted p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto">
+          <TabsList className="bg-muted p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto overflow-x-auto no-scrollbar">
             <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 flex gap-3 data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all">
               Withdrawals 
               {withdrawals.filter(w => w.status === 'Pending').length > 0 && (
@@ -153,7 +183,10 @@ export default function AdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="restaurants" className="rounded-xl font-black px-8 h-12 transition-all">Listings</TabsTrigger>
-            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway Config</TabsTrigger>
+            <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 transition-all flex gap-2">
+              <Zap className="w-4 h-4" /> Wingo Control
+            </TabsTrigger>
+            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway</TabsTrigger>
           </TabsList>
 
           <TabsContent value="withdrawals">
@@ -282,8 +315,65 @@ export default function AdminPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="wingo">
+            <Card className="border-4 border-primary/20 bg-white rounded-[4rem] p-12 shadow-2xl max-w-2xl mx-auto">
+              <div className="flex flex-col items-center text-center space-y-4 mb-10">
+                <div className="p-4 bg-primary/10 rounded-3xl">
+                  <Zap className="w-12 h-12 text-primary" />
+                </div>
+                <h2 className="text-4xl font-black italic tracking-tighter">Wingo Result Controller</h2>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Control the payout by setting winning numbers for future periods</p>
+              </div>
+
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-2">Target Period ID (Check Wingo Page)</Label>
+                    <Input 
+                      placeholder="e.g. 202403151230" 
+                      value={wingoPeriod} 
+                      onChange={e => setWingoPeriod(e.target.value)}
+                      className="h-14 rounded-2xl font-black border-2 focus:border-primary text-lg"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-2">Set Winning Number (0-9)</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="0-9" 
+                      value={wingoNumber} 
+                      onChange={e => setWingoNumber(e.target.value)}
+                      className="h-14 rounded-2xl font-black border-2 focus:border-primary text-lg"
+                    />
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleSetWingoResult} 
+                  className="w-full h-18 rounded-2xl font-black text-xl py-8 shadow-xl shadow-primary/20 flex gap-3"
+                  disabled={isWingoLoading}
+                >
+                  {isWingoLoading ? <Loader2 className="animate-spin" /> : <Save className="w-6 h-6" />}
+                  Fix Round Result
+                </Button>
+
+                <div className="bg-muted/50 p-6 rounded-3xl border-2 border-dashed">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                    <Info className="w-4 h-4" /> Admin Instructions
+                  </h4>
+                  <ul className="text-[11px] font-bold text-muted-foreground space-y-2 uppercase leading-relaxed">
+                    <li>1. Open Wingo page to see current Period ID.</li>
+                    <li>2. Enter that ID or the next ID here.</li>
+                    <li>3. Pick a number (0-9) you want to make win.</li>
+                    <li>4. Save. Users who bet on this will get paid automatically.</li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="config">
-            <Card className="border-4 border-primary/20 bg-primary/[0.03] rounded-[4rem] p-12 shadow-2xl max-w-3xl">
+            <Card className="border-4 border-primary/20 bg-primary/[0.03] rounded-[4rem] p-12 shadow-2xl max-w-3xl mx-auto">
               <CardTitle className="text-4xl font-black italic tracking-tighter flex items-center gap-4 mb-8">
                 <Globe className="w-12 h-12 text-primary" />
                 PhonePe Gateway Status

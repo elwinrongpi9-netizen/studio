@@ -58,6 +58,16 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "amount", "upiId", "status", "createdAt"]
+    },
+    "WingoConfig": {
+      "title": "Wingo Config",
+      "description": "Admin controlled results for Wingo periods.",
+      "type": "object",
+      "properties": {
+        "periodId": { "type": "string" },
+        "number": { "type": "number" }
+      },
+      "required": ["periodId", "number"]
     }
   },
   "auth": {
@@ -79,6 +89,10 @@
     "/withdrawalRequests/{requestId}": {
       "schema": "#/backend/entities/WithdrawalRequest",
       "description": "Global collection of withdrawal requests for admin review."
+    },
+    "/wingoConfig/{configId}": {
+      "schema": "#/backend/entities/WingoConfig",
+      "description": "Admin controlled Wingo results."
     }
   }
 }
