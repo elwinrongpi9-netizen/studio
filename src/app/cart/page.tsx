@@ -46,14 +46,13 @@ export default function CartPage() {
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showQrModal, setShowQrModal] = useState(false);
 
-  if (!isHydrated) return null;
-
   const subtotal = cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
   const deliveryFee = subtotal > 0 ? 40 : 0;
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
   // Generate a valid UPI Payment URI
+  // This must be called before the early return to follow React Hook rules
   const upiUrl = useMemo(() => {
     const baseUrl = "upi://pay";
     const params = new URLSearchParams({
@@ -65,6 +64,8 @@ export default function CartPage() {
     });
     return `${baseUrl}?${params.toString()}`;
   }, [total]);
+
+  if (!isHydrated) return null;
 
   // QR Code generator URL (must double encode the data parameter)
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
