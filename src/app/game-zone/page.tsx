@@ -21,6 +21,7 @@ const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-
 // REAL MERCHANT DETAILS - Verified for Rongpi Chinese wok
 const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
+const MERCHANT_CODE = "5812";
 
 export default function GameZonePage() {
   const [gameState, setGameState] = useState<"start" | "playing" | "gameover" | "success">("start");
@@ -34,14 +35,17 @@ export default function GameZonePage() {
   const [timeLeft, setTimeLeft] = useState(300);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  // Optimized UPI Payment URI for Gamer's Deal
+  // Optimized UPI Payment URI for Gamer's Deal with Merchant Category Code
   const upiUrl = useMemo(() => {
     const amount = "100.00"; 
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
-    const tr = `GAME${Date.now().toString().slice(-8)}`;
+    const mc = MERCHANT_CODE;
+    const tr = `GAME${Date.now().toString().slice(-10)}`;
+    const tn = encodeURIComponent("Gamer Combo Payment");
     
-    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=INR&tr=${tr}&tn=GamerComboZK`;
+    // Business Optimized URI
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
   }, []);
 
   const qrCodeUrl = useMemo(() => {
@@ -228,7 +232,7 @@ export default function GameZonePage() {
               <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{MERCHANT_UPI_ID}</p>
             </div>
             <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
-            <p className="text-[9px] text-muted-foreground uppercase font-black">Standard PhonePe, GPay, Paytm QR</p>
+            <p className="text-[9px] text-muted-foreground uppercase font-black">Standard PhonePe Business QR</p>
           </div>
         </DialogContent>
       </Dialog>

@@ -5,7 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, Timer } from "lucide-react";
-import Link from "next/link";
+import Link from "link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,7 @@ import {
 // REAL MERCHANT DETAILS - Verified for Rongpi Chinese wok
 const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
+const MERCHANT_CODE = "5812"; // Category code for restaurants
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'Scan & Pay (UPI QR)', icon: <QrCode className="w-4 h-4" /> },
@@ -53,19 +54,21 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Optimized UPI Payment URI for Real Transactions
+  // Optimized UPI Payment URI for Real Business Transactions
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
-    const tr = `ZK${Date.now().toString().slice(-8)}`; // Unique transaction ref
+    const mc = MERCHANT_CODE;
+    const tr = `ZK${Date.now().toString().slice(-10)}`; // Longer unique ref
+    const tn = encodeURIComponent("ZomatoKarbi Order");
     
-    // Simplest working format for all UPI apps
-    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=INR&tr=${tr}&tn=OrderFromZomatoKarbi`;
+    // Comprehensive Business UPI Format
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
-    // High error correction (chld=H) for better scanning
+    // High resolution QR with error correction for better scanning on mobile screens
     return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H`;
   }, [upiUrl]);
 
@@ -260,7 +263,7 @@ export default function CartPage() {
             <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => { setShowQrModal(false); processOrder(true); }}>
               I have paid ₹{total.toFixed(0)}
             </Button>
-            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified for PhonePe, GPay, Paytm</p>
+            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified for PhonePe, GPay, Paytm Business</p>
           </div>
         </DialogContent>
       </Dialog>
