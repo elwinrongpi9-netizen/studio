@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { 
@@ -9,20 +9,15 @@ import {
   Timer, 
   Wallet, 
   ArrowLeft, 
-  Trophy, 
   Info, 
-  Loader2, 
   Sparkles,
-  Zap,
-  CheckCircle2,
-  AlertCircle
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc } from "@/firebase";
-import { doc, setDoc, increment, getDoc, updateDoc } from "firebase/firestore";
+import { doc, increment, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 type BetType = "green" | "red" | "violet" | number;
@@ -30,7 +25,7 @@ type BetType = "green" | "red" | "violet" | number;
 interface GameResult {
   periodId: string;
   number: number;
-  color: "green" | "red" | "violet";
+  colors: ("green" | "red" | "violet")[];
 }
 
 export default function WingoPage() {
@@ -44,10 +39,17 @@ export default function WingoPage() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [periodId, setPeriodId] = useState("");
   const [history, setHistory] = useState<GameResult[]>([]);
-  const [selectedBet, setSelectedBet] = useState<BetType | null>(null);
   const [betAmount, setBetAmount] = useState<number>(10);
   const [isBetting, setIsBetting] = useState(false);
   const [activeBets, setActiveBets] = useState<{ type: BetType; amount: number }[]>([]);
+
+  // Function to get colors based on user's specific mapping
+  const getColorsForNumber = (num: number): ("green" | "red" | "violet")[] => {
+    if (num === 0) return ["red", "violet"];
+    if (num === 5) return ["green", "violet"];
+    if ([2, 4, 6, 8].includes(num)) return ["red"];
+    return ["green"]; // 1, 3, 7, 9 are Green
+  };
 
   // Initialize Period ID and History
   useEffect(() => {
@@ -55,12 +57,14 @@ export default function WingoPage() {
     const pid = now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0') + now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
     setPeriodId(pid);
 
-    // Mock initial history
-    const mockHistory: GameResult[] = Array.from({ length: 5 }).map((_, i) => ({
-      periodId: (parseInt(pid) - (i + 1)).toString(),
-      number: Math.floor(Math.random() * 10),
-      color: ["green", "red", "violet"][Math.floor(Math.random() * 3)] as any
-    }));
+    const mockHistory: GameResult[] = Array.from({ length: 5 }).map((_, i) => {
+      const num = Math.floor(Math.random() * 10);
+      return {
+        periodId: (parseInt(pid) - (i + 1)).toString(),
+        number: num,
+        colors: getColorsForNumber(num)
+      };
+    });
     setHistory(mockHistory);
   }, []);
 
@@ -76,23 +80,21 @@ export default function WingoPage() {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [timeLeft, activeBets]);
+  }, [timeLeft, activeBets, periodId]);
 
   const handleRoundEnd = async () => {
     const winNumber = Math.floor(Math.random() * 10);
-    let winColor: "green" | "red" | "violet" = "green";
-    if (winNumber === 0 || winNumber === 5) winColor = "violet";
-    else if (winNumber % 2 === 0) winColor = "red";
-    else winColor = "green";
+    const winColors = getColorsForNumber(winNumber);
 
     const result: GameResult = {
       periodId: periodId,
       number: winNumber,
-      color: winColor
+      colors: winColors
     };
 
     setHistory(prev => [result, ...prev].slice(0, 10));
-    setPeriodId((prev) => (parseInt(prev) + 1).toString());
+    const nextPid = (parseInt(periodId) + 1).toString();
+    setPeriodId(nextPid);
 
     // Check winnings
     if (activeBets.length > 0 && user && firestore) {
@@ -101,7 +103,12 @@ export default function WingoPage() {
         if (typeof bet.type === 'number') {
           if (bet.type === winNumber) totalWinning += bet.amount * 9;
         } else {
-          if (bet.type === winColor) totalWinning += bet.amount * 2;
+          // If the color bet is among the winning colors
+          if (winColors.includes(bet.type as any)) {
+            // Standard odds: Violet wins 4.5x on 0/5, Green/Red wins 1.5x on 0/5
+            // Simplified odds for MVP: 2x for color win
+            totalWinning += bet.amount * 2;
+          }
         }
       });
 
@@ -112,12 +119,11 @@ export default function WingoPage() {
         toast({
           title: "Congratulations! 🎉",
           description: `You won ₹${totalWinning} in period ${result.periodId}`,
-          variant: "default"
         });
       } else {
         toast({
           title: "Round Ended",
-          description: `Result: ${winColor.toUpperCase()} ${winNumber}. Better luck next time!`,
+          description: `Result: ${winNumber} (${winColors.join(' & ')}). Better luck next time!`,
           variant: "destructive"
         });
       }
@@ -299,16 +305,25 @@ export default function WingoPage() {
                   <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{res.periodId}</p>
                 </div>
                 <div className="flex items-center gap-6">
-                  <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
-                    res.color === 'green' ? 'bg-green-500' : res.color === 'red' ? 'bg-red-500' : 'bg-purple-500'
-                  }`}>
-                    {res.number}
-                  </span>
-                  <div className={`w-3 h-3 rounded-full animate-pulse ${
-                    res.color === 'green' ? 'bg-green-500' : res.color === 'red' ? 'bg-red-500' : 'bg-purple-500'
-                  }`} />
-                  <span className="text-[10px] font-black uppercase text-muted-foreground w-12 text-right tracking-tighter">
-                    {res.color}
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
+                      res.colors[0] === 'green' ? 'bg-green-500' : 'bg-red-500'
+                    }`}>
+                      {res.number}
+                    </span>
+                    {res.colors.length > 1 && (
+                      <div className="w-4 h-4 rounded-full bg-purple-500 shadow-sm border-2 border-white -ml-3" />
+                    )}
+                  </div>
+                  <div className="flex gap-1.5">
+                    {res.colors.map((color, ci) => (
+                      <div key={ci} className={`w-3 h-3 rounded-full animate-pulse ${
+                        color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : 'bg-purple-500'
+                      }`} />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-muted-foreground w-16 text-right tracking-tighter">
+                    {res.colors.join(' & ')}
                   </span>
                 </div>
               </div>
@@ -318,11 +333,11 @@ export default function WingoPage() {
 
         {/* Betting Rules Info */}
         <div className="mt-8 bg-muted/30 p-6 rounded-[2rem] border-2 border-dashed flex items-start gap-4">
-          <Info className="w-6 h-6 text-primary shrink-0" />
+          <Zap className="w-6 h-6 text-primary shrink-0" />
           <div className="space-y-1">
-             <p className="text-[10px] font-black uppercase tracking-widest text-foreground">Wingo Rules</p>
+             <p className="text-[10px] font-black uppercase tracking-widest text-foreground">Wingo 1M Rules</p>
              <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed">
-               Predict color to win 2x amount. Predict number to win 9x amount. 1 Coin = ₹1. Withdrawals processed within 24H.
+               0 & 5 are dual colors. Payout: Number (9x), Color (2x). 1 Coin = ₹1. Safe & Transparent payouts within 24H.
              </p>
           </div>
         </div>
