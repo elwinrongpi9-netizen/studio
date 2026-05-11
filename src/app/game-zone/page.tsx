@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { Trophy, Play, RotateCcw, Heart, ArrowLeft, Gamepad2, Star, QrCode, Smartphone, Timer, CheckCircle2, PartyPopper } from "lucide-react";
+import { Trophy, Gamepad2, Star, QrCode, Timer, CheckCircle2, Heart, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -34,20 +34,18 @@ export default function GameZonePage() {
   const [timeLeft, setTimeLeft] = useState(300);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  // Deep linked UPI Payment URI for Gamer's Deal
+  // Optimized UPI Payment URI for Gamer's Deal
   const upiUrl = useMemo(() => {
     const amount = "100.00"; 
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
-    const cu = "INR";
-    const mode = "02"; // Business mode
-    const orgid = "000000";
+    const tr = `GAME${Date.now().toString().slice(-8)}`;
     
-    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=${cu}&mode=${mode}&orgid=${orgid}`;
+    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=INR&tr=${tr}&tn=GamerComboZK`;
   }, []);
 
   const qrCodeUrl = useMemo(() => {
-    return `https://chart.googleapis.com/chart?chs=400x400&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8`;
+    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H`;
   }, [upiUrl]);
 
   useEffect(() => {
@@ -215,14 +213,14 @@ export default function GameZonePage() {
       </main>
 
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] p-8">
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
             <DialogDescription className="text-center font-bold">Merchant: <span className="text-primary">{MERCHANT_NAME}</span></DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-6">
             <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs">Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</div>
-            <div className="relative w-64 h-64 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
+            <div className="relative w-72 h-72 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
               <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain" unoptimized />
             </div>
             <div className="text-center">
@@ -230,7 +228,7 @@ export default function GameZonePage() {
               <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{MERCHANT_UPI_ID}</p>
             </div>
             <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
-            <p className="text-[9px] text-muted-foreground uppercase font-black">Scan via PhonePe, GPay, Paytm</p>
+            <p className="text-[9px] text-muted-foreground uppercase font-black">Standard PhonePe, GPay, Paytm QR</p>
           </div>
         </DialogContent>
       </Dialog>

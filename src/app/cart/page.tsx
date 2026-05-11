@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Smartphone, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, Timer } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, Timer } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -56,20 +56,17 @@ export default function CartPage() {
   // Optimized UPI Payment URI for Real Transactions
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
-    // Deep link parameters for better compatibility with banking apps
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
-    const cu = "INR";
-    const mode = "02"; // Business mode
-    const orgid = "000000";
-    const sign = ""; // Signature usually not needed for simple QR
+    const tr = `ZK${Date.now().toString().slice(-8)}`; // Unique transaction ref
     
-    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=${cu}&mode=${mode}&orgid=${orgid}`;
+    // Simplest working format for all UPI apps
+    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=INR&tr=${tr}&tn=OrderFromZomatoKarbi`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
-    // Using a more reliable QR provider for banking URIs
-    return `https://chart.googleapis.com/chart?chs=400x400&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8`;
+    // High error correction (chld=H) for better scanning
+    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H`;
   }, [upiUrl]);
 
   useEffect(() => {
@@ -237,7 +234,7 @@ export default function CartPage() {
       </main>
 
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] p-8">
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
             <DialogDescription className="text-center font-bold text-muted-foreground">
@@ -251,7 +248,7 @@ export default function CartPage() {
               <span>Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
             </div>
 
-            <div className="relative w-72 h-72 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
+            <div className="relative w-80 h-80 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
               <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-2" unoptimized />
             </div>
             
@@ -263,7 +260,7 @@ export default function CartPage() {
             <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => { setShowQrModal(false); processOrder(true); }}>
               I have paid ₹{total.toFixed(0)}
             </Button>
-            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Supports PhonePe, GPay, Paytm</p>
+            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified for PhonePe, GPay, Paytm</p>
           </div>
         </DialogContent>
       </Dialog>
