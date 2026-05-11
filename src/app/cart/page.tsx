@@ -53,15 +53,23 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Standard UPI Payment URI for Real Transactions
+  // Optimized UPI Payment URI for Real Transactions
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
-    const name = encodeURIComponent(MERCHANT_NAME);
-    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${name}&am=${amount}&cu=INR&tn=Order_Payment`;
+    // Deep link parameters for better compatibility with banking apps
+    const pa = MERCHANT_UPI_ID;
+    const pn = encodeURIComponent(MERCHANT_NAME);
+    const cu = "INR";
+    const mode = "02"; // Business mode
+    const orgid = "000000";
+    const sign = ""; // Signature usually not needed for simple QR
+    
+    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=${cu}&mode=${mode}&orgid=${orgid}`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=1&data=${encodeURIComponent(upiUrl)}`;
+    // Using a more reliable QR provider for banking URIs
+    return `https://chart.googleapis.com/chart?chs=400x400&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8`;
   }, [upiUrl]);
 
   useEffect(() => {

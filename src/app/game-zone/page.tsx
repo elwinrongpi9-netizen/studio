@@ -34,15 +34,20 @@ export default function GameZonePage() {
   const [timeLeft, setTimeLeft] = useState(300);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  // Real UPI QR Logic for Gamer's Deal
+  // Deep linked UPI Payment URI for Gamer's Deal
   const upiUrl = useMemo(() => {
     const amount = "100.00"; 
-    const name = encodeURIComponent(MERCHANT_NAME);
-    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${name}&am=${amount}&cu=INR&tn=Gamer_Combo`;
+    const pa = MERCHANT_UPI_ID;
+    const pn = encodeURIComponent(MERCHANT_NAME);
+    const cu = "INR";
+    const mode = "02"; // Business mode
+    const orgid = "000000";
+    
+    return `upi://pay?pa=${pa}&pn=${pn}&am=${amount}&cu=${cu}&mode=${mode}&orgid=${orgid}`;
   }, []);
 
   const qrCodeUrl = useMemo(() => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=1&data=${encodeURIComponent(upiUrl)}`;
+    return `https://chart.googleapis.com/chart?chs=400x400&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8`;
   }, [upiUrl]);
 
   useEffect(() => {
