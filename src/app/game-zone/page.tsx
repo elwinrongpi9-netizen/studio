@@ -23,7 +23,7 @@ const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-
 
 const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
-const MERCHANT_CODE = "5812"; // Restaurant Category
+const MERCHANT_CODE = "5812";
 
 export default function GameZonePage() {
   const { user } = useUser();
@@ -45,15 +45,15 @@ export default function GameZonePage() {
   const [isSaving, setIsSaving] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  // Optimized for Real PhonePe Business Transactions
+  const earnedCoins = Math.floor(score / 10); // 10 points = 1 Coin = ₹1
+
   const upiUrl = useMemo(() => {
-    const amount = "100.00"; // Gamer Combo Price
+    const amount = "100.00"; // Fixed Gamer Combo Price
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `GAME${Date.now().toString().slice(-10)}`; // Transaction Ref
-    const tn = encodeURIComponent("ZomatoKarbi Gamer Combo");
-    // Standard Merchant URI with mode=02 for secure business tracking
+    const tr = `GAME${Date.now().toString().slice(-10)}`;
+    const tn = encodeURIComponent("ZomatoKarbi Gamer Combo Payment");
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
   }, []);
 
@@ -115,14 +115,16 @@ export default function GameZonePage() {
 
   const handleGameOver = async () => {
     setGameState("gameover");
-    if (user && score > 0) {
+    if (user && earnedCoins > 0) {
       setIsSaving(true);
       try {
-        const coinsEarned = Math.floor(score / 10);
         await updateDoc(doc(firestore, "users", user.uid), {
-          walletBalance: increment(coinsEarned)
+          walletBalance: increment(earnedCoins)
         });
-        toast({ title: "Coins Saved!", description: `Added ${coinsEarned} Karbi Coins to your wallet.` });
+        toast({ 
+          title: "Coins Saved!", 
+          description: `Added ${earnedCoins} Karbi Coins (₹${earnedCoins}) to your wallet.` 
+        });
       } catch (e) {
         console.error("Wallet save failed", e);
       } finally {
@@ -166,7 +168,7 @@ export default function GameZonePage() {
              <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border-2 border-primary/20 shadow-lg">
                 <Wallet className="w-5 h-5 text-primary" />
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground leading-none">Wallet</span>
+                  <span className="text-[10px] font-black uppercase text-muted-foreground leading-none">Wallet (₹)</span>
                   <span className="font-black text-lg text-primary">{profile?.walletBalance || 0}</span>
                 </div>
               </div>
@@ -190,7 +192,7 @@ export default function GameZonePage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-accent/90 p-8 text-white text-center">
               <div className="bg-white p-6 rounded-[2rem] shadow-2xl mb-8 animate-bounce"><Gamepad2 className="w-16 h-16 text-primary" /></div>
               <h1 className="text-5xl font-black mb-4 tracking-tighter italic uppercase text-white">Momo Catch</h1>
-              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Earn Karbi Coins! Play & Pay for Gamer Combo.</p>
+              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Earn Karbi Coins! 1 Coin = ₹1. Play & Pay Business.</p>
               {!user ? (
                 <div className="bg-white/20 p-4 rounded-2xl mb-4 font-bold">Sign in to save your coins!</div>
               ) : null}
@@ -226,9 +228,9 @@ export default function GameZonePage() {
               <h2 className="text-5xl font-black mb-2 italic">GAME OVER</h2>
               <div className="bg-white p-6 rounded-[2.5rem] w-full max-w-[300px] mb-6 shadow-2xl text-primary mt-4">
                 <div className="flex justify-between items-center mb-2"><span className="font-black text-xs uppercase opacity-60">Score</span><span className="text-4xl font-black">{score}</span></div>
-                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Earned</span><span className="text-xl font-black">+{Math.floor(score/10)} Coins</span></div>
+                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Earned</span><span className="text-xl font-black">₹{earnedCoins} (Coins)</span></div>
                 <Button onClick={() => setShowQrModal(true)} className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black flex items-center justify-center gap-2 shadow-lg">
-                  <QrCode className="w-5 h-5" /> Pay Business
+                  <QrCode className="w-5 h-5" /> Pay ₹100 Business
                 </Button>
               </div>
               <Button onClick={startGame} className="bg-white/20 hover:bg-white/30 rounded-3xl w-full py-6 text-xl font-black">RETRY</Button>

@@ -127,7 +127,10 @@ export function Navbar() {
           {user && (
              <div className="hidden sm:flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10">
                 <Wallet className="w-4 h-4 text-primary" />
-                <span className="text-sm font-black text-primary">{profile?.walletBalance || 0}</span>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase text-muted-foreground leading-none">Coins</span>
+                  <span className="text-sm font-black text-primary">₹{profile?.walletBalance || 0}</span>
+                </div>
              </div>
           )}
           <Link href="/game-zone" className="hidden lg:flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
