@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -43,22 +43,23 @@ export default function WalletPage() {
 
     const withdrawAmount = parseFloat(amount);
     if (isNaN(withdrawAmount) || withdrawAmount < 10) {
-      toast({ title: "Minimum ₹10", description: "Aap kam se kam ₹10 withdraw kar sakte hain.", variant: "destructive" });
+      toast({ title: "Min ₹10 Required", description: "Kam se kam ₹10 hone chahiye.", variant: "destructive" });
       return;
     }
 
     if (withdrawAmount > (profile.walletBalance || 0)) {
-      toast({ title: "Insufficient Balance", variant: "destructive" });
+      toast({ title: "Insufficient Coins", variant: "destructive" });
       return;
     }
 
     if (!upiId.includes("@")) {
-      toast({ title: "Invalid UPI ID", description: "Kripya sahi UPI address dalein (e.g. user@ybl)", variant: "destructive" });
+      toast({ title: "Invalid UPI ID", description: "Kripya valid UPI bhalete bhorao.", variant: "destructive" });
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // Create the withdrawal request
       await addDoc(collection(firestore, "withdrawalRequests"), {
         userId: user.uid,
         userEmail: user.email,
@@ -68,15 +69,17 @@ export default function WalletPage() {
         createdAt: new Date().toISOString()
       });
 
+      // Deduct coins from user balance immediately
       await updateDoc(doc(firestore, "users", user.uid), {
         walletBalance: increment(-withdrawAmount)
       });
 
       toast({ 
-        title: "Request Submitted!", 
-        description: `₹${withdrawAmount} aapke UPI ID ${upiId} par 24 ghante mein bhej diye jayenge.` 
+        title: "Request Success!", 
+        description: `₹${withdrawAmount} aapke UPI par 24 ghante mein bhej diye jayenge.` 
       });
       setAmount("");
+      setUpiId("");
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -90,7 +93,7 @@ export default function WalletPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="mt-4 font-bold text-muted-foreground">Opening your wallet...</p>
+          <p className="mt-4 font-bold text-muted-foreground">Opening your Karbi Wallet...</p>
         </div>
       </div>
     );
@@ -131,7 +134,7 @@ export default function WalletPage() {
                 <Wallet className="w-32 h-32" />
               </div>
               <CardContent className="p-10 relative z-10">
-                <p className="text-primary-foreground/80 font-bold uppercase tracking-widest text-xs mb-2">Total Balance</p>
+                <p className="text-primary-foreground/80 font-bold uppercase tracking-widest text-xs mb-2">Available Balance</p>
                 <h2 className="text-6xl font-black mb-8">₹{profile?.walletBalance || 0}</h2>
                 <div className="flex items-center gap-2 bg-white/20 w-fit px-4 py-2 rounded-2xl backdrop-blur-md">
                   <CheckCircle2 className="w-4 h-4" />
@@ -144,12 +147,12 @@ export default function WalletPage() {
               <CardHeader className="p-0 mb-6">
                 <CardTitle className="text-xl font-black flex items-center gap-2">
                   <ArrowUpRight className="w-6 h-6 text-primary" />
-                  UPI Withdrawal
+                  Request Cash Out
                 </CardTitle>
               </CardHeader>
               <form onSubmit={handleWithdraw} className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Amount (₹)</Label>
+                  <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Withdraw Amount (₹)</Label>
                   <Input 
                     type="number" 
                     placeholder="Min ₹10" 
@@ -160,18 +163,18 @@ export default function WalletPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">UPI ID (Only)</Label>
+                  <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">Your UPI ID</Label>
                   <Input 
-                    placeholder="e.g. mobile@ybl" 
+                    placeholder="e.g. yourname@ybl" 
                     value={upiId} 
                     onChange={e => setUpiId(e.target.value)}
                     className="h-14 rounded-2xl font-bold"
                     required
                   />
-                  <p className="text-[10px] text-muted-foreground font-bold italic">*Sirf UPI account mein transfer hoga.</p>
+                  <p className="text-[10px] text-muted-foreground font-bold italic">*Admin verification ke baad payment bhejenge.</p>
                 </div>
                 <Button className="w-full h-16 rounded-2xl font-black text-lg shadow-xl" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Request Cash Out"}
+                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Withdraw to UPI"}
                 </Button>
               </form>
             </Card>
@@ -183,9 +186,9 @@ export default function WalletPage() {
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-black flex items-center gap-2">
                   <History className="w-6 h-6 text-primary" />
-                  Recent Activity
+                  Withdrawal History
                 </h3>
-                <Badge variant="outline" className="rounded-full font-bold px-4">{withdrawals.length} entries</Badge>
+                <Badge variant="outline" className="rounded-full font-bold px-4">{withdrawals.length} requests</Badge>
               </div>
 
               {historyLoading ? (
@@ -200,11 +203,14 @@ export default function WalletPage() {
                   {withdrawals.map((req: any) => (
                     <div key={req.id} className="flex items-center justify-between p-5 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/10 transition-all">
                       <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-xl ${req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+                        <div className={`p-3 rounded-xl ${
+                          req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 
+                          req.status === 'Completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                        }`}>
                           {req.status === 'Pending' ? <Clock className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
                         </div>
                         <div>
-                          <p className="font-black text-sm">Withdrawal: ₹{req.amount}</p>
+                          <p className="font-black text-sm">Requested: ₹{req.amount}</p>
                           <p className="text-[10px] font-bold text-muted-foreground tracking-tighter uppercase">{req.upiId}</p>
                         </div>
                       </div>
