@@ -108,12 +108,9 @@ export default function CartPage() {
       return;
     }
 
+    setIsPlacingOrder(true);
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
     
-    // Logic for payment status:
-    // 1. If COD: Status is 'Pending'
-    // 2. If UPI & user confirmed payment: Status is 'Paid' (subject to verification)
-    // 3. Otherwise: 'Pending'
     const paymentStatus = (paymentMethod === 'cod') ? 'Pending' : (confirmedPayment ? 'Paid' : 'Pending');
 
     const orderData = {
@@ -136,7 +133,7 @@ export default function CartPage() {
         toast({
           title: "Order Placed Successfully!",
           description: paymentMethod === 'cod' 
-            ? `Order #${orderId} received. Please pay ₹${total.toFixed(0)} at delivery.` 
+            ? `Order #${orderId} has been placed via Cash on Delivery.` 
             : `Your order #${orderId} has been received.`,
         });
         router.push("/orders");
@@ -162,9 +159,8 @@ export default function CartPage() {
     if (paymentMethod === 'upi') {
       setShowQrModal(true);
     } else {
-      setIsPlacingOrder(true);
-      // For COD and others, we simulate a small processing time then confirm
-      setTimeout(() => processOrder(false), 1500);
+      // Direct success for COD and other methods, skipping simulated delay
+      processOrder(false);
     }
   };
 
@@ -303,7 +299,7 @@ export default function CartPage() {
                     {isPlacingOrder ? (
                       <div className="flex items-center gap-3">
                         <Loader2 className="animate-spin w-6 h-6" />
-                        <span>Processing...</span>
+                        <span>Placing Order...</span>
                       </div>
                     ) : (
                       paymentMethod === 'upi' ? 'Scan & Pay Now' : 'Place Order'
@@ -367,8 +363,7 @@ export default function CartPage() {
                 className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 transition-all"
                 onClick={() => {
                   setShowQrModal(false);
-                  setIsPlacingOrder(true);
-                  setTimeout(() => processOrder(true), 1200);
+                  processOrder(true);
                 }}
               >
                 I have paid ₹{total.toFixed(0)}
