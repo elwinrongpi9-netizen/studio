@@ -25,16 +25,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// MERCHANT DETAILS - Exact as per PhonePe Business for Q297152786@ybl
+// MERCHANT DETAILS - EXACT MATCH AS PER SCREENSHOT
 const MERCHANT_UPI_ID = "Q297152786@ybl";
-const MERCHANT_NAME = "Rongpi Chinese Wok";
-const MERCHANT_CODE = "5812"; // MC Code for Eating Places
+const MERCHANT_NAME = "Rongpi Chinese wok";
+const MERCHANT_CODE = "5812"; 
 
 const PAYMENT_METHODS = [
-  { id: 'upi', name: 'Scan & Pay (UPI QR)', icon: <QrCode className="w-4 h-4" /> },
+  { id: 'upi', name: 'PhonePe / UPI QR', icon: <QrCode className="w-4 h-4" /> },
   { id: 'cod', name: 'Cash on Delivery', icon: <Wallet className="w-4 h-4" /> },
-  { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard className="w-4 h-4" /> },
-  { id: 'netbanking', name: 'Net Banking', icon: <Building2 className="w-4 h-4" /> },
 ];
 
 export default function CartPage() {
@@ -73,12 +71,12 @@ export default function CartPage() {
     const tr = `ZK${Date.now().toString().slice(-10)}`; 
     const tn = encodeURIComponent(`Order_from_zomatokarbi`);
     
-    // Official Matched Format for PhonePe Business settlements
+    // Matched URI for PhonePe Business Secure Mode 02
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
-    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=M|2`;
+    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H|2`;
   }, [upiUrl]);
 
   useEffect(() => {
@@ -201,7 +199,6 @@ export default function CartPage() {
                       <div>
                         <h4 className="font-black text-sm">Withdraw Karbi Coins</h4>
                         <p className="text-xs font-bold text-muted-foreground">Balance: <span className="text-primary font-black">₹{walletBalance}</span></p>
-                        <p className="text-[10px] uppercase font-black text-primary/60">1 Coin = ₹1 Instant Discount</p>
                       </div>
                     </div>
                     <Switch 
@@ -262,17 +259,13 @@ export default function CartPage() {
                   <div className="space-y-4 text-sm border-b border-dashed pb-6 mb-6">
                     <div className="flex justify-between font-bold"><span className="text-muted-foreground">Total Bill</span><span>₹{billTotal.toFixed(0)}</span></div>
                     {walletDeduction > 0 && (
-                      <div className="flex justify-between font-black text-primary"><span className="flex items-center gap-1">Coin Discount <Sparkles className="w-3 h-3" /></span><span>-₹{walletDeduction}</span></div>
+                      <div className="flex justify-between font-black text-primary"><span>Coin Discount</span><span>-₹{walletDeduction}</span></div>
                     )}
                   </div>
                   <div className="flex justify-between font-black text-2xl mb-8"><span>Final Pay</span><span className="text-primary">₹{total.toFixed(0)}</span></div>
                   <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20" onClick={handleCheckout}>
-                    {total <= 0 ? 'Place Order (Withdraw Coins)' : (paymentMethod === 'upi' ? 'Secure Scan & Pay' : 'Confirm Order')}
+                    {total <= 0 ? 'Place Order (Withdraw Coins)' : 'Secure Scan & Pay'}
                   </Button>
-                  <div className="flex items-center justify-center gap-2 mt-6 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                    <ShieldCheck className="w-3 h-3 text-primary" />
-                    PhonePe Business Verified (5812)
-                  </div>
                 </div>
               </div>
             </div>
@@ -307,7 +300,7 @@ export default function CartPage() {
             <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => { setShowQrModal(false); processOrder(true); }}>
               I have paid ₹{total.toFixed(0)}
             </Button>
-            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Matched: MC 5812 • Mode 02 Secure</p>
+            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Secure PhonePe Business Gateway Active</p>
           </div>
         </DialogContent>
       </Dialog>
