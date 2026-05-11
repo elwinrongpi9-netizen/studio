@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Exact merchant details from user input
+// Exact merchant details for Rongpi Chinese wok
 const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 
@@ -46,32 +46,33 @@ export default function CartPage() {
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showQrModal, setShowQrModal] = useState(false);
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
+  // Subtotal calculation
+  const subtotal = useMemo(() => {
+    return cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
+  }, [cart]);
+
   const deliveryFee = subtotal > 0 ? 40 : 0;
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Optimized UPI URI construction for maximum compatibility
+  // Optimized UPI URI for maximum compatibility with PhonePe/GPay
+  // Format: upi://pay?pa=VPA&pn=NAME&am=AMOUNT&cu=INR
   const upiUrl = useMemo(() => {
-    // Manual construction to ensure %20 is used instead of + for spaces
-    // Some UPI apps are sensitive to the encoding of the Merchant Name
-    const encodedName = encodeURIComponent(MERCHANT_NAME);
     const amount = total.toFixed(2);
-    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodedName}&am=${amount}&cu=INR&mode=02`;
+    // Note: We use raw spaces for the name here, which will be encoded by the outer encodeURIComponent
+    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${MERCHANT_NAME}&am=${amount}&cu=INR`;
   }, [total]);
+
+  // QR API requires the entire data string to be URL encoded once
+  const qrCodeUrl = useMemo(() => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=${encodeURIComponent(upiUrl)}`;
+  }, [upiUrl]);
 
   if (!isHydrated) return null;
 
-  // External QR generator with proper double encoding of the URI
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(upiUrl)}`;
-
   const processOrder = async (confirmedPayment = false) => {
     if (!user) {
-      toast({
-        title: "Please Sign In",
-        description: "You need to be logged in to place an order.",
-        variant: "destructive",
-      });
+      toast({ title: "Please Sign In", variant: "destructive" });
       return;
     }
 
@@ -107,28 +108,21 @@ export default function CartPage() {
         });
         errorEmitter.emit("permission-error", permissionError);
         setIsPlacingOrder(false);
-        setShowQrModal(false);
       });
   };
 
   const handleCheckout = async () => {
     if (!user) {
-      toast({
-        title: "Please Sign In",
-        variant: "destructive",
-      });
+      toast({ title: "Please Sign In", variant: "destructive" });
       return;
     }
-
     if (cart.length === 0) return;
 
     if (paymentMethod === 'upi') {
       setShowQrModal(true);
     } else {
       setIsPlacingOrder(true);
-      setTimeout(() => {
-        processOrder(true);
-      }, 1500);
+      setTimeout(() => processOrder(true), 1500);
     }
   };
 
@@ -147,8 +141,7 @@ export default function CartPage() {
               <div className="bg-primary/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                 <ShoppingBag className="w-12 h-12 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold mb-2 text-foreground">Your cart is feeling lonely</h2>
-              <p className="text-muted-foreground mb-10 max-w-xs mx-auto">Add some delicious meals from Diphu's top restaurants to get started.</p>
+              <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
               <Link href="/">
                 <Button className="rounded-2xl px-10 py-6 text-lg font-black shadow-xl shadow-primary/20">Find Food</Button>
               </Link>
@@ -212,12 +205,10 @@ export default function CartPage() {
                 </div>
 
                 <div className="bg-card p-8 rounded-3xl shadow-sm border space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-black text-lg flex items-center gap-2">
-                      <CreditCard className="w-6 h-6 text-primary" />
-                      Payment Method
-                    </h3>
-                  </div>
+                  <h3 className="font-black text-lg flex items-center gap-2">
+                    <CreditCard className="w-6 h-6 text-primary" />
+                    Payment Method
+                  </h3>
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {PAYMENT_METHODS.map((method) => (
                       <div 
@@ -289,7 +280,7 @@ export default function CartPage() {
 
       {/* UPI QR Modal */}
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="sm:max-w-[420px] rounded-3xl p-8 overflow-hidden">
+        <DialogContent className="sm:max-w-[420px] rounded-[2.5rem] p-8 overflow-hidden">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
             <DialogDescription className="text-center font-bold text-muted-foreground">
@@ -300,16 +291,16 @@ export default function CartPage() {
           <div className="flex flex-col items-center gap-6">
             <Alert className="bg-primary/5 border-primary/20 rounded-2xl py-2">
               <Info className="h-4 w-4 text-primary" />
-              <AlertTitle className="text-xs font-black uppercase tracking-tight">Payment Tip</AlertTitle>
+              <AlertTitle className="text-xs font-black uppercase">Payment Tip</AlertTitle>
               <AlertDescription className="text-[10px] font-medium">
-                Please scan this QR using PhonePe, GPay, or Paytm.
+                Scan using PhonePe, Google Pay, or Paytm to complete payment.
               </AlertDescription>
             </Alert>
 
-            <div className="relative w-64 h-64 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
+            <div className="relative w-72 h-72 bg-white p-6 rounded-3xl shadow-2xl border-4 border-primary/10">
               <Image 
                 src={qrCodeUrl} 
-                alt="Payment QR Code" 
+                alt="UPI Payment QR" 
                 fill 
                 className="object-contain p-2"
                 unoptimized
@@ -317,7 +308,7 @@ export default function CartPage() {
             </div>
             
             <div className="text-center space-y-2">
-              <p className="text-3xl font-black text-primary">₹{total.toFixed(2)}</p>
+              <p className="text-4xl font-black text-primary">₹{total.toFixed(0)}</p>
               <div className="flex items-center justify-center gap-2 bg-muted/50 px-4 py-1.5 rounded-full">
                 <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />
                 <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase">{MERCHANT_UPI_ID}</p>
@@ -340,13 +331,9 @@ export default function CartPage() {
                 className="w-full rounded-2xl text-muted-foreground font-bold hover:bg-transparent"
                 onClick={() => setShowQrModal(false)}
               >
-                Go Back
+                Cancel Payment
               </Button>
             </div>
-            
-            <p className="text-[9px] text-muted-foreground text-center font-bold opacity-60">
-              Supports: PhonePe, GPay, Paytm, BHIM
-            </p>
           </div>
         </DialogContent>
       </Dialog>
