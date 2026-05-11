@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap, TrendingUp, Info, Gamepad2 } from "lucide-react";
+import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap, TrendingUp, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -43,7 +43,7 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Restaurant>>({});
 
-  // Wingo Controller State
+  // Wingo Manual Controller State
   const [wingoPeriod, setWingoPeriod] = useState("");
   const [wingoNumber, setWingoNumber] = useState("");
   const [isWingoLoading, setIsWingoLoading] = useState(false);
@@ -108,7 +108,7 @@ export default function AdminPage() {
       .then(() => {
         toast({ 
           title: `Success!`, 
-          description: status === 'Completed' ? "Request marked as paid. User ledger updated." : "Request rejected.",
+          description: status === 'Completed' ? "Request marked as paid." : "Request rejected.",
           variant: status === 'Completed' ? "default" : "destructive"
         });
       })
@@ -134,22 +134,24 @@ export default function AdminPage() {
     const configRef = doc(firestore, "wingoConfig", wingoPeriod);
     setDoc(configRef, {
       periodId: wingoPeriod,
-      number: num
+      number: num,
+      updatedAt: new Date().toISOString()
     })
     .then(() => {
-      toast({ title: "Wingo Controller Set!", description: `Period ${wingoPeriod} result will be ${num}.` });
+      toast({ title: "Manual Result Set!", description: `Period ${wingoPeriod} will result in Number ${num}.` });
       setWingoPeriod("");
       setWingoNumber("");
     })
     .catch((err) => {
        console.error(err);
+       toast({ title: "Error setting result", variant: "destructive" });
     })
     .finally(() => setIsWingoLoading(false));
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "UPI Copied!", description: "Paste it in your UPI app to pay the user now." });
+    toast({ title: "UPI ID Copied!", description: "Paste it in your PhonePe/GPay app." });
   };
 
   return (
@@ -160,160 +162,33 @@ export default function AdminPage() {
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4 text-foreground">
               <ShieldCheck className="w-12 h-12 text-primary" />
-              Owner Terminal
+              Admin Terminal
             </h1>
-            <p className="text-muted-foreground font-bold mt-2 uppercase text-[10px] tracking-widest">Manage Restaurant Listings and User Payouts</p>
+            <p className="text-muted-foreground font-bold mt-2 uppercase text-[10px] tracking-widest">Wingo Manual Controller & Withdrawal Manager</p>
           </div>
           <div className="flex gap-4">
             <div className="bg-primary/5 px-6 py-4 rounded-2xl border-2 border-primary/10 flex flex-col items-end gap-1">
-               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Pending Payout</span>
+               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Pending Payouts</span>
                <span className="text-2xl font-black text-primary">₹{pendingAmount}</span>
             </div>
           </div>
         </div>
 
-        <Tabs defaultValue="withdrawals" className="space-y-8">
-          <TabsList className="bg-muted p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto overflow-x-auto no-scrollbar">
-            <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 flex gap-3 data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all">
+        <Tabs defaultValue="wingo" className="space-y-8">
+          <TabsList className="bg-muted p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto">
+            <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 transition-all flex gap-2">
+              <Zap className="w-4 h-4" /> Wingo Control
+            </TabsTrigger>
+            <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 flex gap-3 data-[state=active]:bg-white data-[state=active]:shadow-lg">
               Withdrawals 
               {withdrawals.filter(w => w.status === 'Pending').length > 0 && (
-                <span className="bg-primary text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center animate-bounce shadow-lg">
+                <span className="bg-primary text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
                   {withdrawals.filter(w => w.status === 'Pending').length}
                 </span>
               )}
             </TabsTrigger>
             <TabsTrigger value="restaurants" className="rounded-xl font-black px-8 h-12 transition-all">Listings</TabsTrigger>
-            <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 transition-all flex gap-2">
-              <Zap className="w-4 h-4" /> Wingo Control
-            </TabsTrigger>
-            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="withdrawals">
-            <div className="space-y-6">
-              <div className="bg-primary/5 p-8 rounded-[2.5rem] border-2 border-primary/10 flex items-center gap-6 relative overflow-hidden group">
-                <Info className="w-12 h-12 text-primary opacity-20 group-hover:scale-110 transition-transform" />
-                <div className="relative z-10">
-                  <h4 className="font-black text-sm uppercase tracking-widest mb-1">Manual Payout Guide:</h4>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed max-w-2xl">
-                    1. Copy User's UPI ID. 2. Open PhonePe/GPay and pay the amount. 3. Click "Success (Mark Paid)" here to update user's history.
-                  </p>
-                </div>
-              </div>
-              
-              {withdrawals.length === 0 ? (
-                <div className="text-center py-32 bg-muted/20 rounded-[4rem] border-4 border-dashed flex flex-col items-center">
-                  <Banknote className="w-20 h-20 text-muted-foreground mx-auto mb-6 opacity-5" />
-                  <p className="font-black text-muted-foreground uppercase tracking-[0.2em] text-sm italic">Queue Empty</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6">
-                  {withdrawals.map((req) => (
-                    <Card key={req.id} className={`rounded-[3rem] border-2 shadow-sm overflow-hidden bg-white transition-all hover:shadow-2xl ${req.status === 'Pending' ? 'border-orange-100 hover:border-primary/20' : 'border-muted opacity-80'}`}>
-                      <div className="flex flex-col md:flex-row md:items-center justify-between p-10 gap-8">
-                        <div className="flex items-start gap-8">
-                          <div className={`p-6 rounded-[2rem] shadow-sm ${req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-                            <TrendingUp className="w-10 h-10" />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-4">
-                              <h3 className="font-black text-5xl tracking-tighter text-foreground italic">₹{req.amount}</h3>
-                              <Badge className={`rounded-full px-5 py-1 text-[10px] font-black uppercase tracking-widest ${
-                                req.status === 'Pending' ? 'bg-orange-500 shadow-lg shadow-orange-500/20' : 
-                                req.status === 'Completed' ? 'bg-green-600 shadow-lg shadow-green-600/20' : 'bg-destructive'
-                              }`}>
-                                {req.status}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-col gap-1 mt-2">
-                              <p className="text-xs font-black text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
-                                <User className="w-3.5 h-3.5 text-primary" /> {req.userEmail}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-3 mt-6">
-                              <div className="bg-muted px-6 py-4 rounded-2xl flex items-center gap-6 border-2 group hover:border-primary transition-all cursor-pointer" onClick={() => copyToClipboard(req.upiId)}>
-                                <span className="text-xl font-black text-foreground select-all tracking-tight font-mono">{req.upiId}</span>
-                                <div className="p-2 bg-white rounded-lg shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
-                                  <Copy className="w-5 h-5" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col md:items-end gap-6">
-                          {req.status === 'Pending' && (
-                            <div className="flex flex-col sm:flex-row gap-4 w-full">
-                              <Button 
-                                onClick={() => handleWithdrawalStatus(req.id, 'Completed')}
-                                className="rounded-2xl font-black bg-green-600 hover:bg-green-700 gap-3 h-16 px-10 shadow-2xl shadow-green-600/30 text-lg uppercase tracking-widest"
-                              >
-                                <CheckCircle2 className="w-6 h-6" /> Success (Mark Paid)
-                              </Button>
-                              <Button 
-                                variant="outline"
-                                onClick={() => handleWithdrawalStatus(req.id, 'Rejected')}
-                                className="rounded-2xl font-black text-destructive hover:bg-destructive/5 border-destructive/20 h-16 px-8 uppercase tracking-widest"
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
-                          <div className="text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">
-                            Request Date: {new Date(req.createdAt).toLocaleDateString()} • {new Date(req.createdAt).toLocaleTimeString()}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="restaurants">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {restaurants.map((res) => (
-                <Card key={res.id} className="overflow-hidden border-2 rounded-[3rem] bg-white group shadow-sm hover:shadow-2xl transition-all">
-                  <div className="relative h-60">
-                    <Image src={res.image} alt={res.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                      <Button size="icon" variant="secondary" onClick={() => handleEdit(res)} className="rounded-full w-14 h-14 shadow-2xl hover:scale-110 transition-all">
-                        <Edit2 className="w-6 h-6" />
-                      </Button>
-                    </div>
-                  </div>
-                  <CardContent className="p-10">
-                    {editingId === res.id ? (
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                           <Label className="text-[10px] font-black uppercase tracking-widest">Restaurant Name</Label>
-                           <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="rounded-2xl h-12 border-2" />
-                        </div>
-                        <div className="space-y-2">
-                           <Label className="text-[10px] font-black uppercase tracking-widest">Cuisine Type</Label>
-                           <Input value={editForm.cuisine} onChange={e => setEditForm({...editForm, cuisine: e.target.value})} className="rounded-2xl h-12 border-2" />
-                        </div>
-                        <div className="flex gap-4 pt-4">
-                          <Button onClick={() => handleSave(res.id)} className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest">Save</Button>
-                          <Button onClick={() => setEditingId(null)} variant="outline" className="rounded-2xl w-12 h-12 border-2"><X className="w-5 h-5" /></Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <h3 className="font-black text-2xl mb-1 italic tracking-tighter">{res.name}</h3>
-                        <p className="text-xs text-muted-foreground font-black mb-6 uppercase tracking-widest">{res.cuisine}</p>
-                        <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground border-t-2 border-dashed pt-6 uppercase tracking-[0.15em]">
-                          <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Rating: {res.rating}★</span>
-                          <span className="text-primary">₹{res.priceForTwo} For Two</span>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
 
           <TabsContent value="wingo">
             <Card className="border-4 border-primary/20 bg-white rounded-[4rem] p-12 shadow-2xl max-w-2xl mx-auto">
@@ -321,14 +196,14 @@ export default function AdminPage() {
                 <div className="p-4 bg-primary/10 rounded-3xl">
                   <Zap className="w-12 h-12 text-primary" />
                 </div>
-                <h2 className="text-4xl font-black italic tracking-tighter">Wingo Result Controller</h2>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Control the payout by setting winning numbers for future periods</p>
+                <h2 className="text-4xl font-black italic tracking-tighter">Manual Controller</h2>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Predict and Fix the Next Wingo Round Result</p>
               </div>
 
               <div className="space-y-8">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-2">Target Period ID (Check Wingo Page)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-2">Target Period ID</Label>
                     <Input 
                       placeholder="e.g. 202403151230" 
                       value={wingoPeriod} 
@@ -340,7 +215,7 @@ export default function AdminPage() {
                     <Label className="text-[10px] font-black uppercase tracking-widest ml-2">Set Winning Number (0-9)</Label>
                     <Input 
                       type="number" 
-                      placeholder="0-9" 
+                      placeholder="Choose 0-9" 
                       value={wingoNumber} 
                       onChange={e => setWingoNumber(e.target.value)}
                       className="h-14 rounded-2xl font-black border-2 focus:border-primary text-lg"
@@ -359,47 +234,135 @@ export default function AdminPage() {
 
                 <div className="bg-muted/50 p-6 rounded-3xl border-2 border-dashed">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                    <Info className="w-4 h-4" /> Admin Instructions
+                    <Info className="w-4 h-4 text-primary" /> How to use
                   </h4>
                   <ul className="text-[11px] font-bold text-muted-foreground space-y-2 uppercase leading-relaxed">
-                    <li>1. Open Wingo page to see current Period ID.</li>
-                    <li>2. Enter that ID or the next ID here.</li>
-                    <li>3. Pick a number (0-9) you want to make win.</li>
-                    <li>4. Save. Users who bet on this will get paid automatically.</li>
+                    <li>1. Check the current Period ID on the Wingo page.</li>
+                    <li>2. Enter that ID or the next one here.</li>
+                    <li>3. Select a number. All bets matching this number/color/size will win.</li>
+                    <li>4. Submit. The payout happens automatically in real-time.</li>
                   </ul>
                 </div>
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="config">
-            <Card className="border-4 border-primary/20 bg-primary/[0.03] rounded-[4rem] p-12 shadow-2xl max-w-3xl mx-auto">
-              <CardTitle className="text-4xl font-black italic tracking-tighter flex items-center gap-4 mb-8">
-                <Globe className="w-12 h-12 text-primary" />
-                PhonePe Gateway Status
-              </CardTitle>
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Merchant ID</Label>
-                    <p className="font-black text-2xl text-primary italic">Q297152786@ybl</p>
-                  </div>
-                  <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Settlement Mode</Label>
-                    <p className="font-black text-2xl text-foreground italic">Mode 02 (Business)</p>
-                  </div>
-                </div>
-                
-                <div className="bg-white p-8 rounded-[2.5rem] border-2 border-dashed border-primary/20">
-                  <h4 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-primary" /> Automated Reconciliation Active
-                  </h4>
-                  <p className="text-xs font-bold text-muted-foreground uppercase leading-relaxed tracking-tight">
-                    Every payment scanned via QR code in this app is tagged with Merchant Category Code 5812. This ensures the funds go directly to your PhonePe Business account linked with your Merchant ID. Withdrawal requests are manual to ensure 100% bank-verified payouts to users.
+          <TabsContent value="withdrawals">
+            <div className="space-y-6">
+               <div className="bg-primary/5 p-8 rounded-[2.5rem] border-2 border-primary/10 flex items-center gap-6">
+                <Info className="w-10 h-10 text-primary opacity-30" />
+                <div>
+                  <h4 className="font-black text-sm uppercase tracking-widest mb-1">Payout Protocol:</h4>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed max-w-2xl">
+                    Copy the UPI ID below, pay manually via PhonePe, and then click "Mark Paid" to clear the user's request.
                   </p>
                 </div>
               </div>
-            </Card>
+
+              {withdrawals.length === 0 ? (
+                <div className="text-center py-32 bg-muted/20 rounded-[4rem] border-4 border-dashed">
+                  <Banknote className="w-20 h-20 text-muted-foreground mx-auto mb-6 opacity-5" />
+                  <p className="font-black text-muted-foreground uppercase tracking-widest text-sm italic">No Pending Requests</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {withdrawals.map((req) => (
+                    <Card key={req.id} className={`rounded-[3rem] border-2 bg-white transition-all ${req.status === 'Pending' ? 'border-orange-100' : 'border-muted opacity-80'}`}>
+                      <div className="flex flex-col md:flex-row md:items-center justify-between p-10 gap-8">
+                        <div className="flex items-start gap-8">
+                          <div className={`p-6 rounded-[2rem] ${req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+                            <TrendingUp className="w-10 h-10" />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-4">
+                              <h3 className="font-black text-5xl tracking-tighter text-foreground italic">₹{req.amount}</h3>
+                              <Badge className={`rounded-full px-5 py-1 text-[10px] font-black uppercase ${
+                                req.status === 'Pending' ? 'bg-orange-500' : 
+                                req.status === 'Completed' ? 'bg-green-600' : 'bg-destructive'
+                              }`}>
+                                {req.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                              <User className="w-3.5 h-3.5 text-primary" /> {req.userEmail}
+                            </p>
+                            <div className="flex items-center gap-3 mt-6">
+                              <div className="bg-muted px-6 py-4 rounded-2xl flex items-center gap-6 border-2 group hover:border-primary transition-all cursor-pointer" onClick={() => copyToClipboard(req.upiId)}>
+                                <span className="text-xl font-black text-foreground select-all tracking-tight font-mono">{req.upiId}</span>
+                                <Copy className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col md:items-end gap-6">
+                          {req.status === 'Pending' && (
+                            <div className="flex flex-col sm:flex-row gap-4 w-full">
+                              <Button 
+                                onClick={() => handleWithdrawalStatus(req.id, 'Completed')}
+                                className="rounded-2xl font-black bg-green-600 hover:bg-green-700 h-16 px-10 shadow-2xl shadow-green-600/30 text-lg uppercase"
+                              >
+                                Mark Paid
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                onClick={() => handleWithdrawalStatus(req.id, 'Rejected')}
+                                className="rounded-2xl font-black text-destructive border-destructive/20 h-16 px-8 uppercase"
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                          <div className="text-right text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                            Request Date: {new Date(req.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="restaurants">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {restaurants.map((res) => (
+                <Card key={res.id} className="overflow-hidden border-2 rounded-[3rem] bg-white group shadow-sm hover:shadow-2xl transition-all">
+                  <div className="relative h-60">
+                    <Image src={res.image} alt={res.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                      <Button size="icon" variant="secondary" onClick={() => handleEdit(res)} className="rounded-full w-14 h-14">
+                        <Edit2 className="w-6 h-6" />
+                      </Button>
+                    </div>
+                  </div>
+                  <CardContent className="p-10">
+                    {editingId === res.id ? (
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                           <Label className="text-[10px] font-black uppercase tracking-widest">Restaurant Name</Label>
+                           <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="rounded-2xl h-12" />
+                        </div>
+                        <div className="flex gap-4 pt-4">
+                          <Button onClick={() => handleSave(res.id)} className="flex-1 h-12 rounded-2xl font-black uppercase">Save</Button>
+                          <Button onClick={() => setEditingId(null)} variant="outline" className="rounded-2xl w-12 h-12"><X className="w-5 h-5" /></Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="font-black text-2xl mb-1 italic tracking-tighter">{res.name}</h3>
+                        <p className="text-xs text-muted-foreground font-black mb-6 uppercase tracking-widest">{res.cuisine}</p>
+                        <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground border-t-2 border-dashed pt-6 uppercase tracking-widest">
+                          <span>Rating: {res.rating}★</span>
+                          <span className="text-primary">₹{res.priceForTwo} For Two</span>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
       </main>
