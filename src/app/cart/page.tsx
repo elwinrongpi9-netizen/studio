@@ -31,9 +31,9 @@ const MERCHANT_NAME = "Rongpi Chinese wok";
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'Scan & Pay (UPI QR)', icon: <QrCode className="w-4 h-4" /> },
+  { id: 'cod', name: 'Cash on Delivery', icon: <Wallet className="w-4 h-4" /> },
   { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard className="w-4 h-4" /> },
   { id: 'netbanking', name: 'Net Banking', icon: <Building2 className="w-4 h-4" /> },
-  { id: 'cod', name: 'Cash on Delivery', icon: <Wallet className="w-4 h-4" /> },
 ];
 
 export default function CartPage() {
@@ -56,7 +56,19 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Timer logic
+  // Optimized UPI URI for maximum compatibility
+  const upiUrl = useMemo(() => {
+    const amount = total.toFixed(2);
+    // Standard UPI URI format: upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR
+    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amount}&cu=INR`;
+  }, [total]);
+
+  // QR API requires the entire data string to be URL encoded
+  const qrCodeUrl = useMemo(() => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=${encodeURIComponent(upiUrl)}`;
+  }, [upiUrl]);
+
+  // Timer logic for QR Modal
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (showQrModal && timeLeft > 0) {
@@ -88,17 +100,6 @@ export default function CartPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Optimized UPI URI for maximum compatibility
-  const upiUrl = useMemo(() => {
-    const amount = total.toFixed(2);
-    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amount}&cu=INR`;
-  }, [total]);
-
-  // QR API requires the entire data string to be URL encoded once
-  const qrCodeUrl = useMemo(() => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=${encodeURIComponent(upiUrl)}`;
-  }, [upiUrl]);
-
   if (!isHydrated) return null;
 
   const processOrder = async (confirmedPayment = false) => {
@@ -108,6 +109,13 @@ export default function CartPage() {
     }
 
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
+    
+    // Logic for payment status:
+    // 1. If COD: Status is 'Pending'
+    // 2. If UPI & user confirmed payment: Status is 'Paid' (subject to verification)
+    // 3. Otherwise: 'Pending'
+    const paymentStatus = (paymentMethod === 'cod') ? 'Pending' : (confirmedPayment ? 'Paid' : 'Pending');
+
     const orderData = {
       id: orderId,
       restaurantName: cart[0]?.restaurantName || "Restaurant",
@@ -117,7 +125,7 @@ export default function CartPage() {
       items: cart,
       userId: user.uid,
       paymentMethod: PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || 'Unknown',
-      paymentStatus: (paymentMethod === 'cod') ? 'Pending' : (confirmedPayment ? 'Paid' : 'Pending Verification'),
+      paymentStatus: paymentStatus,
     };
 
     const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
@@ -126,8 +134,10 @@ export default function CartPage() {
       .then(() => {
         clearCart();
         toast({
-          title: "Order Placed!",
-          description: `Your order #${orderId} has been received.`,
+          title: "Order Placed Successfully!",
+          description: paymentMethod === 'cod' 
+            ? `Order #${orderId} received. Please pay ₹${total.toFixed(0)} at delivery.` 
+            : `Your order #${orderId} has been received.`,
         });
         router.push("/orders");
       })
@@ -153,7 +163,8 @@ export default function CartPage() {
       setShowQrModal(true);
     } else {
       setIsPlacingOrder(true);
-      setTimeout(() => processOrder(true), 1500);
+      // For COD and others, we simulate a small processing time then confirm
+      setTimeout(() => processOrder(false), 1500);
     }
   };
 
