@@ -4,16 +4,25 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2 } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2, Smartphone, Building2, Wallet } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth, useFirestore, useUser } from "@/firebase";
-import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useFirestore, useUser } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useState } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+
+const PAYMENT_METHODS = [
+  { id: 'upi', name: 'UPI (GPay, PhonePe)', icon: <Smartphone className="w-4 h-4" /> },
+  { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard className="w-4 h-4" /> },
+  { id: 'netbanking', name: 'Net Banking', icon: <Building2 className="w-4 h-4" /> },
+  { id: 'cod', name: 'Cash on Delivery', icon: <Wallet className="w-4 h-4" /> },
+];
 
 export default function CartPage() {
   const { cart, removeFromCart, addToCart, clearCart, isHydrated } = useAppStore();
@@ -22,6 +31,7 @@ export default function CartPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('upi');
 
   if (!isHydrated) return null;
 
@@ -43,37 +53,42 @@ export default function CartPage() {
     if (cart.length === 0) return;
     setIsPlacingOrder(true);
 
-    const orderId = Math.random().toString(36).substr(2, 9);
-    const orderData = {
-      id: orderId,
-      restaurantName: cart[0].restaurantName,
-      total: total,
-      status: "Preparing",
-      createdAt: new Date().toISOString(),
-      items: cart,
-      userId: user.uid,
-    };
+    // Simulate payment gateway delay
+    setTimeout(() => {
+      const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
+      const orderData = {
+        id: orderId,
+        restaurantName: cart[0].restaurantName,
+        total: total,
+        status: "Preparing",
+        createdAt: new Date().toISOString(),
+        items: cart,
+        userId: user.uid,
+        paymentMethod: PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || 'Unknown',
+        paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Paid',
+      };
 
-    const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
+      const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
 
-    setDoc(orderRef, orderData)
-      .then(() => {
-        clearCart();
-        toast({
-          title: "Order Placed Successfully!",
-          description: `Order #${orderId} has been confirmed.`,
+      setDoc(orderRef, orderData)
+        .then(() => {
+          clearCart();
+          toast({
+            title: "Payment Successful!",
+            description: `Order #${orderId} has been placed successfully.`,
+          });
+          router.push("/orders");
+        })
+        .catch(async (error) => {
+          const permissionError = new FirestorePermissionError({
+            path: orderRef.path,
+            operation: "create",
+            requestResourceData: orderData,
+          });
+          errorEmitter.emit("permission-error", permissionError);
+          setIsPlacingOrder(false);
         });
-        router.push("/orders");
-      })
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: orderRef.path,
-          operation: "create",
-          requestResourceData: orderData,
-        });
-        errorEmitter.emit("permission-error", permissionError);
-        setIsPlacingOrder(false);
-      });
+    }, 2000);
   };
 
   return (
@@ -81,9 +96,9 @@ export default function CartPage() {
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 flex items-center gap-3">
+          <h1 className="text-3xl font-black mb-8 flex items-center gap-3">
              <ShoppingBag className="w-8 h-8 text-primary" />
-             Your Order
+             Checkout
           </h1>
 
           {cart.length === 0 ? (
@@ -101,12 +116,10 @@ export default function CartPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 space-y-6">
                 <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-primary" />
-                      Delivery Address
-                    </h3>
-                  </div>
+                  <h3 className="font-bold flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-primary" />
+                    Delivery Address
+                  </h3>
                   <div className="pl-7">
                     <p className="font-bold">Home</p>
                     <p className="text-sm text-muted-foreground">{user?.email || "123 Karbi St, Diphu, Assam - 782462"}</p>
@@ -114,7 +127,7 @@ export default function CartPage() {
                 </div>
 
                 <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-6">
-                  <h3 className="font-bold">Items from {cart[0].restaurantName}</h3>
+                  <h3 className="font-bold">Order Items</h3>
                   <div className="space-y-4">
                     {cart.map((item) => (
                       <div key={item.id} className="flex gap-4 items-center border-b pb-4 last:border-0 last:pb-0">
@@ -154,43 +167,62 @@ export default function CartPage() {
                 <div className="bg-card p-6 rounded-2xl shadow-sm border space-y-4">
                   <h3 className="font-bold flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-primary" />
-                    Payment Mode
+                    Payment Method
                   </h3>
-                  <div className="pl-7 space-y-3">
-                    <div className="flex items-center gap-3 p-3 border rounded-xl bg-primary/10 border-primary/20">
-                      <div className="w-4 h-4 rounded-full border-4 border-primary" />
-                      <div>
-                        <p className="text-sm font-bold">Cash on Delivery</p>
+                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid gap-4">
+                    {PAYMENT_METHODS.map((method) => (
+                      <div key={method.id} className="flex items-center space-x-3 p-4 border rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
+                        <RadioGroupItem value={method.id} id={method.id} />
+                        <Label htmlFor={method.id} className="flex items-center gap-3 cursor-pointer flex-1">
+                          <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                            {method.icon}
+                          </div>
+                          <span className="font-bold">{method.name}</span>
+                        </Label>
                       </div>
-                    </div>
-                  </div>
+                    ))}
+                  </RadioGroup>
                 </div>
               </div>
 
               <div className="lg:col-span-4">
                 <div className="bg-card p-6 rounded-2xl shadow-lg border sticky top-24">
-                  <h3 className="font-bold mb-4">Summary</h3>
+                  <h3 className="font-bold mb-4">Bill Summary</h3>
                   <div className="space-y-3 text-sm border-b pb-4 mb-4">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="text-muted-foreground">Item Total</span>
                       <span>₹{subtotal.toFixed(0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Delivery Fee</span>
-                      <span className="text-green-500">₹{deliveryFee.toFixed(0)}</span>
+                      <span className="text-green-500 font-bold">₹{deliveryFee.toFixed(0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Platform Fee</span>
+                      <span>₹{platformFee.toFixed(0)}</span>
                     </div>
                   </div>
-                  <div className="flex justify-between font-bold text-lg mb-6">
-                    <span>Total</span>
-                    <span>₹{total.toFixed(0)}</span>
+                  <div className="flex justify-between font-black text-xl mb-6">
+                    <span>Total Pay</span>
+                    <span className="text-primary">₹{total.toFixed(0)}</span>
                   </div>
                   <Button 
-                    className="w-full py-6 rounded-xl font-bold shadow-lg"
+                    className="w-full py-7 rounded-xl font-black text-lg shadow-xl shadow-primary/20"
                     onClick={handleCheckout}
                     disabled={isPlacingOrder}
                   >
-                    {isPlacingOrder ? <Loader2 className="animate-spin mr-2" /> : "Place Order"}
+                    {isPlacingOrder ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="animate-spin" />
+                        <span>Processing Payment...</span>
+                      </div>
+                    ) : (
+                      `Pay ₹${total.toFixed(0)}`
+                    )}
                   </Button>
+                  <p className="text-[10px] text-center text-muted-foreground mt-4 leading-tight">
+                    By placing the order, you agree to our terms and conditions.
+                  </p>
                 </div>
               </div>
             </div>

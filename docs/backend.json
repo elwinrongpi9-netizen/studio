@@ -24,9 +24,11 @@
         "total": { "type": "number" },
         "status": { "type": "string", "enum": ["Preparing", "Out for delivery", "Delivered"] },
         "createdAt": { "type": "string", "format": "date-time" },
-        "items": { "type": "array" }
+        "items": { "type": "array" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["Paid", "Pending"] }
       },
-      "required": ["restaurantName", "total", "status", "createdAt"]
+      "required": ["restaurantName", "total", "status", "createdAt", "paymentMethod", "paymentStatus"]
     },
     "UserProfile": {
       "title": "User Profile",

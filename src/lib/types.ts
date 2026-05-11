@@ -33,4 +33,6 @@ export interface Order {
   status: 'Preparing' | 'Out for delivery' | 'Delivered';
   createdAt: string;
   restaurantName: string;
+  paymentMethod: string;
+  paymentStatus: 'Paid' | 'Pending';
 }
