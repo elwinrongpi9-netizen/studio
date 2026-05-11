@@ -9,20 +9,14 @@ import {
   Timer, 
   Wallet, 
   ArrowLeft, 
-  Info, 
-  Sparkles,
   Zap,
-  TrendingUp,
   Loader2,
-  ShieldAlert,
-  Save,
-  ChevronRight
+  ShieldAlert
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc } from "@/firebase";
-import { doc, increment, updateDoc, getDoc, setDoc } from "firebase/firestore";
+import { doc, increment, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -70,6 +64,7 @@ export default function WingoPage() {
     return num >= 5 ? "Big" : "Small";
   };
 
+  // Initialize Period and History
   useEffect(() => {
     const generatePeriodId = () => {
       const now = new Date();
@@ -92,18 +87,23 @@ export default function WingoPage() {
     setHistory(mockHistory);
   }, []);
 
+  // Timer Management
   useEffect(() => {
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleRoundEnd();
-          return 60;
-        }
+        if (prev <= 0) return 60;
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft, activeBets, periodId]);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Round End Trigger
+  useEffect(() => {
+    if (timeLeft === 0) {
+      handleRoundEnd();
+    }
+  }, [timeLeft]);
 
   const handleRoundEnd = async () => {
     if (!firestore) return;
@@ -111,7 +111,7 @@ export default function WingoPage() {
     let winNumber = Math.floor(Math.random() * 10);
     const currentPeriod = periodId;
     
-    // Check for Admin Override with high priority
+    // Check for Admin Override
     try {
       const controlRef = doc(firestore, "wingoConfig", currentPeriod);
       const controlSnap = await getDoc(controlRef);
@@ -142,8 +142,8 @@ export default function WingoPage() {
     setPeriodId(nextPid);
     if (isAdmin) setAdminTargetPeriod(nextPid);
 
-    // Process Bets and Payouts
-    if (activeBets.length > 0 && user && firestore) {
+    // Process Payouts
+    if (activeBets.length > 0 && user) {
       let totalWinning = 0;
       activeBets.forEach(bet => {
         if (typeof bet.type === 'number') {
@@ -166,15 +166,15 @@ export default function WingoPage() {
 
       if (totalWinning > 0) {
         const uRef = doc(firestore, "users", user.uid);
-        // Instant Wallet Update using increment
-        updateDoc(uRef, {
+        // Robust Wallet Update
+        setDoc(uRef, {
           walletBalance: increment(totalWinning)
-        })
+        }, { merge: true })
         .then(() => {
           toast({
             title: "VICTORY! 🎉",
-            description: `Round ${result.periodId} won! Result: ${winNumber}. ₹${totalWinning} added to wallet.`,
-            className: "bg-green-600 text-white font-black border-none"
+            description: `Round ${currentPeriod} Result: ${winNumber}. Added ₹${totalWinning} to wallet.`,
+            className: "bg-green-600 text-white font-black"
           });
         })
         .catch((err) => {
@@ -188,7 +188,7 @@ export default function WingoPage() {
       } else {
         toast({
           title: "LOSS 😞",
-          description: `Result: ${winNumber} (${winSize}). Better luck next time!`,
+          description: `Result was ${winNumber} (${winSize}).`,
           variant: "destructive",
           className: "font-black"
         });
@@ -204,33 +204,33 @@ export default function WingoPage() {
     }
 
     if (timeLeft < 5) {
-      toast({ title: "Betting Closed (Last 5s)", variant: "destructive" });
+      toast({ title: "Betting Closed", description: "Wait for the next round.", variant: "destructive" });
       return;
     }
 
     const currentBalance = profile?.walletBalance || 0;
     if (betAmount > currentBalance) {
-      toast({ title: "Insufficient Balance", description: "Recharge coins in Game Zone or Wallet first!", variant: "destructive" });
+      toast({ title: "Insufficient Coins", description: "Earn coins in Game Zone or recharge wallet.", variant: "destructive" });
       return;
     }
 
     setIsBetting(true);
-    try {
-      const uRef = doc(firestore, "users", user.uid);
-      await updateDoc(uRef, {
-        walletBalance: increment(-betAmount)
-      });
+    const uRef = doc(firestore, "users", user.uid);
+    setDoc(uRef, {
+      walletBalance: increment(-betAmount)
+    }, { merge: true })
+    .then(() => {
       setActiveBets(prev => [...prev, { type, amount: betAmount }]);
       toast({ 
         title: "Bet Placed!", 
-        description: `₹${betAmount} on ${typeof type === 'string' ? type.toUpperCase() : `No. ${type}`}` 
+        description: `₹${betAmount} on ${typeof type === 'string' ? type.toUpperCase() : `Number ${type}`}` 
       });
-    } catch (e) {
-      console.error(e);
-      toast({ title: "Transaction Failed", variant: "destructive" });
-    } finally {
-      setIsBetting(false);
-    }
+    })
+    .catch((err) => {
+       console.error(err);
+       toast({ title: "Bet Failed", variant: "destructive" });
+    })
+    .finally(() => setIsBetting(false));
   };
 
   const handleAdminSetResult = async () => {
@@ -241,7 +241,6 @@ export default function WingoPage() {
       return;
     }
 
-    // Set Result Instantly (Skip loading spinner)
     const configRef = doc(firestore, "wingoConfig", adminTargetPeriod);
     setDoc(configRef, {
       periodId: adminTargetPeriod,
@@ -249,7 +248,7 @@ export default function WingoPage() {
       updatedAt: new Date().toISOString()
     })
     .then(() => {
-      toast({ title: "SUCCESS!", description: `Round ${adminTargetPeriod} fixed to ${num}.` });
+      toast({ title: "SUCCESS!", description: `Period ${adminTargetPeriod} fixed to ${num}.` });
       setAdminTargetNumber("");
     })
     .catch((err) => {
@@ -263,7 +262,7 @@ export default function WingoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
       <Navbar />
       
       <div className="bg-primary text-white p-6 pb-12 rounded-b-[3rem] shadow-xl relative">
@@ -299,7 +298,6 @@ export default function WingoPage() {
 
       <main className="flex-1 container mx-auto px-4 -mt-6 max-w-2xl pb-24">
         <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-4 border-primary/10">
-          
           <div className="flex gap-4 mb-6">
             <Button 
               onClick={() => placeBet("big")} 
@@ -367,10 +365,10 @@ export default function WingoPage() {
         </div>
 
         {isAdmin && (
-          <div className="mt-8 bg-black text-white rounded-[2rem] p-6 shadow-2xl border-2 border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="mt-8 bg-black text-white rounded-[2rem] p-6 shadow-2xl border-2 border-white/10">
             <div className="flex items-center gap-2 mb-4">
               <ShieldAlert className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Real-Time Manual Controller</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Manual Controller</span>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -382,13 +380,11 @@ export default function WingoPage() {
                     onChange={e => setAdminTargetPeriod(e.target.value)} 
                     className="bg-white/5 border-white/10 h-10 rounded-xl text-[10px] font-mono text-white"
                   />
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[8px] font-bold text-primary opacity-80 cursor-pointer hover:opacity-100" onClick={() => setAdminTargetPeriod(periodId)}>Current: {periodId}</span>
-                  </div>
+                  <span className="text-[8px] font-bold text-primary opacity-80 cursor-pointer" onClick={() => setAdminTargetPeriod(periodId)}>Current: {periodId}</span>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Winning Num (0-9)</p>
+                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Win Number (0-9)</p>
                 <div className="flex gap-2">
                   <Input 
                     type="number" 
@@ -397,7 +393,7 @@ export default function WingoPage() {
                     onChange={e => setAdminTargetNumber(e.target.value)}
                     className="bg-white/5 border-white/10 h-10 rounded-xl text-xs font-mono text-white w-20"
                   />
-                  <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/80 h-10 rounded-xl px-4 flex-1 text-[10px] font-black uppercase transition-transform active:scale-95">
+                  <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/80 h-10 rounded-xl px-4 flex-1 text-[10px] font-black uppercase">
                     Set Result
                   </Button>
                 </div>
@@ -413,28 +409,24 @@ export default function WingoPage() {
           <div className="space-y-4">
             {history.map((res, i) => (
               <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/10 transition-all">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{res.periodId}</p>
-                </div>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{res.periodId}</p>
                 <div className="flex items-center gap-6">
                   <div className="flex flex-col items-center">
                     <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest mb-1">{res.size}</span>
-                    <div className="flex items-center gap-1.5">
-                      <div className="relative">
-                        <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
-                          res.colors[0] === 'green' ? 'bg-green-500' : 'bg-red-500'
-                        }`}>
-                          {res.number}
-                        </span>
-                        {res.colors.length > 1 && (
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-500 border-2 border-white shadow-sm" />
-                        )}
-                      </div>
+                    <div className="relative">
+                      <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
+                        res.colors[0] === 'green' ? 'bg-green-500' : 'bg-red-500'
+                      }`}>
+                        {res.number}
+                      </span>
+                      {res.colors.length > 1 && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-500 border-2 border-white shadow-sm" />
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-1.5">
                     {res.colors.map((color, ci) => (
-                      <div key={ci} className={`w-3.5 h-3.5 rounded-full shadow-inner ${
+                      <div key={ci} className={`w-3.5 h-3.5 rounded-full ${
                         color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : 'bg-purple-500'
                       }`} />
                     ))}
