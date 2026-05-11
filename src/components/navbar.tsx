@@ -1,8 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, UtensilsCrossed, Smartphone, LogOut, User, Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
+import { ShoppingBag, UtensilsCrossed, Smartphone, LogOut, User, Lock, Mail, Loader2, ShieldCheck, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useAuth, useUser, useFirestore } from "@/firebase";
@@ -143,8 +142,8 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4 md:gap-8">
-          <Link href="#" className="hidden lg:flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
-            <Smartphone className="w-4 h-4" /> Get App
+          <Link href="/game-zone" className="hidden lg:flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors">
+            <Gamepad2 className="w-4 h-4" /> Game Zone
           </Link>
           <div className="flex items-center gap-2 md:gap-6">
             <Link href="/cart">
