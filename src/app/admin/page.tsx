@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
-const ADMIN_EMAIL = "zomatokarbi@gmail.com";
+const ADMIN_EMAIL = "elwinrongpi9@gmail.com";
 
 export default function AdminPage() {
   const { user, loading: userLoading } = useUser();
