@@ -54,7 +54,6 @@ export default function WingoPage() {
   // Admin Controller State
   const [adminTargetPeriod, setAdminTargetPeriod] = useState("");
   const [adminTargetNumber, setAdminTargetNumber] = useState("");
-  const [isAdminSaving, setIsAdminSaving] = useState(false);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -162,6 +161,12 @@ export default function WingoPage() {
           description: `You won ₹${totalWinning} in period ${result.periodId}`,
           className: "bg-green-600 text-white font-black"
         });
+      } else {
+        toast({
+          title: "Loss 😞",
+          description: `Better luck next time! Result was ${winNumber} (${winSize})`,
+          variant: "destructive"
+        });
       }
     }
     setActiveBets([]);
@@ -204,7 +209,6 @@ export default function WingoPage() {
     const num = parseInt(adminTargetNumber);
     if (isNaN(num) || num < 0 || num > 9) return;
 
-    setIsAdminSaving(true);
     const configRef = doc(firestore, "wingoConfig", adminTargetPeriod);
     setDoc(configRef, {
       periodId: adminTargetPeriod,
@@ -212,10 +216,13 @@ export default function WingoPage() {
       updatedAt: new Date().toISOString()
     })
     .then(() => {
-      toast({ title: "Period Fixed!", description: `Result for ${adminTargetPeriod} set to ${num}.` });
+      toast({ title: "Success!", description: `Round ${adminTargetPeriod} fixed to Number ${num}.` });
       setAdminTargetNumber("");
     })
-    .finally(() => setIsAdminSaving(false));
+    .catch((err) => {
+      console.error(err);
+      toast({ title: "Error setting result", variant: "destructive" });
+    });
   };
 
   return (
@@ -326,37 +333,36 @@ export default function WingoPage() {
           <div className="mt-8 bg-black text-white rounded-[2rem] p-6 shadow-2xl border-2 border-white/10">
             <div className="flex items-center gap-2 mb-4">
               <ShieldAlert className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Manual Control Dashboard</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Manual Controller</span>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Target Period</p>
+                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Period ID</p>
                 <div className="flex gap-2">
                   <Input 
                     value={adminTargetPeriod} 
                     onChange={e => setAdminTargetPeriod(e.target.value)} 
-                    className="bg-white/5 border-white/10 h-10 rounded-xl text-xs font-mono text-white"
+                    className="bg-white/5 border-white/10 h-10 rounded-xl text-[10px] font-mono text-white"
                   />
                   <div className="flex flex-col gap-1">
                     <span className="text-[8px] font-bold text-primary opacity-80 cursor-pointer hover:opacity-100" onClick={() => setAdminTargetPeriod(periodId)}>Now: {periodId}</span>
-                    <span className="text-[8px] font-bold text-white/30 cursor-pointer hover:opacity-100" onClick={() => setAdminTargetPeriod((parseInt(periodId)+1).toString())}>Next: {(parseInt(periodId)+1)}</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Set Number (0-9)</p>
+                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Set Result (0-9)</p>
                 <div className="flex gap-2">
                   <Input 
                     type="number" 
-                    placeholder="Result" 
+                    placeholder="Num" 
                     value={adminTargetNumber} 
                     onChange={e => setAdminTargetNumber(e.target.value)}
                     className="bg-white/5 border-white/10 h-10 rounded-xl text-xs font-mono text-white w-20"
                   />
-                  <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/80 h-10 rounded-xl px-4 flex-1 text-[10px] font-black uppercase" disabled={isAdminSaving}>
-                    {isAdminSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 mr-2" />}
-                    Set Result
+                  <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/80 h-10 rounded-xl px-4 flex-1 text-[10px] font-black uppercase">
+                    <Save className="w-3 h-3 mr-2" />
+                    Set
                   </Button>
                 </div>
               </div>
