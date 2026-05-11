@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2, Smartphone, Building2, Wallet, ShieldCheck, CheckCircle } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2, Smartphone, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -16,9 +16,16 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const PAYMENT_METHODS = [
-  { id: 'upi', name: 'UPI (GPay, PhonePe)', icon: <Smartphone className="w-4 h-4" /> },
+  { id: 'upi', name: 'Scan UPI QR Code', icon: <QrCode className="w-4 h-4" /> },
   { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard className="w-4 h-4" /> },
   { id: 'netbanking', name: 'Net Banking', icon: <Building2 className="w-4 h-4" /> },
   { id: 'cod', name: 'Cash on Delivery', icon: <Wallet className="w-4 h-4" /> },
@@ -32,6 +39,7 @@ export default function CartPage() {
   const { toast } = useToast();
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('upi');
+  const [showQrModal, setShowQrModal] = useState(false);
 
   if (!isHydrated) return null;
 
@@ -40,7 +48,7 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  const handleCheckout = async () => {
+  const processOrder = async (confirmedPayment = false) => {
     if (!user) {
       toast({
         title: "Please Sign In",
@@ -50,45 +58,62 @@ export default function CartPage() {
       return;
     }
 
-    if (cart.length === 0) return;
-    setIsPlacingOrder(true);
+    const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
+    const orderData = {
+      id: orderId,
+      restaurantName: cart[0].restaurantName,
+      total: total,
+      status: "Preparing",
+      createdAt: new Date().toISOString(),
+      items: cart,
+      userId: user.uid,
+      paymentMethod: PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || 'Unknown',
+      paymentStatus: (paymentMethod === 'cod') ? 'Pending' : (confirmedPayment ? 'Paid' : 'Pending Verification'),
+    };
 
-    // Simulate payment gateway delay
-    setTimeout(() => {
-      const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
-      const orderData = {
-        id: orderId,
-        restaurantName: cart[0].restaurantName,
-        total: total,
-        status: "Preparing",
-        createdAt: new Date().toISOString(),
-        items: cart,
-        userId: user.uid,
-        paymentMethod: PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || 'Unknown',
-        paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Paid',
-      };
+    const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
 
-      const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
-
-      setDoc(orderRef, orderData)
-        .then(() => {
-          clearCart();
-          toast({
-            title: "Order Placed Successfully!",
-            description: `Payment confirmed via ${orderData.paymentMethod}. Order #${orderId}`,
-          });
-          router.push("/orders");
-        })
-        .catch(async (error) => {
-          const permissionError = new FirestorePermissionError({
-            path: orderRef.path,
-            operation: "create",
-            requestResourceData: orderData,
-          });
-          errorEmitter.emit("permission-error", permissionError);
-          setIsPlacingOrder(false);
+    setDoc(orderRef, orderData)
+      .then(() => {
+        clearCart();
+        toast({
+          title: "Order Placed!",
+          description: `Your order #${orderId} has been received.`,
         });
-    }, 2000);
+        router.push("/orders");
+      })
+      .catch(async (error) => {
+        const permissionError = new FirestorePermissionError({
+          path: orderRef.path,
+          operation: "create",
+          requestResourceData: orderData,
+        });
+        errorEmitter.emit("permission-error", permissionError);
+        setIsPlacingOrder(false);
+        setShowQrModal(false);
+      });
+  };
+
+  const handleCheckout = async () => {
+    if (!user) {
+      toast({
+        title: "Please Sign In",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (cart.length === 0) return;
+
+    if (paymentMethod === 'upi') {
+      setShowQrModal(true);
+    } else {
+      setIsPlacingOrder(true);
+      // Simulate general payment gateway
+      setTimeout(() => {
+        processOrder(true);
+      }, 1500);
+    }
   };
 
   return (
@@ -124,7 +149,6 @@ export default function CartPage() {
                     <p className="font-black text-foreground">Home</p>
                     <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                       {user?.email || "User Account"}<br />
-                      123 Karbi Street, Near Market Area,<br />
                       Diphu, Karbi Anglong, Assam - 782462
                     </p>
                   </div>
@@ -177,9 +201,6 @@ export default function CartPage() {
                       <CreditCard className="w-6 h-6 text-primary" />
                       Payment Method
                     </h3>
-                    <div className="flex items-center gap-1.5 text-[10px] font-black text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100 uppercase tracking-wider">
-                      <ShieldCheck className="w-3 h-3" /> Secure Payment
-                    </div>
                   </div>
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {PAYMENT_METHODS.map((method) => (
@@ -233,10 +254,10 @@ export default function CartPage() {
                     {isPlacingOrder ? (
                       <div className="flex items-center gap-3">
                         <Loader2 className="animate-spin w-6 h-6" />
-                        <span>Confirming...</span>
+                        <span>Processing...</span>
                       </div>
                     ) : (
-                      `Place Order`
+                      paymentMethod === 'upi' ? 'Scan & Pay' : 'Place Order'
                     )}
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-6 text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center">
@@ -249,6 +270,54 @@ export default function CartPage() {
           )}
         </div>
       </main>
+
+      {/* UPI QR Modal */}
+      <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
+        <DialogContent className="sm:max-w-[400px] rounded-3xl p-8">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
+            <DialogDescription className="text-center font-medium">
+              Scan the QR code below using any UPI app (GPay, PhonePe, etc.)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative w-64 h-64 bg-white p-4 rounded-3xl shadow-xl border-4 border-primary/20">
+              <Image 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=zomatokarbi@okicici&pn=Zomato%20Karbi&am=${total}&cu=INR`} 
+                alt="Payment QR Code" 
+                fill 
+                className="object-contain p-2"
+              />
+            </div>
+            
+            <div className="text-center space-y-2">
+              <p className="text-2xl font-black text-primary">₹{total.toFixed(0)}</p>
+              <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Payable to: Zomato Karbi</p>
+            </div>
+
+            <div className="w-full space-y-3 pt-4">
+              <Button 
+                className="w-full py-6 rounded-xl font-black text-lg shadow-lg"
+                onClick={() => {
+                  setShowQrModal(false);
+                  setIsPlacingOrder(true);
+                  setTimeout(() => processOrder(true), 1000);
+                }}
+              >
+                I have paid
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full rounded-xl text-muted-foreground font-bold"
+                onClick={() => setShowQrModal(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
