@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { Trophy, Play, RotateCcw, Utensils, Zap, Heart, ArrowLeft, Gamepad2, Star, Sparkles, QrCode, Smartphone, Timer, X, CheckCircle2 } from "lucide-react";
+import { Trophy, Play, RotateCcw, Utensils, Zap, Heart, ArrowLeft, Gamepad2, Star, Sparkles, QrCode, Smartphone, Timer, X, CheckCircle2, PartyPopper } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -23,7 +23,7 @@ const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 
 export default function GameZonePage() {
-  const [gameState, setGameState] = useState<"start" | "playing" | "gameover">("start");
+  const [gameState, setGameState] = useState<"start" | "playing" | "gameover" | "success">("start");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [items, setItems] = useState<{ id: number; x: number; y: number; char: string; color: string }[]>([]);
@@ -36,7 +36,6 @@ export default function GameZonePage() {
 
   // UPI QR Logic
   const upiUrl = useMemo(() => {
-    // Amount can be based on score or a fixed "Support" amount, let's use a fixed 100 for "Game Special"
     const amount = "100.00"; 
     return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amount}&cu=INR`;
   }, []);
@@ -135,6 +134,11 @@ export default function GameZonePage() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const confirmPayment = () => {
+    setShowQrModal(false);
+    setGameState("success");
   };
 
   return (
@@ -244,6 +248,31 @@ export default function GameZonePage() {
               </Button>
             </div>
           )}
+
+          {gameState === "success" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-green-500 to-emerald-600 p-8 text-white text-center">
+              <div className="bg-white p-8 rounded-full mb-8 animate-in zoom-in duration-500 shadow-2xl">
+                <CheckCircle2 className="w-24 h-24 text-green-500" />
+              </div>
+              <h2 className="text-5xl font-black mb-4 tracking-tighter drop-shadow-xl">PAID!</h2>
+              <p className="text-xl font-bold opacity-90 mb-10 leading-tight">
+                Payment received by<br/>
+                <span className="text-yellow-300">{MERCHANT_NAME}</span>
+              </p>
+              
+              <div className="bg-white/20 backdrop-blur-md p-6 rounded-[2.5rem] w-full max-w-[300px] mb-8 border border-white/30 flex items-center gap-4">
+                <PartyPopper className="w-10 h-10 text-yellow-300" />
+                <div className="text-left">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Bonus Unlock</p>
+                  <p className="font-black text-lg">Gamer's Combo Active!</p>
+                </div>
+              </div>
+
+              <Button onClick={startGame} className="bg-white text-green-600 hover:bg-white/90 rounded-3xl w-full py-8 text-xl font-black shadow-2xl transition-all">
+                PLAY AGAIN
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Instructions */}
@@ -300,9 +329,9 @@ export default function GameZonePage() {
             <div className="w-full pt-2">
               <Button 
                 className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 transition-all"
-                onClick={() => setShowQrModal(false)}
+                onClick={confirmPayment}
               >
-                Close Payment Screen
+                I have paid ₹100
               </Button>
             </div>
             <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-[0.2em]">
