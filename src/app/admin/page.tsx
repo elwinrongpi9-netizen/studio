@@ -4,13 +4,13 @@
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useCollection } from "@/firebase";
 import { collection, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Restaurant } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,7 @@ export default function AdminPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  const [currentHostname, setCurrentHostname] = useState<string>("");
   
   const restaurantsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -31,6 +32,12 @@ export default function AdminPage() {
   const { data: restaurants, loading: resLoading } = useCollection<Restaurant>(restaurantsQuery);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Restaurant>>({});
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentHostname(window.location.hostname);
+    }
+  }, []);
 
   if (userLoading || resLoading) {
     return (
@@ -88,7 +95,7 @@ export default function AdminPage() {
     <>
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
             <h1 className="text-4xl font-black flex items-center gap-3">
               <ShieldCheck className="w-10 h-10 text-primary" />
@@ -96,14 +103,58 @@ export default function AdminPage() {
             </h1>
             <p className="text-muted-foreground font-medium mt-2">Manage zomatokarbi.com restaurant network</p>
           </div>
-          <Button className="rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20">
-            <Plus className="w-4 h-4" /> Add Restaurant
-          </Button>
+          <div className="flex gap-4">
+            <Button className="rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20">
+              <Plus className="w-4 h-4" /> Add Restaurant
+            </Button>
+          </div>
         </div>
 
+        {/* Site Config Card */}
+        <Card className="mb-12 border-primary/20 bg-primary/5 rounded-3xl overflow-hidden">
+          <CardHeader className="bg-primary/10 border-b border-primary/10">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Site Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-xs font-black uppercase text-muted-foreground">Main Website URL</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="bg-white px-3 py-2 rounded-lg border flex-1 text-sm font-bold">https://zomatokarbi.com</code>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-black uppercase text-muted-foreground">Authorized Domain (For Payment Gateway)</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="bg-white px-3 py-2 rounded-lg border flex-1 text-sm font-bold">{currentHostname || "loading..."}</code>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/50 p-4 rounded-2xl border border-dashed border-primary/20">
+                <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                  <Settings className="w-4 h-4" /> Developer Note
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Use the domain above for <strong>Firebase Auth Whitelisting</strong> and <strong>Payment Gateway Whitelisting</strong> (Razorpay, Stripe, etc.). This ensures secure transactions and valid login popups.
+                </p>
+                <Button variant="link" size="sm" className="p-0 h-auto text-[10px] mt-2 font-bold" asChild>
+                  <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">
+                    Go to Firebase Console <ExternalLink className="w-3 h-3 ml-1" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <h2 className="text-2xl font-black mb-6">Manage Restaurants ({restaurants.length})</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {restaurants.map((res) => (
-            <Card key={res.id} className="overflow-hidden border-2 hover:border-primary/20 transition-all group">
+            <Card key={res.id} className="overflow-hidden border-2 hover:border-primary/20 transition-all group rounded-3xl">
               <div className="relative h-48">
                 <Image src={res.image} alt={res.name} fill className="object-cover" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
