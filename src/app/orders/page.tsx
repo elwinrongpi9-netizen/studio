@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard } from "lucide-react";
+import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirestore, useCollection } from "@/firebase";
