@@ -64,43 +64,47 @@ export default function WingoPage() {
     return num >= 5 ? "Big" : "Small";
   };
 
-  // Initialize Period and History
-  useEffect(() => {
-    const generatePeriodId = () => {
-      const now = new Date();
-      return now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0') + now.getHours().toString().padStart(2, '0') + now.getMinutes().toString().padStart(2, '0');
-    };
+  const generatePeriodId = () => {
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() + 
+                    (now.getMonth() + 1).toString().padStart(2, '0') + 
+                    now.getDate().toString().padStart(2, '0');
+    const totalMinutes = now.getHours() * 60 + now.getMinutes();
+    return dateStr + totalMinutes.toString().padStart(4, '0');
+  };
 
+  // Initialize Period and Sync Timer to actual clock
+  useEffect(() => {
     const pid = generatePeriodId();
     setPeriodId(pid);
     setAdminTargetPeriod(pid);
 
+    // Initial Mock History
     const mockHistory: GameResult[] = Array.from({ length: 5 }).map((_, i) => {
       const num = Math.floor(Math.random() * 10);
       return {
-        periodId: (parseInt(pid) - (i + 1)).toString(),
+        periodId: (BigInt(pid) - BigInt(i + 1)).toString(),
         number: num,
         colors: getColorsForNumber(num),
         size: getSizeForNumber(num)
       };
     });
     setHistory(mockHistory);
-  }, []);
 
-  // Timer Management
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) return 60;
-        return prev - 1;
-      });
-    }, 1000);
+    // Sync Timer to exact clock seconds
+    const syncTimer = () => {
+      const seconds = new Date().getSeconds();
+      setTimeLeft(60 - seconds);
+    };
+
+    syncTimer();
+    const interval = setInterval(syncTimer, 1000);
     return () => clearInterval(interval);
   }, []);
 
   // Round End Trigger
   useEffect(() => {
-    if (timeLeft === 0) {
+    if (timeLeft === 60) {
       handleRoundEnd();
     }
   }, [timeLeft]);
@@ -108,10 +112,10 @@ export default function WingoPage() {
   const handleRoundEnd = async () => {
     if (!firestore) return;
 
-    let winNumber = Math.floor(Math.random() * 10);
     const currentPeriod = periodId;
+    let winNumber = Math.floor(Math.random() * 10);
     
-    // Check for Admin Override
+    // Check for Admin Override (Manual Control)
     try {
       const controlRef = doc(firestore, "wingoConfig", currentPeriod);
       const controlSnap = await getDoc(controlRef);
@@ -137,12 +141,12 @@ export default function WingoPage() {
 
     setHistory(prev => [result, ...prev].slice(0, 10));
     
-    // Set Next Period
-    const nextPid = (parseInt(currentPeriod) + 1).toString();
+    // Set Next Period based on current time
+    const nextPid = generatePeriodId();
     setPeriodId(nextPid);
     if (isAdmin) setAdminTargetPeriod(nextPid);
 
-    // Process Payouts
+    // Process Payouts for Active Bets
     if (activeBets.length > 0 && user) {
       let totalWinning = 0;
       activeBets.forEach(bet => {
@@ -166,14 +170,14 @@ export default function WingoPage() {
 
       if (totalWinning > 0) {
         const uRef = doc(firestore, "users", user.uid);
-        // Robust Wallet Update
+        // Guaranteed Wallet Update (using setDoc with merge for robustness)
         setDoc(uRef, {
           walletBalance: increment(totalWinning)
         }, { merge: true })
         .then(() => {
           toast({
             title: "VICTORY! 🎉",
-            description: `Round ${currentPeriod} Result: ${winNumber}. Added ₹${totalWinning} to wallet.`,
+            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added.`,
             className: "bg-green-600 text-white font-black"
           });
         })
@@ -188,7 +192,7 @@ export default function WingoPage() {
       } else {
         toast({
           title: "LOSS 😞",
-          description: `Result was ${winNumber} (${winSize}).`,
+          description: `Result was ${winNumber} (${winSize}). Better luck next time!`,
           variant: "destructive",
           className: "font-black"
         });
@@ -204,13 +208,13 @@ export default function WingoPage() {
     }
 
     if (timeLeft < 5) {
-      toast({ title: "Betting Closed", description: "Wait for the next round.", variant: "destructive" });
+      toast({ title: "Betting Closed", description: "Wait for the next round to start.", variant: "destructive" });
       return;
     }
 
     const currentBalance = profile?.walletBalance || 0;
     if (betAmount > currentBalance) {
-      toast({ title: "Insufficient Coins", description: "Earn coins in Game Zone or recharge wallet.", variant: "destructive" });
+      toast({ title: "Insufficient Coins", description: "Your balance is too low for this bet.", variant: "destructive" });
       return;
     }
 
@@ -252,12 +256,8 @@ export default function WingoPage() {
       setAdminTargetNumber("");
     })
     .catch((err) => {
-      const permissionError = new FirestorePermissionError({
-        path: configRef.path,
-        operation: 'write',
-        requestResourceData: { periodId: adminTargetPeriod, number: num },
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error(err);
+      toast({ title: "Control Failed", variant: "destructive" });
     });
   };
 
@@ -290,7 +290,7 @@ export default function WingoPage() {
             </p>
             <div className="flex gap-2 mt-1">
               <span className="bg-muted px-3 py-2 rounded-xl text-3xl font-black text-primary font-mono shadow-inner">0</span>
-              <span className="bg-muted px-3 py-2 rounded-xl text-3xl font-black text-primary font-mono shadow-inner">{String(timeLeft).padStart(2, '0')}</span>
+              <span className="bg-muted px-3 py-2 rounded-xl text-3xl font-black text-primary font-mono shadow-inner">{String(timeLeft === 60 ? 0 : timeLeft).padStart(2, '0')}</span>
             </div>
           </div>
         </div>
@@ -368,19 +368,18 @@ export default function WingoPage() {
           <div className="mt-8 bg-black text-white rounded-[2rem] p-6 shadow-2xl border-2 border-white/10">
             <div className="flex items-center gap-2 mb-4">
               <ShieldAlert className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Manual Controller</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Admin Manual Controller</span>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Target Period</p>
+                <p className="text-[9px] font-black text-white/40 uppercase ml-1 mb-1">Target Period (Small Size)</p>
                 <div className="flex gap-2">
                   <Input 
                     value={adminTargetPeriod} 
                     onChange={e => setAdminTargetPeriod(e.target.value)} 
                     className="bg-white/5 border-white/10 h-10 rounded-xl text-[10px] font-mono text-white"
                   />
-                  <span className="text-[8px] font-bold text-primary opacity-80 cursor-pointer" onClick={() => setAdminTargetPeriod(periodId)}>Current: {periodId}</span>
                 </div>
               </div>
               <div className="space-y-1">
@@ -394,7 +393,7 @@ export default function WingoPage() {
                     className="bg-white/5 border-white/10 h-10 rounded-xl text-xs font-mono text-white w-20"
                   />
                   <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/80 h-10 rounded-xl px-4 flex-1 text-[10px] font-black uppercase">
-                    Set Result
+                    SUCCESS!
                   </Button>
                 </div>
               </div>
