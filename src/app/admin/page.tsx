@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Trash2 } from "lucide-react";
+import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Trash2, Copy, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -48,7 +48,7 @@ export default function AdminPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="font-bold text-muted-foreground">Accessing Admin Panel...</p>
+          <p className="font-bold text-muted-foreground tracking-widest uppercase text-xs">Accessing Command Center...</p>
         </div>
       </div>
     );
@@ -98,6 +98,11 @@ export default function AdminPage() {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "UPI Copied!", description: "Paste this into your PhonePe app." });
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
@@ -106,93 +111,102 @@ export default function AdminPage() {
           <div>
             <h1 className="text-4xl font-black flex items-center gap-3">
               <ShieldCheck className="w-10 h-10 text-primary" />
-              Admin Dashboard
+              Owner Console
             </h1>
-            <p className="text-muted-foreground font-medium mt-2">Manage zomatokarbi.com ecosystem</p>
+            <p className="text-muted-foreground font-medium mt-2">Manage zomatokarbi.com business lifecycle</p>
           </div>
         </div>
 
         <Tabs defaultValue="withdrawals" className="space-y-8">
-          <TabsList className="bg-muted p-1 rounded-2xl">
-            <TabsTrigger value="withdrawals" className="rounded-xl font-bold px-6 flex gap-2">
+          <TabsList className="bg-muted p-1 rounded-2xl h-14">
+            <TabsTrigger value="withdrawals" className="rounded-xl font-black px-6 flex gap-3 h-12 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all">
               Withdrawals 
               {withdrawals.filter(w => w.status === 'Pending').length > 0 && (
-                <span className="bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                <span className="bg-primary text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
                   {withdrawals.filter(w => w.status === 'Pending').length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="restaurants" className="rounded-xl font-bold px-6">Restaurants</TabsTrigger>
-            <TabsTrigger value="config" className="rounded-xl font-bold px-6">Gateway Status</TabsTrigger>
+            <TabsTrigger value="restaurants" className="rounded-xl font-black px-6 h-12">Restaurants</TabsTrigger>
+            <TabsTrigger value="config" className="rounded-xl font-black px-6 h-12">Gateway Status</TabsTrigger>
           </TabsList>
 
           <TabsContent value="withdrawals">
-            <div className="space-y-4">
-              <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 mb-6">
-                <p className="text-xs font-bold text-primary flex items-center gap-2">
-                  <Shield className="w-4 h-4" /> 
-                  Owner Tip: Manual PhonePe payment ke baad hi "Mark Paid" click karein.
-                </p>
+            <div className="space-y-6">
+              <div className="bg-primary/5 p-6 rounded-[2rem] border-2 border-primary/10 flex items-center gap-4">
+                <Shield className="w-8 h-8 text-primary" />
+                <div>
+                  <h4 className="font-black text-sm">Settlement Rule:</h4>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed">
+                    Verify user's UPI ID twice before sending money via PhonePe. "Mark Paid" only after settlement.
+                  </p>
+                </div>
               </div>
               
               {withdrawals.length === 0 ? (
-                <div className="text-center py-20 bg-muted/20 rounded-[2rem] border-2 border-dashed">
+                <div className="text-center py-24 bg-muted/20 rounded-[3rem] border-2 border-dashed">
                   <Banknote className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-                  <p className="font-bold text-muted-foreground">No withdrawal requests found.</p>
+                  <p className="font-bold text-muted-foreground">No active withdrawal requests.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-6">
                   {withdrawals.map((req) => (
-                    <Card key={req.id} className="rounded-3xl border shadow-sm overflow-hidden bg-white">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between p-6 gap-6">
-                        <div className="flex items-center gap-4">
-                          <div className={`p-4 rounded-2xl ${req.status === 'Pending' ? 'bg-orange-100' : 'bg-green-100'}`}>
-                            <ArrowDownToLine className={`w-6 h-6 ${req.status === 'Pending' ? 'text-orange-600' : 'text-green-600'}`} />
+                    <Card key={req.id} className="rounded-[2.5rem] border-2 shadow-sm overflow-hidden bg-white hover:border-primary/10 transition-colors">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between p-8 gap-8">
+                        <div className="flex items-start gap-6">
+                          <div className={`p-5 rounded-[1.5rem] ${req.status === 'Pending' ? 'bg-orange-100' : 'bg-green-100'}`}>
+                            <ArrowDownToLine className={`w-8 h-8 ${req.status === 'Pending' ? 'text-orange-600' : 'text-green-600'}`} />
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-black text-2xl">₹{req.amount}</h3>
-                              <Badge className={`rounded-full px-3 text-[10px] font-black uppercase ${
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <h3 className="font-black text-3xl">₹{req.amount}</h3>
+                              <Badge className={`rounded-full px-4 py-1 text-[10px] font-black uppercase tracking-widest ${
                                 req.status === 'Pending' ? 'bg-orange-500' : 
                                 req.status === 'Completed' ? 'bg-green-600' : 'bg-destructive'
                               }`}>
                                 {req.status}
                               </Badge>
                             </div>
-                            <p className="text-xs font-bold text-muted-foreground mt-1 flex items-center gap-1">
+                            <p className="text-xs font-bold text-muted-foreground flex items-center gap-1">
                               <User className="w-3 h-3" /> {req.userEmail}
                             </p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <p className="text-sm font-black text-primary bg-primary/5 px-3 py-1 rounded-lg border border-primary/10 select-all">
-                                UPI ID: {req.upiId}
-                              </p>
+                            <div className="flex items-center gap-3 mt-4">
+                              <div className="bg-primary/5 px-4 py-3 rounded-2xl border-2 border-primary/10 flex items-center gap-3 group relative">
+                                <span className="text-sm font-black text-primary select-all">UPI: {req.upiId}</span>
+                                <button 
+                                  onClick={() => copyToClipboard(req.upiId)}
+                                  className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-primary"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col md:items-end gap-4">
                           {req.status === 'Pending' && (
-                            <>
+                            <div className="flex gap-3">
                               <Button 
                                 onClick={() => handleWithdrawalStatus(req.id, 'Completed')}
-                                className="rounded-xl font-bold bg-green-600 hover:bg-green-700 gap-2 h-12 px-6"
+                                className="rounded-2xl font-black bg-green-600 hover:bg-green-700 gap-2 h-14 px-8 shadow-lg shadow-green-600/20"
                               >
-                                <CheckCircle2 className="w-4 h-4" /> Mark Paid
+                                <CheckCircle2 className="w-5 h-5" /> Mark Paid
                               </Button>
                               <Button 
                                 variant="outline"
                                 onClick={() => handleWithdrawalStatus(req.id, 'Rejected')}
-                                className="rounded-xl font-bold text-destructive hover:text-destructive border-destructive/20 h-12"
+                                className="rounded-2xl font-black text-destructive hover:text-destructive border-destructive/20 h-14"
                               >
                                 Reject
                               </Button>
-                            </>
+                            </div>
                           )}
                           <div className="text-right">
-                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">
+                             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block">
                               {new Date(req.createdAt).toLocaleDateString()}
                             </span>
-                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">
+                             <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mt-1">
                               {new Date(req.createdAt).toLocaleTimeString()}
                             </span>
                           </div>
@@ -208,45 +222,45 @@ export default function AdminPage() {
           <TabsContent value="restaurants">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {restaurants.map((res) => (
-                <Card key={res.id} className="overflow-hidden border-2 hover:border-primary/20 transition-all group rounded-3xl bg-white shadow-sm">
-                  <div className="relative h-48">
+                <Card key={res.id} className="overflow-hidden border-2 hover:border-primary/20 transition-all group rounded-[2.5rem] bg-white shadow-sm">
+                  <div className="relative h-56">
                     <Image src={res.image} alt={res.name} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                      <Button size="icon" variant="secondary" onClick={() => handleEdit(res)} className="rounded-full shadow-lg">
-                        <Edit2 className="w-4 h-4" />
+                      <Button size="icon" variant="secondary" onClick={() => handleEdit(res)} className="rounded-full shadow-lg w-12 h-12">
+                        <Edit2 className="w-5 h-5" />
                       </Button>
                     </div>
                   </div>
-                  <CardContent className="p-6">
+                  <CardContent className="p-8">
                     {editingId === res.id ? (
                       <div className="space-y-4">
                         <div className="space-y-1">
-                          <Label className="text-xs font-black uppercase">Name</Label>
-                          <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="rounded-xl" />
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground">Name</Label>
+                          <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="rounded-xl h-12" />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs font-black uppercase">Cuisine</Label>
-                          <Input value={editForm.cuisine} onChange={e => setEditForm({...editForm, cuisine: e.target.value})} className="rounded-xl" />
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground">Cuisine</Label>
+                          <Input value={editForm.cuisine} onChange={e => setEditForm({...editForm, cuisine: e.target.value})} className="rounded-xl h-12" />
                         </div>
-                        <div className="flex gap-2 pt-2">
-                          <Button onClick={() => handleSave(res.id)} className="flex-1 rounded-xl h-10 font-bold gap-2">
-                            <Save className="w-4 h-4" /> Save
+                        <div className="flex gap-2 pt-4">
+                          <Button onClick={() => handleSave(res.id)} className="flex-1 rounded-xl h-12 font-black gap-2">
+                            <Save className="w-4 h-4" /> Save Changes
                           </Button>
-                          <Button onClick={() => setEditingId(null)} variant="outline" className="rounded-xl h-10 px-3">
+                          <Button onClick={() => setEditingId(null)} variant="outline" className="rounded-xl h-12 px-4">
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-black text-xl truncate pr-4">{res.name}</h3>
-                          <span className="bg-green-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 flex-shrink-0">
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="font-black text-2xl truncate pr-4 tracking-tight">{res.name}</h3>
+                          <span className="bg-green-600 text-white text-[10px] font-black px-2 py-1 rounded-lg flex items-center gap-1 flex-shrink-0">
                             {res.rating}★
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground font-medium mb-4">{res.cuisine}</p>
-                        <div className="flex justify-between text-xs font-bold text-muted-foreground border-t pt-4">
+                        <p className="text-sm text-muted-foreground font-bold mb-6">{res.cuisine}</p>
+                        <div className="flex justify-between text-[10px] font-black text-muted-foreground border-t pt-6 uppercase tracking-widest">
                           <span>{res.deliveryTime}</span>
                           <span className="text-foreground">₹{res.priceForTwo} for two</span>
                         </div>
@@ -260,25 +274,34 @@ export default function AdminPage() {
 
           <TabsContent value="config">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Card className="border-primary/20 bg-primary/5 rounded-3xl overflow-hidden shadow-sm">
-                <CardHeader className="bg-primary/10 border-b border-primary/10 py-4">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-primary" />
-                    PhonePe Business Sync
+              <Card className="border-2 border-primary/20 bg-primary/[0.03] rounded-[2.5rem] overflow-hidden shadow-sm">
+                <CardHeader className="bg-primary/5 border-b border-primary/10 py-6">
+                  <CardTitle className="text-xl font-black flex items-center gap-3">
+                    <Globe className="w-6 h-6 text-primary" />
+                    PhonePe Gateway Sync
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-8 space-y-6">
                   <div>
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Merchant Name</Label>
-                    <p className="font-bold text-lg text-foreground">Rongpi Chinese Wok</p>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Merchant Profile</Label>
+                    <p className="font-black text-2xl text-foreground mt-1">Rongpi Chinese Wok</p>
                   </div>
-                  <div>
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Category Code (MC)</Label>
-                    <p className="font-bold text-sm text-primary">5812 (Restaurant & Eating Places)</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Category (MC)</Label>
+                      <p className="font-black text-lg text-primary">5812</p>
+                    </div>
+                    <div className="text-right">
+                      <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em]">Settlement</Label>
+                      <p className="font-black text-lg text-green-600">Mode 02</p>
+                    </div>
                   </div>
-                  <div className="bg-white/50 p-4 rounded-2xl border border-dashed border-primary/20">
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Official **MC 5812** and **Mode 02** are active. Transactions are optimized for real-time visibility in your PhonePe Business dashboard.
+                  <div className="bg-white p-6 rounded-2xl border-2 border-dashed border-primary/20">
+                    <div className="flex items-center gap-2 text-primary font-black text-xs uppercase mb-2">
+                      <Shield className="w-4 h-4" /> Active Status
+                    </div>
+                    <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase">
+                      Official settlement standards are active. Every transaction will include TID and ORGID for instant PhonePe Business dashboard visibility.
                     </p>
                   </div>
                 </CardContent>
