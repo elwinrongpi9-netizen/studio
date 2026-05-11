@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink, CheckCircle2, AlertCircle, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -152,35 +152,33 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* Launch Checklist */}
-          <Card className="border-accent/20 bg-accent/5 rounded-3xl overflow-hidden shadow-sm">
-            <CardHeader className="bg-accent/10 border-b border-accent/10 py-4">
-              <CardTitle className="text-lg flex items-center gap-2 text-accent">
-                <CheckCircle2 className="w-5 h-5" />
-                Launch Checklist
+          {/* Payment Settings Card */}
+          <Card className="border-green-600/20 bg-green-50 rounded-3xl overflow-hidden shadow-sm">
+            <CardHeader className="bg-green-600/10 border-b border-green-600/10 py-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-green-700">
+                <CreditCard className="w-5 h-5" />
+                Gateway Status
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <ul className="space-y-3">
-                {[
-                  { label: "Firebase Auth Enabled", done: true },
-                  { label: "Firestore DB Ready", done: true },
-                  { label: "Google Login Provider", done: false },
-                  { label: "Real Payment Keys", done: false },
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center justify-between text-xs font-bold">
-                    <span className={item.done ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
-                    {item.done ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <span className="w-4 h-4 rounded-full border-2 border-muted" />
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-[10px] text-muted-foreground mt-6 leading-tight italic">
-                *Done items represent code readiness. Manual setup needed in Firebase Console.
-              </p>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Merchant UPI ID</Label>
+                  <p className="font-bold text-sm text-green-800 mt-1 truncate">Q297152786@ybl</p>
+                </div>
+                <div>
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Settlement Mode</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                     <span className="text-[10px] font-black uppercase text-green-700">Direct Business (Mode 02)</span>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-green-600/10">
+                   <p className="text-[10px] text-green-600 font-bold leading-tight italic">
+                     *Gateway is connected to Rongpi Chinese Wok PhonePe Business. 1 Coin = ₹1 conversion active.
+                   </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

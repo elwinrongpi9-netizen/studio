@@ -4,18 +4,19 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, Timer } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, Timer, Sparkles } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { useFirestore, useUser, useDoc } from "@/firebase";
+import { doc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useState, useMemo, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// UPDATED MERCHANT DETAILS from the provided screenshot
+// MERCHANT DETAILS
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese Wok";
 const MERCHANT_CODE = "5812"; 
@@ -42,9 +43,14 @@ export default function CartPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  
+  const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
+  const { data: profile } = useDoc<any>(userRef);
+
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showQrModal, setShowQrModal] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
+  const [useWallet, setUseWallet] = useState(false);
 
   const subtotal = useMemo(() => {
     return cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
@@ -52,7 +58,11 @@ export default function CartPage() {
 
   const deliveryFee = subtotal > 0 ? 40 : 0;
   const platformFee = subtotal > 0 ? 5 : 0;
-  const total = subtotal + deliveryFee + platformFee;
+  
+  const walletBalance = profile?.walletBalance || 0;
+  const walletDeduction = useWallet ? Math.min(walletBalance, subtotal + deliveryFee + platformFee) : 0;
+  
+  const total = (subtotal + deliveryFee + platformFee) - walletDeduction;
 
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
@@ -60,7 +70,7 @@ export default function CartPage() {
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
     const tr = `ZK${Date.now().toString().slice(-10)}`; 
-    const tn = encodeURIComponent("ZomatoKarbi Order");
+    const tn = encodeURIComponent("ZomatoKarbi Order Payment");
     
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
   }, [total]);
@@ -92,19 +102,27 @@ export default function CartPage() {
     }
 
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
-    const paymentStatus = (paymentMethod === 'cod') ? 'Pending' : (confirmedPayment ? 'Paid' : 'Pending');
+    const paymentStatus = (paymentMethod === 'cod') ? 'Pending' : (confirmedPayment || total === 0 ? 'Paid' : 'Pending');
 
     const orderData = {
       id: orderId,
       restaurantName: cart[0]?.restaurantName || "Restaurant",
-      total: total,
+      total: total + walletDeduction,
       status: "Preparing",
       createdAt: new Date().toISOString(),
       items: cart,
       userId: user.uid,
       paymentMethod: PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || 'Unknown',
       paymentStatus: paymentStatus,
+      walletUsed: walletDeduction
     };
+
+    // Deduct from real wallet if used
+    if (walletDeduction > 0) {
+      updateDoc(doc(firestore, "users", user.uid), {
+        walletBalance: increment(-walletDeduction)
+      });
+    }
 
     const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
     setDoc(orderRef, orderData)
@@ -131,6 +149,11 @@ export default function CartPage() {
       return;
     }
     if (cart.length === 0) return;
+
+    if (total === 0) {
+      processOrder(true);
+      return;
+    }
 
     if (paymentMethod === 'upi') {
       setShowQrModal(true);
@@ -165,6 +188,24 @@ export default function CartPage() {
                   </h3>
                   <p className="text-sm text-muted-foreground ml-8">Diphu, Karbi Anglong, Assam - 782462</p>
                 </div>
+
+                {walletBalance > 0 && (
+                  <div className="bg-primary/5 p-6 rounded-3xl shadow-sm border border-primary/20 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-primary p-3 rounded-2xl shadow-lg">
+                        <Sparkles className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-sm">Use Karbi Coins</h4>
+                        <p className="text-xs font-bold text-muted-foreground">Available Balance: <span className="text-primary">₹{walletBalance}</span></p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={useWallet} 
+                      onCheckedChange={setUseWallet}
+                    />
+                  </div>
+                )}
 
                 <div className="bg-card p-8 rounded-3xl shadow-sm border space-y-6">
                   <h3 className="font-black text-lg">Order Items</h3>
@@ -217,14 +258,17 @@ export default function CartPage() {
                   <div className="space-y-4 text-sm border-b border-dashed pb-6 mb-6">
                     <div className="flex justify-between font-bold"><span className="text-muted-foreground">Item Total</span><span>₹{subtotal.toFixed(0)}</span></div>
                     <div className="flex justify-between font-bold"><span className="text-muted-foreground">Delivery</span><span className="text-green-600">₹{deliveryFee}</span></div>
+                    {walletDeduction > 0 && (
+                      <div className="flex justify-between font-black text-primary"><span className="flex items-center gap-1">Wallet Discount <Sparkles className="w-3 h-3" /></span><span>-₹{walletDeduction}</span></div>
+                    )}
                   </div>
-                  <div className="flex justify-between font-black text-2xl mb-8"><span>Total</span><span className="text-primary">₹{total.toFixed(0)}</span></div>
+                  <div className="flex justify-between font-black text-2xl mb-8"><span>To Pay</span><span className="text-primary">₹{total.toFixed(0)}</span></div>
                   <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20" onClick={handleCheckout}>
-                    {paymentMethod === 'upi' ? 'Scan & Pay Now' : 'Place Order'}
+                    {total === 0 ? 'Place Order (Free)' : (paymentMethod === 'upi' ? 'Scan & Pay Now' : 'Place Order')}
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-6 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                     <ShieldCheck className="w-3 h-3 text-primary" />
-                    Secure Merchant Payment
+                    Secure Merchant Gateway
                   </div>
                 </div>
               </div>
@@ -260,7 +304,7 @@ export default function CartPage() {
             <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => { setShowQrModal(false); processOrder(true); }}>
               I have paid ₹{total.toFixed(0)}
             </Button>
-            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified Merchant Account</p>
+            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified Merchant Payment (Mode 02)</p>
           </div>
         </DialogContent>
       </Dialog>
