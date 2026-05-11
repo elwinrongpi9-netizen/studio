@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, UtensilsCrossed, Smartphone, LogOut, User, Lock, Mail, Loader2, ShieldCheck, Gamepad2, Wallet, ArrowUpRight, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, UtensilsCrossed, LogOut, User, Lock, Mail, Loader2, ShieldCheck, Wallet, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
@@ -16,15 +16,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useMemo } from "react";
-import { doc, setDoc, serverTimestamp, getDoc, updateDoc, increment, collection, addDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,22 +50,26 @@ export function Navbar() {
   useEffect(() => {
     const initUser = async () => {
       if (user && firestore) {
-        const uRef = doc(firestore, "users", user.uid);
-        const snap = await getDoc(uRef);
-        
-        const userData: any = {
-          displayName: user.displayName || user.email?.split('@')[0],
-          email: user.email,
-          photoURL: user.photoURL,
-          lastLogin: serverTimestamp(),
-          role: user.email === ADMIN_EMAIL ? "admin" : "user"
-        };
+        try {
+          const uRef = doc(firestore, "users", user.uid);
+          const snap = await getDoc(uRef);
+          
+          const userData: any = {
+            displayName: user.displayName || user.email?.split('@')[0],
+            email: user.email,
+            photoURL: user.photoURL,
+            lastLogin: serverTimestamp(),
+            role: user.email === ADMIN_EMAIL ? "admin" : "user"
+          };
 
-        if (!snap.exists() || snap.data().walletBalance === undefined) {
-          userData.walletBalance = 0;
+          if (!snap.exists() || (snap.data() && snap.data().walletBalance === undefined)) {
+            userData.walletBalance = 0;
+          }
+
+          await setDoc(uRef, userData, { merge: true });
+        } catch (e) {
+          console.warn("User init delayed: Client might be offline.", e);
         }
-
-        await setDoc(uRef, userData, { merge: true });
       }
     };
     initUser();

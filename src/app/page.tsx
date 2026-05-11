@@ -22,15 +22,6 @@ const INSPIRATIONS = [
   { name: "Chinese", img: "https://picsum.photos/seed/chinese/200/200" },
 ];
 
-const LOCALITIES = [
-  { name: "Diphu Market", count: "120 places" },
-  { name: "Sarihajan", count: "45 places" },
-  { name: "Bakalia", count: "30 places" },
-  { name: "Howraghat", count: "25 places" },
-  { name: "Dokmoka", count: "15 places" },
-  { name: "Bokajan", count: "50 places" },
-];
-
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("Delivery");
@@ -46,11 +37,15 @@ export default function Home() {
   useEffect(() => {
     const seedData = async () => {
       if (!firestore || loading || (restaurants && restaurants.length > 0)) return;
-      const snapshot = await getDocs(collection(firestore, "restaurants"));
-      if (snapshot.empty) {
-        MOCK_RESTAURANTS.forEach(res => {
-          setDoc(doc(firestore, "restaurants", res.id), res);
-        });
+      try {
+        const snapshot = await getDocs(collection(firestore, "restaurants"));
+        if (snapshot.empty) {
+          MOCK_RESTAURANTS.forEach(res => {
+            setDoc(doc(firestore, "restaurants", res.id), res, { merge: true });
+          });
+        }
+      } catch (error) {
+        console.warn("Seeding skipped: Client might be offline or initializing.", error);
       }
     };
     seedData();
