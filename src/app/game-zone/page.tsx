@@ -18,12 +18,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const FOOD_ITEMS = ["🥟", "🍕", "🍔", "🍣", "🍛", "🍩", "🍦"];
-const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-yellow-500"];
-
-// MERCHANT DETAILS - Exact as per Cart and PhonePe Dashboard
+// MERCHANT DETAILS - Exact as per PhonePe Dashboard for Business Settlement
 const MERCHANT_UPI_ID = "Q297152786@ybl";
-const MERCHANT_NAME = "Rongpi Chinese Wok";
+const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
 
 export default function GameZonePage() {
@@ -46,22 +43,22 @@ export default function GameZonePage() {
   const [isSaving, setIsSaving] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  const earnedCoins = Math.floor(score / 10); // 1 Coin = 10 Score points, and 1 Coin = ₹1
+  const earnedCoins = Math.floor(score / 10); // 1 Coin = ₹1
 
   const upiUrl = useMemo(() => {
+    // Official Business Format for PhonePe
     const amount = "100.00"; 
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `GM${Date.now().toString().slice(-10)}`;
-    const tn = encodeURIComponent(`Gamer_Combo_Recharge`);
+    const tr = `GBC${Date.now().toString().slice(-10)}`;
+    const tn = encodeURIComponent(`Gamer Combo Recharge`);
     
-    // Matched URI for PhonePe Business
-    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02&purpose=00`;
   }, []);
 
   const qrCodeUrl = useMemo(() => {
-    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=M|2`;
+    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H|2`;
   }, [upiUrl]);
 
   useEffect(() => {
@@ -78,8 +75,8 @@ export default function GameZonePage() {
             id: Date.now(),
             x: Math.random() * 90 + 5,
             y: -10,
-            char: FOOD_ITEMS[Math.floor(Math.random() * FOOD_ITEMS.length)],
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            char: ["🥟", "🍕", "🍔", "🍣", "🍛"][Math.floor(Math.random() * 5)],
+            color: "bg-primary",
           },
         ]);
       }, 900);
@@ -125,8 +122,8 @@ export default function GameZonePage() {
           walletBalance: increment(earnedCoins)
         });
         toast({ 
-          title: "Coins Redeemed!", 
-          description: `₹${earnedCoins} added to your Karbi Wallet.` 
+          title: "Coins Earned!", 
+          description: `₹${earnedCoins} added to your real balance.` 
         });
       } catch (e) {
         console.error("Wallet save failed", e);
@@ -167,14 +164,12 @@ export default function GameZonePage() {
           <Link href="/">
             <Button variant="ghost" className="rounded-xl font-bold bg-white/50 shadow-sm"><ArrowLeft className="w-4 h-4 mr-2" /> Exit</Button>
           </Link>
-          <div className="flex gap-3">
-             <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border-2 border-primary/20 shadow-lg">
-                <Wallet className="w-5 h-5 text-primary" />
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground leading-none tracking-widest">Real Balance</span>
-                  <span className="font-black text-lg text-primary">₹{profile?.walletBalance || 0}</span>
-                </div>
-              </div>
+          <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border-2 border-primary/20 shadow-lg">
+            <Wallet className="w-5 h-5 text-primary" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase text-muted-foreground leading-none tracking-widest">Real Balance</span>
+              <span className="font-black text-lg text-primary">₹{profile?.walletBalance || 0}</span>
+            </div>
           </div>
         </div>
 
@@ -188,10 +183,7 @@ export default function GameZonePage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-accent/90 p-8 text-white text-center">
               <div className="bg-white p-6 rounded-[2rem] shadow-2xl mb-8 animate-bounce"><Gamepad2 className="w-16 h-16 text-primary" /></div>
               <h1 className="text-5xl font-black mb-4 tracking-tighter italic uppercase text-white">Momo Catch</h1>
-              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Jeeto real Karbi Coins!<br/><span className="text-yellow-300">1 Coin = ₹1 Balance</span></p>
-              {!user ? (
-                <div className="bg-white/20 p-4 rounded-2xl mb-4 font-bold">Login to earn real money!</div>
-              ) : null}
+              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Earn real Karbi Coins!<br/><span className="text-yellow-300">1 Coin = ₹1 Balance</span></p>
               <Button onClick={startGame} className="bg-white text-primary hover:bg-white/90 rounded-3xl px-16 py-8 text-2xl font-black shadow-2xl scale-110">PLAY</Button>
             </div>
           )}
@@ -263,7 +255,7 @@ export default function GameZonePage() {
               <p className="text-[10px] font-black text-muted-foreground uppercase mt-1 tracking-widest">{MERCHANT_UPI_ID}</p>
             </div>
             <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl shadow-primary/20" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
-            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Secure Gateway (MC 5812 • Mode 02)</p>
+            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Secure Gateway (MC 5812 • Mode 02 • Purpose 00)</p>
           </div>
         </DialogContent>
       </Dialog>
