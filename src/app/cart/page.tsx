@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Navbar } from "@/components/navbar";
@@ -53,7 +54,7 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Optimized UPI Payment URI for Real Business Transactions
+  // Optimized UPI Payment URI for Real PhonePe Business Transactions
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
     const pa = MERCHANT_UPI_ID;
@@ -62,7 +63,7 @@ export default function CartPage() {
     const tr = `ZK${Date.now().toString().slice(-10)}`; // Unique ref
     const tn = encodeURIComponent("ZomatoKarbi Order");
     
-    // Business Optimized URI for PhonePe Business
+    // Business Optimized URI with mode=02 for PhonePe Business tracking
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
   }, [total]);
 
@@ -121,7 +122,7 @@ export default function CartPage() {
     clearCart();
     toast({
       title: "Order Placed!",
-      description: `Order #${orderId} successful. View in history.`,
+      description: `Order #${orderId} successful.`,
     });
     router.push("/orders");
   };
@@ -225,7 +226,7 @@ export default function CartPage() {
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-6 text-[10px] text-muted-foreground font-black uppercase tracking-widest">
                     <ShieldCheck className="w-3 h-3 text-primary" />
-                    Real Secure Payment
+                    Secure PhonePe Business
                   </div>
                 </div>
               </div>
@@ -250,7 +251,7 @@ export default function CartPage() {
             </div>
 
             <div className="relative w-80 h-80 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
-              <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-2" unoptimized />
+              <Image src={qrCodeUrl} alt="PhonePe QR" fill className="object-contain p-2" unoptimized />
             </div>
             
             <div className="text-center">
@@ -261,7 +262,7 @@ export default function CartPage() {
             <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => { setShowQrModal(false); processOrder(true); }}>
               I have paid ₹{total.toFixed(0)}
             </Button>
-            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified for PhonePe, GPay, Paytm Business</p>
+            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Verified for PhonePe Business Accounts</p>
           </div>
         </DialogContent>
       </Dialog>
