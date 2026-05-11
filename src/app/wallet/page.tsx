@@ -4,12 +4,12 @@
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { doc, collection, query, where, orderBy, addDoc, updateDoc, increment } from "firebase/firestore";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Shield, Sparkles } from "lucide-react";
+import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Sparkles, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ export default function WalletPage() {
 
   const withdrawalsQuery = useMemo(() => {
     if (!firestore || !user) return null;
-    // Note: This query requires a composite index in production.
     return query(
       collection(firestore, "withdrawalRequests"),
       where("userId", "==", user.uid),
@@ -45,18 +44,20 @@ export default function WalletPage() {
     if (!user || !firestore || !profile) return;
 
     const withdrawAmount = parseFloat(amount);
+    const currentBalance = profile.walletBalance || 0;
+
     if (isNaN(withdrawAmount) || withdrawAmount < 10) {
-      toast({ title: "Min ₹10 Required", description: "Minimum ₹10 withdraw karein.", variant: "destructive" });
+      toast({ title: "Min ₹10 Required", description: "Minimum withdrawal ₹10 hai.", variant: "destructive" });
       return;
     }
 
-    if (withdrawAmount > (profile.walletBalance || 0)) {
-      toast({ title: "Insufficient Balance", variant: "destructive" });
+    if (withdrawAmount > currentBalance) {
+      toast({ title: "Insufficient Balance", description: "Aapke paas itne coins nahi hain.", variant: "destructive" });
       return;
     }
 
     if (!upiId.includes("@")) {
-      toast({ title: "Invalid UPI ID", description: "Kripya sahi UPI ID bharein.", variant: "destructive" });
+      toast({ title: "Invalid UPI ID", description: "Sahi UPI ID enter karein (e.g. name@ybl).", variant: "destructive" });
       return;
     }
 
@@ -71,16 +72,16 @@ export default function WalletPage() {
       createdAt: timestamp
     };
 
-    // Use atomic update for balance
     const userDocRef = doc(firestore, "users", user.uid);
-    const requestRef = collection(firestore, "withdrawalRequests");
+    const requestsRef = collection(firestore, "withdrawalRequests");
 
-    addDoc(requestRef, requestData)
+    // Atomic Deduction and Save Request
+    addDoc(requestsRef, requestData)
       .then(() => {
         updateDoc(userDocRef, {
           walletBalance: increment(-withdrawAmount)
         }).catch((err) => {
-           const permissionError = new FirestorePermissionError({
+          const permissionError = new FirestorePermissionError({
             path: userDocRef.path,
             operation: 'update',
             requestResourceData: { walletBalance: -withdrawAmount },
@@ -90,7 +91,7 @@ export default function WalletPage() {
 
         toast({ 
           title: "Request Submitted!", 
-          description: `₹${withdrawAmount} aapke UPI par 24 ghante mein bhej diye jayenge.` 
+          description: `₹${withdrawAmount} deducted. Settlement in 24 hours.` 
         });
         setAmount("");
         setUpiId("");
@@ -114,37 +115,26 @@ export default function WalletPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="mt-4 font-bold text-muted-foreground uppercase text-[10px] tracking-widest">Opening Karbi Wallet...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-          <Wallet className="w-16 h-16 text-muted-foreground mb-4 opacity-20" />
-          <h1 className="text-2xl font-black mb-2 uppercase italic tracking-tighter">Sign In Required</h1>
-          <p className="text-muted-foreground mb-6 font-medium">Please login to access your Karbi Coins.</p>
-          <Link href="/"><Button className="rounded-2xl font-bold px-10">Return Home</Button></Link>
+          <p className="mt-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Syncing Karbi Ledger...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col">
+    <div className="min-h-screen bg-muted/20 flex flex-col">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-10">
           <Link href="/">
             <Button variant="ghost" size="icon" className="rounded-full bg-white shadow-sm hover:scale-110 transition-transform">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-black italic tracking-tighter">Karbi <span className="text-primary uppercase not-italic">Wallet</span></h1>
+          <div>
+            <h1 className="text-4xl font-black italic tracking-tighter">Karbi <span className="text-primary not-italic">Wallet</span></h1>
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">1 Coin = ₹1 Indian Rupee</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -154,107 +144,107 @@ export default function WalletPage() {
                 <Wallet className="w-32 h-32" />
               </div>
               <CardContent className="p-10 relative z-10">
-                <p className="text-primary-foreground/80 font-black uppercase tracking-widest text-[10px] mb-2">Real Balance (INR)</p>
+                <p className="text-primary-foreground/80 font-black uppercase tracking-widest text-[10px] mb-2">Available for Cashout</p>
                 <h2 className="text-6xl font-black mb-8 flex items-center gap-2">
                   ₹{profile?.walletBalance || 0}
                   <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
                 </h2>
-                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-sm">
+                <div className="flex items-center gap-2 bg-white/10 px-5 py-2.5 rounded-xl border border-white/10 backdrop-blur-sm">
                   <Clock className="w-4 h-4 text-white" />
-                  <p className="text-[10px] font-black uppercase tracking-tight">Withdrawals take up to 24 hours</p>
+                  <p className="text-[9px] font-black uppercase tracking-tight leading-none">All requests processed within 24 hours</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
-              <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-xl font-black flex items-center gap-2">
-                  <ArrowUpRight className="w-6 h-6 text-primary" />
-                  UPI Withdrawal
+            <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white p-8">
+              <CardHeader className="p-0 mb-8">
+                <CardTitle className="text-2xl font-black flex items-center gap-2">
+                  <ArrowUpRight className="w-7 h-7 text-primary" />
+                  UPI Cashout
                 </CardTitle>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">1 Karbi Coin = ₹1 Indian Rupee</p>
               </CardHeader>
               <form onSubmit={handleWithdraw} className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">Amount to Cash Out</Label>
+                  <Label className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Withdraw Amount</Label>
                   <Input 
                     type="number" 
                     placeholder="Min ₹10" 
                     value={amount} 
                     onChange={e => setAmount(e.target.value)}
-                    className="h-14 rounded-2xl text-xl font-black bg-muted/20 border-transparent focus:border-primary/20 transition-all"
+                    className="h-14 rounded-2xl text-xl font-black bg-muted/30 border-2 focus:border-primary transition-all"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">Recipient UPI ID</Label>
+                  <Label className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Your VPA / UPI ID</Label>
                   <Input 
-                    placeholder="e.g. yourname@ybl" 
+                    placeholder="e.g. 9876543210@ybl" 
                     value={upiId} 
                     onChange={e => setUpiId(e.target.value)}
-                    className="h-14 rounded-2xl font-bold bg-muted/20 border-transparent focus:border-primary/20 transition-all"
+                    className="h-14 rounded-2xl font-black bg-muted/30 border-2 focus:border-primary transition-all"
                     required
                   />
                 </div>
                 <Button className="w-full h-16 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Request Cash Out"}
+                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Request Withdrawal"}
                 </Button>
-                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
-                  <p className="text-[9px] text-center font-black text-primary uppercase leading-tight tracking-widest">
-                    Owner manually process karenge. Sahi UPI ID bharein.
-                  </p>
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 flex items-start gap-3">
+                   <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                   <p className="text-[9px] font-black text-primary uppercase leading-tight tracking-widest">
+                     Our admin verifies each request manually. Ensure your UPI ID is correct to avoid payment failure.
+                   </p>
                 </div>
               </form>
             </Card>
           </div>
 
           <div className="lg:col-span-7">
-            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 min-h-[550px]">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black flex items-center gap-2">
-                  <History className="w-6 h-6 text-primary" />
-                  Wallet Activity
+            <div className="bg-white rounded-[2.5rem] shadow-xl p-10 min-h-[600px] border-2">
+              <div className="flex items-center justify-between mb-10">
+                <h3 className="text-2xl font-black flex items-center gap-3 italic">
+                  <History className="w-7 h-7 text-primary not-italic" />
+                  Ledger History
                 </h3>
-                <Badge variant="outline" className="rounded-full px-4 font-black text-[10px] border-primary/20 text-primary">
-                  {withdrawals.length} Entries
+                <Badge variant="outline" className="rounded-full px-5 py-1 font-black text-[10px] border-primary/30 text-primary">
+                  {withdrawals.length} REQUESTS
                 </Badge>
               </div>
 
               {historyLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <Loader2 className="animate-spin text-primary w-10 h-10" />
-                  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Fetching History...</p>
+                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                  <Loader2 className="animate-spin text-primary w-12 h-12" />
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Updating Ledger...</p>
                 </div>
               ) : withdrawals.length === 0 ? (
-                <div className="text-center py-24 bg-muted/10 rounded-[2rem] border-2 border-dashed flex flex-col items-center">
-                  <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-10" />
-                  <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">No recent transactions.</p>
+                <div className="text-center py-32 bg-muted/10 rounded-[3rem] border-2 border-dashed flex flex-col items-center">
+                  <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
+                  <p className="font-black text-muted-foreground uppercase text-xs tracking-widest italic">No activity recorded yet.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {withdrawals.map((req: any) => (
-                    <div key={req.id} className="flex items-center justify-between p-6 rounded-2xl bg-muted/20 border-2 border-transparent hover:border-primary/10 transition-all group">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-4 rounded-2xl shadow-sm transition-transform group-hover:scale-110 ${
+                    <div key={req.id} className="flex items-center justify-between p-7 rounded-[2rem] bg-muted/30 border-2 border-transparent hover:border-primary/20 transition-all group">
+                      <div className="flex items-center gap-6">
+                        <div className={`p-5 rounded-2xl shadow-sm transition-transform group-hover:scale-110 ${
                           req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 
                           req.status === 'Completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
                         }`}>
-                          {req.status === 'Pending' ? <Clock className="w-6 h-6" /> : req.status === 'Completed' ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                          {req.status === 'Pending' ? <Clock className="w-8 h-8" /> : req.status === 'Completed' ? <CheckCircle2 className="w-8 h-8" /> : <AlertCircle className="w-8 h-8" />}
                         </div>
-                        <div className="space-y-0.5">
-                          <p className="font-black text-2xl tracking-tighter">₹{req.amount}</p>
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate max-w-[150px] md:max-w-none">{req.upiId}</p>
+                        <div className="space-y-1">
+                          <p className="font-black text-3xl tracking-tighter text-foreground italic">₹{req.amount}</p>
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest truncate max-w-[180px] md:max-w-none">{req.upiId}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className={`rounded-full px-4 py-1 text-[10px] font-black uppercase tracking-widest ${
-                          req.status === 'Pending' ? 'bg-orange-500' : 
-                          req.status === 'Completed' ? 'bg-green-600' : 'bg-destructive'
+                      <div className="text-right flex flex-col items-end gap-3">
+                        <Badge className={`rounded-full px-5 py-1 text-[10px] font-black uppercase tracking-[0.15em] ${
+                          req.status === 'Pending' ? 'bg-orange-500 shadow-lg shadow-orange-500/20' : 
+                          req.status === 'Completed' ? 'bg-green-600 shadow-lg shadow-green-600/20' : 'bg-destructive shadow-lg'
                         }`}>
                           {req.status}
                         </Badge>
-                        <p className="text-[9px] font-black text-muted-foreground mt-3 uppercase tracking-tighter">
-                          {new Date(req.createdAt).toLocaleDateString()} at {new Date(req.createdAt).toLocaleTimeString()}
+                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-tighter opacity-60">
+                          {new Date(req.createdAt).toLocaleDateString()} • {new Date(req.createdAt).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
@@ -268,3 +258,4 @@ export default function WalletPage() {
     </div>
   );
 }
+
