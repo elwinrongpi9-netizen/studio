@@ -21,8 +21,9 @@ import {
 const FOOD_ITEMS = ["🥟", "🍕", "🍔", "🍣", "🍛", "🍩", "🍦"];
 const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-yellow-500"];
 
-const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
-const MERCHANT_NAME = "Rongpi Chinese wok";
+// UPDATED MERCHANT DETAILS from the provided screenshot
+const MERCHANT_UPI_ID = "Q297152786@ybl";
+const MERCHANT_NAME = "Rongpi Chinese Wok";
 const MERCHANT_CODE = "5812";
 
 export default function GameZonePage() {
@@ -45,7 +46,8 @@ export default function GameZonePage() {
   const [isSaving, setIsSaving] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  const earnedCoins = Math.floor(score / 10); // 10 points = 1 Coin = ₹1
+  // 10 points = 1 Coin = ₹1
+  const earnedCoins = Math.floor(score / 10); 
 
   const upiUrl = useMemo(() => {
     const amount = "100.00"; // Fixed Gamer Combo Price
@@ -192,7 +194,7 @@ export default function GameZonePage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-accent/90 p-8 text-white text-center">
               <div className="bg-white p-6 rounded-[2rem] shadow-2xl mb-8 animate-bounce"><Gamepad2 className="w-16 h-16 text-primary" /></div>
               <h1 className="text-5xl font-black mb-4 tracking-tighter italic uppercase text-white">Momo Catch</h1>
-              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Earn Karbi Coins! 1 Coin = ₹1. Play & Pay Business.</p>
+              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Earn Karbi Coins! 1 Coin = ₹1. Kheliye aur Jitiye!</p>
               {!user ? (
                 <div className="bg-white/20 p-4 rounded-2xl mb-4 font-bold">Sign in to save your coins!</div>
               ) : null}
@@ -260,14 +262,14 @@ export default function GameZonePage() {
               <span>Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
             </div>
             <div className="relative w-72 h-72 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
-              <Image src={qrCodeUrl} alt="PhonePe Business QR" fill className="object-contain p-2" unoptimized />
+              <Image src={qrCodeUrl} alt="UPI Business QR" fill className="object-contain p-2" unoptimized />
             </div>
             <div className="text-center">
               <p className="text-4xl font-black text-primary">₹100.00</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase mt-1">{MERCHANT_UPI_ID}</p>
             </div>
             <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
-            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Verified PhonePe Business Account (Mode 02)</p>
+            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Verified Merchant Account (Mode 02)</p>
           </div>
         </DialogContent>
       </Dialog>
