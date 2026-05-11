@@ -42,9 +42,24 @@ export function Navbar() {
       });
     } catch (error: any) {
       console.error("Login failed", error);
+      
+      let errorMessage = "Could not sign in with Google.";
+      
+      // Specific handling for common setup errors
+      if (error.code === 'auth/unauthorized-domain') {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+        errorMessage = `The domain "${domain}" is not authorized. Please add it to "Authorized domains" in the Firebase Console (Authentication > Settings).`;
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = "Google sign-in is not enabled. Please enable it in the Firebase Console (Authentication > Sign-in method).";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Login popup was closed before completion.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Login Failed",
-        description: error.message || "Could not sign in with Google. Ensure it's enabled in Firebase Console.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
