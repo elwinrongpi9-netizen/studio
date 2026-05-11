@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -66,7 +67,7 @@ export default function Home() {
           
         return matchesSearch;
       })
-      .sort((a, b) => a.name.localeCompare(b.name)); // Alphabetical sorting (A-Z)
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [restaurants, searchQuery]);
 
   return (
@@ -80,16 +81,16 @@ export default function Home() {
           <div className="container mx-auto px-4 max-w-5xl relative z-10">
             <div className="flex flex-col items-center mb-8">
                <h1 className="text-5xl md:text-6xl font-black mb-6 text-center tracking-tight">
-                Karbi <span className="text-primary">Zomato</span>
+                zomatokarbi<span className="text-primary">.com</span>
               </h1>
               <p className="text-muted-foreground text-center text-xl mb-10 max-w-2xl font-medium">
-                Find the best food in <span className="font-bold text-foreground underline decoration-accent/30 underline-offset-4">Diphu, Karbi Anglong</span>
+                The best food discovery in <span className="font-bold text-foreground underline decoration-accent/30 underline-offset-4">Diphu, Karbi Anglong</span>
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-3xl bg-background rounded-2xl border shadow-xl overflow-hidden ring-1 ring-border">
                 <div className="flex items-center px-5 py-5 md:border-r border-b md:border-b-0 min-w-[200px] cursor-pointer hover:bg-muted/50 transition-colors">
                   <MapPin className="w-5 h-5 text-primary mr-3" />
-                  <span className="text-sm font-bold truncate">Diphu, Assam</span>
+                  <span className="text-sm font-bold truncate">Diphu, Karbi Anglong</span>
                   <ChevronDown className="w-4 h-4 ml-auto text-muted-foreground" />
                 </div>
                 <div className="flex-1 relative">
@@ -150,7 +151,7 @@ export default function Home() {
             <div className="lg:col-span-8">
               <div className="flex items-center justify-between mb-10">
                 <h2 className="text-3xl font-black">
-                  {searchQuery ? `Results for "${searchQuery}"` : `Best ${activeTab} Restaurants in Diphu`}
+                  {searchQuery ? `Results for "${searchQuery}"` : `Best ${activeTab} in Diphu`}
                 </h2>
               </div>
               
@@ -174,37 +175,10 @@ export default function Home() {
                   </Button>
                 </div>
               )}
-
-              <section className="mt-20">
-                <h2 className="text-3xl font-black mb-8">Popular localities in Diphu</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {LOCALITIES.map((loc) => (
-                    <div key={loc.name} className="p-5 bg-card border rounded-2xl flex items-center justify-between group cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
-                      <div>
-                        <h4 className="font-bold text-lg">{loc.name}</h4>
-                        <p className="text-sm text-muted-foreground">{loc.count}</p>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
             </div>
             
             <aside className="lg:col-span-4 space-y-10">
               <AIRecommendations />
-              <div className="bg-gradient-to-br from-primary to-accent p-8 rounded-3xl shadow-lg border-none text-white space-y-6">
-                <h3 className="text-xl font-black">Exclusive Collections</h3>
-                <div className="relative rounded-2xl overflow-hidden h-48 group cursor-pointer shadow-inner">
-                  <Image src="https://picsum.photos/seed/coll1/600/300" alt="New in Town" fill className="object-cover transition-transform group-hover:scale-110 opacity-80" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                    <p className="text-white text-lg font-black">New in Town</p>
-                    <p className="text-white/80 text-sm font-bold flex items-center gap-1">9 Places <ChevronRight className="w-4 h-4" /></p>
-                  </div>
-                </div>
-              </div>
             </aside>
           </div>
         </div>
@@ -214,11 +188,11 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 mb-16">
             <div className="flex items-center gap-3">
                <UtensilsCrossed className="w-10 h-10 text-primary" />
-               <span className="text-3xl font-black tracking-tighter">Karbi Zomato</span>
+               <span className="text-3xl font-black tracking-tighter">zomatokarbi.com</span>
             </div>
           </div>
           <p className="text-xs text-muted-foreground font-medium border-t border-border pt-10">
-            © {new Date().getFullYear()} Karbi Zomato™ Ltd. All rights reserved. Diphu, Karbi Anglong, Assam.
+            © {new Date().getFullYear()} zomatokarbi.com Ltd. All rights reserved. Diphu, Karbi Anglong, Assam.
           </p>
         </div>
       </footer>

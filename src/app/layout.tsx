@@ -5,8 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 export const metadata: Metadata = {
-  title: 'Karbi Zomato | Fresh Food Delivered',
-  description: 'Your favorite local food discovery and delivery app.',
+  title: 'zomatokarbi.com | Fresh Food Delivered',
+  description: 'Your favorite local food discovery and delivery app in Karbi Anglong.',
 };
 
 export default function RootLayout({
