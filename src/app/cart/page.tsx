@@ -69,16 +69,17 @@ export default function CartPage() {
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    // Simple unique transaction ID
-    const tr = `ZK${Date.now().toString().slice(-8)}`; 
-    const tn = encodeURIComponent(`Order from ${user?.displayName || 'User'}`);
+    // Simple unique transaction ID required for Business Dashboard
+    const tr = `ZK${Date.now().toString().slice(-10)}`; 
+    const tn = encodeURIComponent(`Order_from_zomatokarbi`);
     
     // Optimized for PhonePe Business (pa, pn, mc, tr, tn, am, cu, mode)
+    // mode=02 is essential for secure business settlements
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
-  }, [total, user]);
+  }, [total]);
 
   const qrCodeUrl = useMemo(() => {
-    // High quality QR encoding for clear scanning
+    // High quality QR encoding for clear scanning using standard Google Chart API
     return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=M|2`;
   }, [upiUrl]);
 

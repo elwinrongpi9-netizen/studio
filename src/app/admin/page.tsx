@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink, CheckCircle2, AlertCircle, CreditCard } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, Edit2, Loader2, Save, X, Globe, Settings, ExternalLink, CheckCircle2, AlertCircle, CreditCard, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -103,11 +103,6 @@ export default function AdminPage() {
             </h1>
             <p className="text-muted-foreground font-medium mt-2">Manage zomatokarbi.com restaurant network</p>
           </div>
-          <div className="flex gap-4">
-            <Button className="rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90">
-              <Plus className="w-4 h-4" /> Add Restaurant
-            </Button>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
@@ -129,24 +124,17 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div>
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Deployment Hostname</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="bg-white px-3 py-2 rounded-lg border flex-1 text-xs font-bold">{currentHostname || "loading..."}</code>
-                    </div>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Merchant Name</Label>
+                    <p className="font-bold text-sm text-foreground">Rongpi Chinese Wok</p>
                   </div>
                 </div>
                 <div className="bg-white/50 p-4 rounded-2xl border border-dashed border-primary/20 flex flex-col justify-center">
                   <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-accent" /> Payment Gateway Tip
+                    <Shield className="w-4 h-4 text-primary" /> Secure Mode Active
                   </h4>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Razorpay ya Stripe dashboard mein **Webhook URL** aur **Authorized Domain** ke liye upar wala Hostname copy karke paste karein.
+                    App ab official **Merchant Category Code (5812)** aur **Secure Mode 02** use kar raha hai PhonePe Business settlements ke liye.
                   </p>
-                  <Button variant="link" size="sm" className="p-0 h-auto text-[10px] mt-2 font-bold justify-start" asChild>
-                    <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">
-                      Go to Firebase Console <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -163,19 +151,19 @@ export default function AdminPage() {
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Merchant UPI ID</Label>
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Verified VPA</Label>
                   <p className="font-bold text-sm text-green-800 mt-1 truncate">Q297152786@ybl</p>
                 </div>
                 <div>
-                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Settlement Mode</Label>
+                  <Label className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Settlement Type</Label>
                   <div className="flex items-center gap-2 mt-1">
                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                     <span className="text-[10px] font-black uppercase text-green-700">Direct Business (Mode 02)</span>
+                     <span className="text-[10px] font-black uppercase text-green-700">PhonePe Business Dashboard</span>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-green-600/10">
                    <p className="text-[10px] text-green-600 font-bold leading-tight italic">
-                     *Gateway is connected to Rongpi Chinese Wok PhonePe Business. 1 Coin = ₹1 conversion active.
+                     *1 Coin = ₹1 conversion active. Transactions reflect real-time in merchant dashboard.
                    </p>
                 </div>
               </div>

@@ -53,12 +53,12 @@ export default function GameZonePage() {
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `GAME${Date.now().toString().slice(-8)}`;
-    const tn = encodeURIComponent(`Gamer Combo - ${user?.displayName || 'User'}`);
+    const tr = `GM${Date.now().toString().slice(-10)}`;
+    const tn = encodeURIComponent(`Gamer_Combo_Recharge`);
     
-    // Standard PhonePe Business URI
+    // Standard PhonePe Business URI with Mode 02
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
-  }, [user]);
+  }, []);
 
   const qrCodeUrl = useMemo(() => {
     return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=M|2`;
@@ -233,7 +233,7 @@ export default function GameZonePage() {
                 <div className="flex justify-between items-center mb-2"><span className="font-black text-xs uppercase opacity-60">Score</span><span className="text-4xl font-black">{score}</span></div>
                 <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Earned</span><span className="text-xl font-black">₹{earnedCoins} (Coins)</span></div>
                 <Button onClick={() => setShowQrModal(true)} className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black flex items-center justify-center gap-2 shadow-lg">
-                  <QrCode className="w-5 h-5" /> Pay ₹100 Business
+                  <QrCode className="w-5 h-5" /> Pay Business ₹100
                 </Button>
               </div>
               <Button onClick={startGame} className="bg-white/20 hover:bg-white/30 rounded-3xl w-full py-6 text-xl font-black">RETRY</Button>
