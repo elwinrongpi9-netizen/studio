@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert } from "lucide-react";
+import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 const ADMIN_EMAIL = "zomatokarbi@gmail.com";
 
@@ -47,7 +49,7 @@ export default function AdminPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Admin Command Center...</p>
+          <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest">Syncing Command Center...</p>
         </div>
       </div>
     );
@@ -59,9 +61,9 @@ export default function AdminPage() {
         <Navbar />
         <div className="flex-1 container mx-auto px-4 py-20 text-center">
           <ShieldAlert className="w-20 h-20 text-destructive mx-auto mb-6" />
-          <h1 className="text-4xl font-black mb-4">Unauthorized Access</h1>
-          <p className="text-muted-foreground mb-8">This page is only for the owner: {ADMIN_EMAIL}</p>
-          <Button onClick={() => router.push("/")} className="rounded-xl px-8 font-bold">Return Home</Button>
+          <h1 className="text-4xl font-black mb-4 uppercase italic tracking-tighter">Unauthorized Access</h1>
+          <p className="text-muted-foreground mb-8 font-medium">This cockpit is restricted to: <span className="text-foreground font-black">{ADMIN_EMAIL}</span></p>
+          <Button onClick={() => router.push("/")} className="rounded-2xl px-12 h-14 font-black uppercase tracking-widest shadow-xl">Return to Base</Button>
         </div>
       </div>
     );
@@ -74,29 +76,42 @@ export default function AdminPage() {
 
   const handleSave = async (id: string) => {
     if (!firestore) return;
-    try {
-      const resRef = doc(firestore, "restaurants", id);
-      await updateDoc(resRef, editForm);
-      setEditingId(null);
-      toast({ title: "Updated!", description: "Restaurant info saved." });
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to update.", variant: "destructive" });
-    }
+    const resRef = doc(firestore, "restaurants", id);
+    updateDoc(resRef, editForm)
+      .then(() => {
+        setEditingId(null);
+        toast({ title: "Updated!", description: "Restaurant info saved successfully." });
+      })
+      .catch((err) => {
+        const permissionError = new FirestorePermissionError({
+          path: resRef.path,
+          operation: 'update',
+          requestResourceData: editForm,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const handleWithdrawalStatus = async (id: string, status: 'Completed' | 'Rejected') => {
     if (!firestore) return;
-    try {
-      await updateDoc(doc(firestore, "withdrawalRequests", id), { status });
-      toast({ title: `Request ${status}`, description: status === 'Completed' ? "Settlement Success!" : "Request Denied." });
-    } catch (e) {
-      toast({ title: "Error", description: "Status update failed.", variant: "destructive" });
-    }
+    const reqRef = doc(firestore, "withdrawalRequests", id);
+    updateDoc(reqRef, { status })
+      .then(() => {
+        toast({ title: `Request ${status}`, description: status === 'Completed' ? "Funds settled successfully!" : "Request has been denied." });
+      })
+      .catch((err) => {
+        const permissionError = new FirestorePermissionError({
+          path: reqRef.path,
+          operation: 'update',
+          requestResourceData: { status },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "UPI Copied!", description: "Paste it in your PhonePe app to pay." });
+    toast({ title: "UPI Copied!", description: "Paste it in your UPI app (PhonePe/GPay) to pay." });
   };
 
   return (
@@ -105,101 +120,102 @@ export default function AdminPage() {
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
-            <h1 className="text-4xl font-black flex items-center gap-3">
-              <ShieldCheck className="w-10 h-10 text-primary" />
+            <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4">
+              <ShieldCheck className="w-12 h-12 text-primary" />
               Admin Control
             </h1>
-            <p className="text-muted-foreground font-medium mt-2">Manage payouts and restaurant listings</p>
+            <p className="text-muted-foreground font-bold mt-2 uppercase text-[10px] tracking-widest">Master Dashboard for Rongpi Chinese Wok</p>
+          </div>
+          <div className="bg-primary/5 px-6 py-3 rounded-2xl border-2 border-primary/10 flex items-center gap-3">
+             <Zap className="w-5 h-5 text-primary animate-pulse" />
+             <span className="text-sm font-black text-primary">Live Terminal Active</span>
           </div>
         </div>
 
         <Tabs defaultValue="withdrawals" className="space-y-8">
-          <TabsList className="bg-muted p-1 rounded-2xl h-14">
-            <TabsTrigger value="withdrawals" className="rounded-xl font-black px-6 h-12 flex gap-3 data-[state=active]:bg-white shadow-sm">
+          <TabsList className="bg-muted p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto">
+            <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 flex gap-3 data-[state=active]:bg-white data-[state=active]:shadow-lg transition-all">
               Withdrawals 
               {withdrawals.filter(w => w.status === 'Pending').length > 0 && (
-                <span className="bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                <span className="bg-primary text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center animate-bounce shadow-lg">
                   {withdrawals.filter(w => w.status === 'Pending').length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="restaurants" className="rounded-xl font-black px-6 h-12">Restaurants</TabsTrigger>
-            <TabsTrigger value="config" className="rounded-xl font-black px-6 h-12">System Status</TabsTrigger>
+            <TabsTrigger value="restaurants" className="rounded-xl font-black px-8 h-12 transition-all">Listings</TabsTrigger>
+            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway</TabsTrigger>
           </TabsList>
 
           <TabsContent value="withdrawals">
             <div className="space-y-6">
-              <div className="bg-primary/5 p-6 rounded-[2rem] border-2 border-primary/10 flex items-center gap-4">
-                <Shield className="w-8 h-8 text-primary" />
-                <div>
-                  <h4 className="font-black text-sm">Settlement Rule (1 Coin = ₹1):</h4>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed">
-                    Step 1: Copy UPI. Step 2: Pay via PhonePe. Step 3: Click "Mark Paid". Payout goal: 24h.
+              <div className="bg-primary/5 p-8 rounded-[2.5rem] border-2 border-primary/10 flex items-center gap-6 relative overflow-hidden group">
+                <Shield className="w-12 h-12 text-primary opacity-20 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                  <h4 className="font-black text-sm uppercase tracking-widest mb-1">Settlement Protocol (1 Coin = ₹1):</h4>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed max-w-2xl">
+                    1. Click Copy UPI. 2. Open PhonePe Business/Personal. 3. Transfer Amount. 4. Return here and click "Mark Paid". All settlements logged in real-time.
                   </p>
                 </div>
               </div>
               
               {withdrawals.length === 0 ? (
-                <div className="text-center py-24 bg-muted/20 rounded-[3rem] border-2 border-dashed">
-                  <Banknote className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-                  <p className="font-bold text-muted-foreground">No withdrawal requests found.</p>
+                <div className="text-center py-32 bg-muted/20 rounded-[4rem] border-4 border-dashed flex flex-col items-center">
+                  <Banknote className="w-20 h-20 text-muted-foreground mx-auto mb-6 opacity-5" />
+                  <p className="font-black text-muted-foreground uppercase tracking-[0.2em] text-sm italic">Queue Empty</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-6">
                   {withdrawals.map((req) => (
-                    <Card key={req.id} className="rounded-[2.5rem] border-2 shadow-sm overflow-hidden bg-white hover:border-primary/10 transition-colors">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between p-8 gap-8">
-                        <div className="flex items-start gap-6">
-                          <div className={`p-5 rounded-[1.5rem] ${req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-                            <ArrowDownToLine className="w-8 h-8" />
+                    <Card key={req.id} className="rounded-[3rem] border-2 shadow-sm overflow-hidden bg-white hover:border-primary/20 transition-all hover:shadow-2xl">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between p-10 gap-8">
+                        <div className="flex items-start gap-8">
+                          <div className={`p-6 rounded-[2rem] shadow-sm ${req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+                            <ArrowDownToLine className="w-10 h-10" />
                           </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-3">
-                              <h3 className="font-black text-3xl text-foreground">₹{req.amount}</h3>
-                              <Badge className={`rounded-full px-4 text-[10px] font-black uppercase ${
-                                req.status === 'Pending' ? 'bg-orange-500' : 
-                                req.status === 'Completed' ? 'bg-green-600' : 'bg-destructive'
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-4">
+                              <h3 className="font-black text-5xl tracking-tighter text-foreground italic">₹{req.amount}</h3>
+                              <Badge className={`rounded-full px-5 py-1 text-[10px] font-black uppercase tracking-widest ${
+                                req.status === 'Pending' ? 'bg-orange-500 shadow-lg shadow-orange-500/20' : 
+                                req.status === 'Completed' ? 'bg-green-600 shadow-lg shadow-green-600/20' : 'bg-destructive'
                               }`}>
                                 {req.status}
                               </Badge>
                             </div>
-                            <p className="text-xs font-bold text-muted-foreground flex items-center gap-1">
-                              <User className="w-3 h-3" /> {req.userEmail}
-                            </p>
-                            <div className="flex items-center gap-2 mt-4">
-                              <div className="bg-muted px-4 py-2 rounded-xl flex items-center gap-3 border group">
-                                <span className="text-sm font-black text-foreground select-all">{req.upiId}</span>
-                                <button 
-                                  onClick={() => copyToClipboard(req.upiId)}
-                                  className="p-1 hover:bg-primary/10 rounded-lg transition-colors text-primary"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </button>
+                            <div className="flex flex-col gap-1 mt-2">
+                              <p className="text-xs font-black text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
+                                <User className="w-3.5 h-3.5 text-primary" /> {req.userEmail}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3 mt-6">
+                              <div className="bg-muted px-6 py-3 rounded-2xl flex items-center gap-4 border-2 group hover:border-primary/30 transition-all cursor-pointer" onClick={() => copyToClipboard(req.upiId)}>
+                                <span className="text-lg font-black text-foreground select-all tracking-tight">{req.upiId}</span>
+                                <Copy className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                               </div>
                             </div>
                           </div>
                         </div>
                         
-                        <div className="flex flex-col md:items-end gap-4">
+                        <div className="flex flex-col md:items-end gap-6">
                           {req.status === 'Pending' && (
-                            <div className="flex gap-3">
+                            <div className="flex flex-col sm:flex-row gap-4 w-full">
                               <Button 
                                 onClick={() => handleWithdrawalStatus(req.id, 'Completed')}
-                                className="rounded-2xl font-black bg-green-600 hover:bg-green-700 gap-2 h-14 px-8 shadow-lg shadow-green-600/20"
+                                className="rounded-2xl font-black bg-green-600 hover:bg-green-700 gap-3 h-16 px-10 shadow-2xl shadow-green-600/30 text-lg uppercase tracking-widest"
                               >
-                                <CheckCircle2 className="w-5 h-5" /> Mark Paid
+                                <CheckCircle2 className="w-6 h-6" /> Mark Paid
                               </Button>
                               <Button 
                                 variant="outline"
                                 onClick={() => handleWithdrawalStatus(req.id, 'Rejected')}
-                                className="rounded-2xl font-black text-destructive hover:text-destructive border-destructive/20 h-14"
+                                className="rounded-2xl font-black text-destructive hover:bg-destructive/5 border-destructive/20 h-16 px-8 uppercase tracking-widest"
                               >
                                 Reject
                               </Button>
                             </div>
                           )}
-                          <div className="text-right text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                            {new Date(req.createdAt).toLocaleDateString()} at {new Date(req.createdAt).toLocaleTimeString()}
+                          <div className="text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">
+                            {new Date(req.createdAt).toLocaleDateString()} • {new Date(req.createdAt).toLocaleTimeString()}
                           </div>
                         </div>
                       </div>
@@ -211,33 +227,39 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="restaurants">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {restaurants.map((res) => (
-                <Card key={res.id} className="overflow-hidden border-2 rounded-[2.5rem] bg-white group shadow-sm">
-                  <div className="relative h-52">
-                    <Image src={res.image} alt={res.name} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Button size="icon" variant="secondary" onClick={() => handleEdit(res)} className="rounded-full w-12 h-12">
-                        <Edit2 className="w-5 h-5" />
+                <Card key={res.id} className="overflow-hidden border-2 rounded-[3rem] bg-white group shadow-sm hover:shadow-2xl transition-all">
+                  <div className="relative h-60">
+                    <Image src={res.image} alt={res.name} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                      <Button size="icon" variant="secondary" onClick={() => handleEdit(res)} className="rounded-full w-14 h-14 shadow-2xl hover:scale-110 transition-all">
+                        <Edit2 className="w-6 h-6" />
                       </Button>
                     </div>
                   </div>
-                  <CardContent className="p-8">
+                  <CardContent className="p-10">
                     {editingId === res.id ? (
-                      <div className="space-y-4">
-                        <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="rounded-xl" />
-                        <Input value={editForm.cuisine} onChange={e => setEditForm({...editForm, cuisine: e.target.value})} className="rounded-xl" />
-                        <div className="flex gap-2">
-                          <Button onClick={() => handleSave(res.id)} className="flex-1 rounded-xl font-black">Save</Button>
-                          <Button onClick={() => setEditingId(null)} variant="outline" className="rounded-xl px-4">X</Button>
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                           <Label className="text-[10px] font-black uppercase tracking-widest">Restaurant Name</Label>
+                           <Input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="rounded-2xl h-12 border-2" />
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="text-[10px] font-black uppercase tracking-widest">Cuisine Type</Label>
+                           <Input value={editForm.cuisine} onChange={e => setEditForm({...editForm, cuisine: e.target.value})} className="rounded-2xl h-12 border-2" />
+                        </div>
+                        <div className="flex gap-4 pt-4">
+                          <Button onClick={() => handleSave(res.id)} className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest">Save</Button>
+                          <Button onClick={() => setEditingId(null)} variant="outline" className="rounded-2xl w-12 h-12 border-2"><X className="w-5 h-5" /></Button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <h3 className="font-black text-xl mb-1">{res.name}</h3>
-                        <p className="text-xs text-muted-foreground font-bold mb-4">{res.cuisine}</p>
-                        <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground border-t pt-4 uppercase">
-                          <span>Rating: {res.rating}★</span>
+                        <h3 className="font-black text-2xl mb-1 italic tracking-tighter">{res.name}</h3>
+                        <p className="text-xs text-muted-foreground font-black mb-6 uppercase tracking-widest">{res.cuisine}</p>
+                        <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground border-t-2 border-dashed pt-6 uppercase tracking-[0.15em]">
+                          <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" /> Rating: {res.rating}★</span>
                           <span className="text-primary">₹{res.priceForTwo} For Two</span>
                         </div>
                       </>
@@ -249,28 +271,29 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="config">
-            <Card className="border-2 border-primary/20 bg-primary/[0.03] rounded-[2.5rem] p-8 shadow-sm max-w-2xl">
-              <CardTitle className="text-2xl font-black flex items-center gap-3 mb-6">
-                <Globe className="w-8 h-8 text-primary" />
-                PhonePe Gateway Config
+            <Card className="border-4 border-primary/20 bg-primary/[0.03] rounded-[4rem] p-12 shadow-2xl max-w-3xl">
+              <CardTitle className="text-4xl font-black italic tracking-tighter flex items-center gap-4 mb-8">
+                <Globe className="w-12 h-12 text-primary" />
+                PhonePe Gateway Terminal
               </CardTitle>
-              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-2xl border flex justify-between items-center">
-                  <div>
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Gateway Mode</Label>
-                    <p className="font-black text-lg text-primary">Secure Mode 02</p>
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Network Status</Label>
+                    <p className="font-black text-2xl text-primary italic">Mode 02 (Secure)</p>
                   </div>
-                  <div className="text-right">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Business Cat (MC)</Label>
-                    <p className="font-black text-lg text-foreground">5812 (Eating Places)</p>
+                  <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Merchant Category</Label>
+                    <p className="font-black text-2xl text-foreground italic">MC 5812 (Dining)</p>
                   </div>
                 </div>
-                <div className="bg-primary/10 p-6 rounded-2xl border border-primary/20">
-                  <h4 className="font-black text-xs uppercase mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" /> Connection Verified
+                
+                <div className="bg-white p-8 rounded-[2.5rem] border-2 border-dashed border-primary/20">
+                  <h4 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-primary" /> Verified Endpoint Sync
                   </h4>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed">
-                    Official merchant dashboard sync is active. Transactions with MC 5812 will be processed by PhonePe Business dashboard for real-time settlement tracking.
+                  <p className="text-xs font-bold text-muted-foreground uppercase leading-relaxed tracking-tight">
+                    All QR codes generated within the Karbi Anglong domain are signed with MC 5812 and Mode 02. This ensures that every transaction is identified as a Verified Merchant Payout by the PhonePe Business ecosystem for instant dashboard visibility and zero-fee settlements.
                   </p>
                 </div>
               </div>
