@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, UtensilsCrossed, Smartphone, LogOut, User, Lock, Mail, Loader2 } from "lucide-react";
+import { ShoppingBag, UtensilsCrossed, Smartphone, LogOut, User, Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useAuth, useUser, useFirestore } from "@/firebase";
@@ -28,18 +28,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const ADMIN_EMAIL = "zomatokarbi@gmail.com";
+
 export function Navbar() {
   const { cart } = useAppStore();
   const auth = useAuth();
-  const firestore = useFirebase().db;
+  const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
   const { toast } = useToast();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [email, setEmail] = useState("zomatokarbi@gmail.com");
+  const [email, setEmail] = useState(ADMIN_EMAIL);
   const [password, setPassword] = useState("Junakip1");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
     if (user && firestore) {
@@ -49,6 +52,7 @@ export function Navbar() {
         email: user.email,
         photoURL: user.photoURL,
         lastLogin: serverTimestamp(),
+        role: user.email === ADMIN_EMAIL ? "admin" : "user"
       }, { merge: true });
     }
   }, [user, firestore, email]);
@@ -81,8 +85,7 @@ export function Navbar() {
       });
       setIsLoginOpen(false);
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        // Automatically try to register if user doesn't exist for demo purposes
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
         try {
           await createUserWithEmailAndPassword(auth, email, password);
           toast({
@@ -159,6 +162,13 @@ export function Navbar() {
               <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
             ) : user ? (
               <div className="flex items-center gap-4">
+                {isAdmin && (
+                  <Link href="/admin">
+                    <Button variant="ghost" className="hidden md:flex items-center gap-2 text-primary font-bold">
+                      <ShieldCheck className="w-4 h-4" /> Admin
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/orders" className="hidden md:block text-sm font-bold text-muted-foreground hover:text-primary">
                   Orders
                 </Link>
@@ -249,7 +259,7 @@ export function Navbar() {
                   </Button>
 
                   <p className="text-[10px] text-center text-muted-foreground mt-8 leading-tight">
-                    Developer Hint: Login with <span className="font-bold">zomatokarbi@gmail.com</span> / <span className="font-bold">Junakip1</span> to test the flow.
+                    Developer Hint: Login with <span className="font-bold">zomatokarbi@gmail.com</span> / <span className="font-bold">Junakip1</span> to test the admin flow.
                   </p>
                 </DialogContent>
               </Dialog>
@@ -259,9 +269,4 @@ export function Navbar() {
       </div>
     </nav>
   );
-}
-
-function useFirebase() {
-  const { db, auth } = useAuth() as any; // Temporary cast for simplicity
-  return { db, auth };
 }

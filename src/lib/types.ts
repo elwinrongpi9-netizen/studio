@@ -36,3 +36,12 @@ export interface Order {
   paymentMethod: string;
   paymentStatus: 'Paid' | 'Pending';
 }
+
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  address?: string;
+  role: 'user' | 'admin';
+}
