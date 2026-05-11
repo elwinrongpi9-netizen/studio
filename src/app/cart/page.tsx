@@ -70,8 +70,8 @@ export default function CartPage() {
     const tr = `TRX${Date.now()}`;
     const tid = `TID${Date.now()}`;
     
-    // Matched URI for official PhonePe Business visibility
-    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tid=${tid}&tr=${tr}&am=${amount}&cu=INR&mode=02&purpose=00&orgid=000000`;
+    // Matched URI for official PhonePe Business visibility (Mode 02, MC 5812)
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tid=${tid}&tr=${tr}&am=${amount}&cu=INR&mode=02&purpose=00`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
