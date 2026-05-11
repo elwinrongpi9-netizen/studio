@@ -3,13 +3,13 @@
 
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, orderBy, addDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
+import { doc, collection, query, where, orderBy, addDoc, updateDoc, increment } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Shield, Sparkles, TrendingUp } from "lucide-react";
+import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Shield, Sparkles, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -49,17 +49,17 @@ export default function WalletPage() {
 
     const withdrawAmount = parseFloat(amount);
     if (isNaN(withdrawAmount) || withdrawAmount < 10) {
-      toast({ title: "Min ₹10 Required", description: "Kam se kam ₹10 hone chahiye.", variant: "destructive" });
+      toast({ title: "Min ₹10 Required", description: "Minimum ₹10 withdraw karein.", variant: "destructive" });
       return;
     }
 
     if (withdrawAmount > (profile.walletBalance || 0)) {
-      toast({ title: "Insufficient Coins", variant: "destructive" });
+      toast({ title: "Insufficient Balance", variant: "destructive" });
       return;
     }
 
     if (!upiId.includes("@")) {
-      toast({ title: "Invalid UPI ID", description: "Kripya valid UPI ID enter karein.", variant: "destructive" });
+      toast({ title: "Invalid UPI ID", description: "Kripya sahi UPI ID bharein.", variant: "destructive" });
       return;
     }
 
@@ -67,7 +67,6 @@ export default function WalletPage() {
     try {
       const timestamp = new Date().toISOString();
       
-      // Create the withdrawal request
       await addDoc(collection(firestore, "withdrawalRequests"), {
         userId: user.uid,
         userEmail: user.email,
@@ -77,13 +76,12 @@ export default function WalletPage() {
         createdAt: timestamp
       });
 
-      // Deduct coins from user balance immediately
       await updateDoc(doc(firestore, "users", user.uid), {
         walletBalance: increment(-withdrawAmount)
       });
 
       toast({ 
-        title: "Request Success!", 
+        title: "Request Submitted!", 
         description: `₹${withdrawAmount} aapke UPI par 24 ghante mein bhej diye jayenge.` 
       });
       setAmount("");
@@ -101,7 +99,7 @@ export default function WalletPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="mt-4 font-bold text-muted-foreground">Opening your Karbi Wallet...</p>
+          <p className="mt-4 font-bold text-muted-foreground">Opening Karbi Wallet...</p>
         </div>
       </div>
     );
@@ -114,7 +112,7 @@ export default function WalletPage() {
         <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
           <Wallet className="w-16 h-16 text-muted-foreground mb-4 opacity-20" />
           <h1 className="text-2xl font-black mb-2">Sign In Required</h1>
-          <p className="text-muted-foreground mb-6">Apna balance dekhne aur withdraw karne ke liye login karein.</p>
+          <p className="text-muted-foreground mb-6">Login karein balance dekhne ke liye.</p>
           <Link href="/"><Button className="rounded-xl font-bold">Return Home</Button></Link>
         </div>
       </div>
@@ -135,27 +133,20 @@ export default function WalletPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Balance Card */}
           <div className="lg:col-span-5 space-y-6">
-            <Card className="rounded-[2.5rem] bg-primary text-white border-none shadow-2xl overflow-hidden relative group">
-              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none group-hover:scale-110 transition-transform">
+            <Card className="rounded-[2.5rem] bg-primary text-white border-none shadow-2xl overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                 <Wallet className="w-32 h-32" />
               </div>
               <CardContent className="p-10 relative z-10">
-                <p className="text-primary-foreground/80 font-bold uppercase tracking-widest text-[10px] mb-2">Available Balance</p>
+                <p className="text-primary-foreground/80 font-bold uppercase tracking-widest text-[10px] mb-2">Available Coins</p>
                 <h2 className="text-6xl font-black mb-8 flex items-center gap-2">
                   ₹{profile?.walletBalance || 0}
                   <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
                 </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/10 rounded-2xl p-3">
-                    <p className="text-[9px] uppercase font-black opacity-60">Success Out</p>
-                    <p className="font-black text-sm">₹{totalWithdrawn}</p>
-                  </div>
-                  <div className="bg-white/10 rounded-2xl p-3">
-                    <p className="text-[9px] uppercase font-black opacity-60">Pending</p>
-                    <p className="font-black text-sm">₹{withdrawals.filter(w => w.status === 'Pending').reduce((a, b) => a + b.amount, 0)}</p>
-                  </div>
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl border border-white/10">
+                  <Clock className="w-4 h-4 text-white" />
+                  <p className="text-[10px] font-black uppercase tracking-tight">Withdrawals take up to 24 hours</p>
                 </div>
               </CardContent>
             </Card>
@@ -164,71 +155,60 @@ export default function WalletPage() {
               <CardHeader className="p-0 mb-6">
                 <CardTitle className="text-xl font-black flex items-center gap-2">
                   <ArrowUpRight className="w-6 h-6 text-primary" />
-                  Real-Time Withdraw
+                  UPI Withdrawal
                 </CardTitle>
-                <p className="text-xs font-bold text-muted-foreground">Coins will be deducted immediately from wallet.</p>
+                <p className="text-xs font-bold text-muted-foreground">1 Coin = ₹1. Manual payment mode enabled.</p>
               </CardHeader>
               <form onSubmit={handleWithdraw} className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">Amount to Cash Out (₹)</Label>
+                  <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">Amount (₹)</Label>
                   <Input 
                     type="number" 
                     placeholder="Min ₹10" 
                     value={amount} 
                     onChange={e => setAmount(e.target.value)}
-                    className="h-14 rounded-2xl text-xl font-black focus:ring-primary/20 bg-muted/20"
+                    className="h-14 rounded-2xl text-xl font-black bg-muted/20"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">Your UPI ID (Verified Only)</Label>
+                  <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">Your UPI ID</Label>
                   <Input 
-                    placeholder="e.g. mobile@ybl" 
+                    placeholder="e.g. yourname@ybl" 
                     value={upiId} 
                     onChange={e => setUpiId(e.target.value)}
                     className="h-14 rounded-2xl font-bold bg-muted/20"
                     required
                   />
-                  <div className="flex items-start gap-2 bg-primary/5 p-3 rounded-xl border border-primary/10 mt-2">
-                    <Shield className="w-3.5 h-3.5 text-primary mt-0.5" />
-                    <p className="text-[9px] text-muted-foreground font-bold leading-tight uppercase">
-                      Admin manually transfers funds to this UPI. Please ensure it is 100% correct.
-                    </p>
-                  </div>
                 </div>
-                <Button className="w-full h-16 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] transition-transform" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Initiate Withdrawal"}
+                <Button className="w-full h-16 rounded-2xl font-black text-lg shadow-xl" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Request Cash Out"}
                 </Button>
+                <p className="text-[9px] text-center font-bold text-muted-foreground uppercase leading-tight">
+                  Sahi UPI ID bharein, admin manually paise transfer karenge.
+                </p>
               </form>
             </Card>
           </div>
 
-          {/* History Column */}
           <div className="lg:col-span-7">
-            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 min-h-[600px] flex flex-col">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black flex items-center gap-2">
-                  <History className="w-6 h-6 text-primary" />
-                  Transaction Log
-                </h3>
-                <Badge variant="outline" className="rounded-full font-black px-4 bg-muted border-none uppercase text-[10px] tracking-widest">
-                  {withdrawals.length} Entries
-                </Badge>
-              </div>
+            <div className="bg-white rounded-[2.5rem] shadow-xl p-8 min-h-[500px]">
+              <h3 className="text-xl font-black flex items-center gap-2 mb-8">
+                <History className="w-6 h-6 text-primary" />
+                Wallet Activity
+              </h3>
 
               {historyLoading ? (
-                <div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>
+                <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary" /></div>
               ) : withdrawals.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center py-20 bg-muted/10 rounded-[2rem] border-2 border-dashed">
-                  <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-                    <Clock className="w-8 h-8 text-muted-foreground opacity-30" />
-                  </div>
-                  <p className="font-bold text-muted-foreground">Your financial history starts here.</p>
+                <div className="text-center py-20 bg-muted/10 rounded-[2rem] border-2 border-dashed">
+                  <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-4 opacity-30" />
+                  <p className="font-bold text-muted-foreground">No recent transactions.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {withdrawals.map((req: any) => (
-                    <div key={req.id} className="flex items-center justify-between p-5 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/5 transition-all group">
+                    <div key={req.id} className="flex items-center justify-between p-5 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/5 transition-all">
                       <div className="flex items-center gap-4">
                         <div className={`p-3 rounded-2xl ${
                           req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 
@@ -237,21 +217,18 @@ export default function WalletPage() {
                           {req.status === 'Pending' ? <Clock className="w-5 h-5" /> : req.status === 'Completed' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                             <p className="font-black text-lg">₹{req.amount}</p>
-                             <span className="text-[10px] font-black uppercase text-muted-foreground">to UPI</span>
-                          </div>
-                          <p className="text-[9px] font-black text-muted-foreground tracking-widest uppercase truncate max-w-[150px]">{req.upiId}</p>
+                          <p className="font-black text-lg">₹{req.amount}</p>
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{req.upiId}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <Badge className={`rounded-full px-3 text-[10px] font-black uppercase tracking-tighter ${
+                        <Badge className={`rounded-full px-3 text-[10px] font-black uppercase ${
                           req.status === 'Pending' ? 'bg-orange-500' : 
                           req.status === 'Completed' ? 'bg-green-600' : 'bg-destructive'
                         }`}>
                           {req.status}
                         </Badge>
-                        <p className="text-[10px] font-black text-muted-foreground mt-2 uppercase">
+                        <p className="text-[9px] font-black text-muted-foreground mt-2 uppercase">
                           {new Date(req.createdAt).toLocaleDateString()}
                         </p>
                       </div>
