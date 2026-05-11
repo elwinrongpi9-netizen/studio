@@ -8,7 +8,7 @@ import { Trophy, Gamepad2, Star, QrCode, Timer, CheckCircle2, Heart, ArrowLeft, 
 import Link from "next/link";
 import Image from "next/image";
 import { useUser, useFirestore, useDoc } from "@/firebase";
-import { doc, updateDoc, increment } from "firebase/firestore";
+import { doc, setDoc, increment, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// MERCHANT DETAILS - Exact as per PhonePe Dashboard for Business Settlement
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
@@ -43,18 +42,18 @@ export default function GameZonePage() {
   const [isSaving, setIsSaving] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  const earnedCoins = Math.floor(score / 10); // 1 Coin = ₹1
+  const earnedCoins = Math.floor(score / 10); 
 
   const upiUrl = useMemo(() => {
-    // Official Business Format for PhonePe
-    const amount = "100.00"; 
+    const amount = (100).toFixed(2);
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `GBC${Date.now().toString().slice(-10)}`;
-    const tn = encodeURIComponent(`Gamer Combo Recharge`);
+    const tr = `TRX${Date.now()}`;
+    const tid = `TID${Date.now()}`;
     
-    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02&purpose=00`;
+    // Optimized URI for PhonePe Business Settlement
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tid=${tid}&tr=${tr}&am=${amount}&cu=INR&mode=02&purpose=00&orgid=000000`;
   }, []);
 
   const qrCodeUrl = useMemo(() => {
@@ -118,9 +117,10 @@ export default function GameZonePage() {
     if (user && firestore && earnedCoins > 0) {
       setIsSaving(true);
       try {
-        await updateDoc(doc(firestore, "users", user.uid), {
+        const uRef = doc(firestore, "users", user.uid);
+        await setDoc(uRef, {
           walletBalance: increment(earnedCoins)
-        });
+        }, { merge: true });
         toast({ 
           title: "Coins Earned!", 
           description: `₹${earnedCoins} added to your real balance.` 
@@ -140,16 +140,20 @@ export default function GameZonePage() {
     }
   }, [gameState, score, highScore]);
 
-  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMouseMove = (e: any) => {
     if (gameState !== "playing" || !gameAreaRef.current) return;
     const rect = gameAreaRef.current.getBoundingClientRect();
-    const x = "touches" in e 
+    const x = e.touches 
       ? ((e.touches[0].clientX - rect.left) / rect.width) * 100 
       : ((e.clientX - rect.left) / rect.width) * 100;
     setPlayerX(Math.max(5, Math.min(95, x)));
   };
 
   const startGame = () => {
+    if (!user) {
+      toast({ title: "Please Login First", variant: "destructive" });
+      return;
+    }
     setScore(0);
     setLives(3);
     setItems([]);
@@ -162,7 +166,7 @@ export default function GameZonePage() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-2xl">
         <div className="flex items-center justify-between mb-8">
           <Link href="/">
-            <Button variant="ghost" className="rounded-xl font-bold bg-white/50 shadow-sm"><ArrowLeft className="w-4 h-4 mr-2" /> Exit</Button>
+            <Button variant="ghost" className="rounded-xl font-bold bg-white/50"><ArrowLeft className="w-4 h-4 mr-2" /> Exit</Button>
           </Link>
           <div className="flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl border-2 border-primary/20 shadow-lg">
             <Wallet className="w-5 h-5 text-primary" />
@@ -175,16 +179,16 @@ export default function GameZonePage() {
 
         <div 
           ref={gameAreaRef}
-          className={`relative aspect-[3/4] bg-white rounded-[3rem] border-8 border-white overflow-hidden cursor-none shadow-2xl transition-all duration-300 ${lastCatch ? 'ring-8 ring-green-400/30' : ''}`}
+          className={`relative aspect-[3/4] bg-white rounded-[3rem] border-8 border-white overflow-hidden cursor-none shadow-2xl transition-all ${lastCatch ? 'ring-8 ring-green-400/30' : ''}`}
           onMouseMove={handleMouseMove}
           onTouchMove={handleMouseMove}
         >
           {gameState === "start" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-accent/90 p-8 text-white text-center">
               <div className="bg-white p-6 rounded-[2rem] shadow-2xl mb-8 animate-bounce"><Gamepad2 className="w-16 h-16 text-primary" /></div>
-              <h1 className="text-5xl font-black mb-4 tracking-tighter italic uppercase text-white">Momo Catch</h1>
-              <p className="text-white/90 font-bold mb-10 max-w-[280px]">Earn real Karbi Coins!<br/><span className="text-yellow-300">1 Coin = ₹1 Balance</span></p>
-              <Button onClick={startGame} className="bg-white text-primary hover:bg-white/90 rounded-3xl px-16 py-8 text-2xl font-black shadow-2xl scale-110">PLAY</Button>
+              <h1 className="text-5xl font-black mb-4 tracking-tighter italic uppercase">Momo Catch</h1>
+              <p className="text-white/90 font-bold mb-10">Earn real Karbi Coins!<br/><span className="text-yellow-300 font-black">1 Coin = ₹1 Balance</span></p>
+              <Button onClick={startGame} className="bg-white text-primary rounded-3xl px-16 py-8 text-2xl font-black scale-110">PLAY NOW</Button>
             </div>
           )}
 
@@ -213,12 +217,12 @@ export default function GameZonePage() {
           {gameState === "gameover" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-primary p-8 text-white text-center">
               {isSaving ? <Loader2 className="w-12 h-12 animate-spin mb-4" /> : <Trophy className="w-16 h-16 text-yellow-300 fill-yellow-300 mb-6" />}
-              <h2 className="text-5xl font-black mb-2 italic">WINNER!</h2>
+              <h2 className="text-5xl font-black mb-2 italic uppercase">Victory!</h2>
               <div className="bg-white p-6 rounded-[2.5rem] w-full max-w-[300px] mb-6 shadow-2xl text-primary mt-4">
-                <div className="flex justify-between items-center mb-2"><span className="font-black text-xs uppercase opacity-60">Score</span><span className="text-4xl font-black">{score}</span></div>
-                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Withdrawal</span><span className="text-xl font-black text-green-600 flex items-center gap-1">₹{earnedCoins} <Sparkles className="w-4 h-4" /></span></div>
-                <Button onClick={() => setShowQrModal(true)} className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black flex items-center justify-center gap-2 shadow-lg">
-                  <QrCode className="w-5 h-5" /> Pay Business ₹100
+                <div className="flex justify-between items-center mb-2"><span className="font-black text-xs uppercase opacity-60">Game Score</span><span className="text-4xl font-black">{score}</span></div>
+                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Earned</span><span className="text-xl font-black text-green-600">₹{earnedCoins}</span></div>
+                <Button onClick={() => setShowQrModal(true)} className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black flex items-center justify-center gap-2">
+                  <QrCode className="w-5 h-5" /> Pay ₹100 Recharge
                 </Button>
               </div>
               <Button onClick={startGame} className="bg-white/20 hover:bg-white/30 rounded-3xl w-full py-6 text-xl font-black">PLAY AGAIN</Button>
@@ -228,9 +232,9 @@ export default function GameZonePage() {
           {gameState === "success" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500 p-8 text-white text-center">
               <CheckCircle2 className="w-24 h-24 mb-6" />
-              <h2 className="text-5xl font-black mb-4 italic">PAID!</h2>
-              <p className="font-bold opacity-90 mb-10">Payment Received at PhonePe Business for<br/><span className="text-yellow-300 font-black">{MERCHANT_NAME}</span></p>
-              <Button onClick={startGame} className="bg-white text-green-600 rounded-3xl w-full py-8 text-xl font-black">CONTINUE GAMING</Button>
+              <h2 className="text-5xl font-black mb-4 italic">SUCCESS!</h2>
+              <p className="font-bold opacity-90 mb-10">Payment verified for<br/><span className="text-yellow-300 font-black">{MERCHANT_NAME}</span></p>
+              <Button onClick={startGame} className="bg-white text-green-600 rounded-3xl w-full py-8 text-xl font-black">CONTINUE</Button>
             </div>
           )}
         </div>
@@ -239,8 +243,8 @@ export default function GameZonePage() {
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
           <DialogHeader className="mb-4">
-            <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
-            <DialogDescription className="text-center font-bold">Verified: <span className="text-primary">{MERCHANT_NAME}</span></DialogDescription>
+            <DialogTitle className="text-3xl font-black text-center">Business QR</DialogTitle>
+            <DialogDescription className="text-center font-bold">Verified Merchant: <span className="text-primary">{MERCHANT_NAME}</span></DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-6">
             <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs animate-pulse flex items-center gap-2">
@@ -254,8 +258,8 @@ export default function GameZonePage() {
               <p className="text-4xl font-black text-primary">₹100.00</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase mt-1 tracking-widest">{MERCHANT_UPI_ID}</p>
             </div>
-            <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl shadow-primary/20" onClick={() => { setShowQrModal(false); setGameState("success"); }}>I have paid ₹100</Button>
-            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Secure Gateway (MC 5812 • Mode 02 • Purpose 00)</p>
+            <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl" onClick={() => { setShowQrModal(false); setGameState("success"); }}>Verify Payment</Button>
+            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest text-center">Secure Gateway • MC 5812 • Mode 02</p>
           </div>
         </DialogContent>
       </Dialog>

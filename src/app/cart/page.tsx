@@ -25,7 +25,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// VERIFIED MERCHANT DETAILS - AS PER PHONEPE BUSINESS DASHBOARD
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
@@ -64,15 +63,15 @@ export default function CartPage() {
   const total = billTotal - walletDeduction;
 
   const upiUrl = useMemo(() => {
-    // Exact format for PhonePe Business Settlement (MC 5812 + Mode 02 + Purpose 00)
     const amount = total.toFixed(2);
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `ZBC${Date.now().toString().slice(-10)}`; 
-    const tn = encodeURIComponent(`Order from zomatokarbi`);
+    const tr = `TRX${Date.now()}`;
+    const tid = `TID${Date.now()}`;
     
-    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02&purpose=00`;
+    // Matched URI for official PhonePe Business visibility
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tid=${tid}&tr=${tr}&am=${amount}&cu=INR&mode=02&purpose=00&orgid=000000`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
@@ -80,7 +79,7 @@ export default function CartPage() {
   }, [upiUrl]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: any;
     if (showQrModal && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     } else if (timeLeft === 0) {
@@ -89,14 +88,10 @@ export default function CartPage() {
     return () => clearInterval(timer);
   }, [showQrModal, timeLeft]);
 
-  useEffect(() => {
-    if (showQrModal) setTimeLeft(300);
-  }, [showQrModal]);
-
   if (!isHydrated) return null;
 
-  const processOrder = (confirmedPayment = false) => {
-    if (!user) {
+  const processOrder = async (confirmedPayment = false) => {
+    if (!user || !firestore) {
       toast({ title: "Please Sign In", variant: "destructive" });
       return;
     }
@@ -112,29 +107,27 @@ export default function CartPage() {
       createdAt: new Date().toISOString(),
       items: cart,
       userId: user.uid,
-      paymentMethod: total === 0 ? 'Karbi Coins Wallet' : (PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || 'Unknown'),
+      paymentMethod: total === 0 ? 'Karbi Coins' : (PAYMENT_METHODS.find(m => m.id === paymentMethod)?.name || 'Unknown'),
       paymentStatus: paymentStatus,
       walletUsed: walletDeduction
     };
 
-    if (walletDeduction > 0 && firestore) {
-      updateDoc(doc(firestore, "users", user.uid), {
+    if (walletDeduction > 0) {
+      await updateDoc(doc(firestore, "users", user.uid), {
         walletBalance: increment(-walletDeduction)
       });
     }
 
-    if (firestore) {
-      const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
-      setDoc(orderRef, orderData)
-        .catch(async () => {
-          const permissionError = new FirestorePermissionError({
-            path: orderRef.path,
-            operation: "create",
-            requestResourceData: orderData,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+    const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
+    setDoc(orderRef, orderData)
+      .catch(async () => {
+        const permissionError = new FirestorePermissionError({
+          path: orderRef.path,
+          operation: "create",
+          requestResourceData: orderData,
         });
-    }
+        errorEmitter.emit("permission-error", permissionError);
+      });
 
     clearCart();
     toast({
@@ -157,6 +150,7 @@ export default function CartPage() {
     }
 
     if (paymentMethod === 'upi') {
+      setTimeLeft(300);
       setShowQrModal(true);
     } else {
       processOrder(false);
@@ -198,7 +192,7 @@ export default function CartPage() {
                       </div>
                       <div>
                         <h4 className="font-black text-sm">Withdraw Karbi Coins</h4>
-                        <p className="text-xs font-bold text-muted-foreground">Balance: <span className="text-primary font-black">₹{walletBalance}</span></p>
+                        <p className="text-xs font-bold text-muted-foreground">Available: <span className="text-primary font-black">₹{walletBalance}</span></p>
                       </div>
                     </div>
                     <Switch 
@@ -264,7 +258,7 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between font-black text-2xl mb-8"><span>Final Pay</span><span className="text-primary">₹{total.toFixed(0)}</span></div>
                   <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20" onClick={handleCheckout}>
-                    {total <= 0 ? 'Place Order (Withdraw Coins)' : 'Secure Scan & Pay'}
+                    {total <= 0 ? 'Place Order (Withdraw)' : 'Secure Scan & Pay'}
                   </Button>
                 </div>
               </div>
@@ -293,7 +287,7 @@ export default function CartPage() {
             </div>
             
             <div className="text-center">
-              <p className="text-4xl font-black text-primary">₹{total.toFixed(0)}</p>
+              <p className="text-4xl font-black text-primary">₹{total.toFixed(2)}</p>
               <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase mt-2">{MERCHANT_UPI_ID}</p>
             </div>
 
