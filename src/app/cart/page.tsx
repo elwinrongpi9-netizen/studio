@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Updated to the merchant details from your image
+// Exact merchant details from user input
 const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 
@@ -51,24 +51,19 @@ export default function CartPage() {
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
 
-  // Generate a valid UPI Payment URI
-  // This must be called before the early return to follow React Hook rules
+  // Optimized UPI URI construction for maximum compatibility
   const upiUrl = useMemo(() => {
-    const baseUrl = "upi://pay";
-    const params = new URLSearchParams({
-      pa: MERCHANT_UPI_ID,
-      pn: MERCHANT_NAME,
-      am: total.toFixed(2),
-      cu: "INR",
-      tn: "Food Order - zomatokarbi.com"
-    });
-    return `${baseUrl}?${params.toString()}`;
+    // Manual construction to ensure %20 is used instead of + for spaces
+    // Some UPI apps are sensitive to the encoding of the Merchant Name
+    const encodedName = encodeURIComponent(MERCHANT_NAME);
+    const amount = total.toFixed(2);
+    return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodedName}&am=${amount}&cu=INR&mode=02`;
   }, [total]);
 
   if (!isHydrated) return null;
 
-  // QR Code generator URL (must double encode the data parameter)
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
+  // External QR generator with proper double encoding of the URI
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(upiUrl)}`;
 
   const processOrder = async (confirmedPayment = false) => {
     if (!user) {
@@ -83,7 +78,7 @@ export default function CartPage() {
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
     const orderData = {
       id: orderId,
-      restaurantName: cart[0].restaurantName,
+      restaurantName: cart[0]?.restaurantName || "Restaurant",
       total: total,
       status: "Preparing",
       createdAt: new Date().toISOString(),
@@ -307,7 +302,7 @@ export default function CartPage() {
               <Info className="h-4 w-4 text-primary" />
               <AlertTitle className="text-xs font-black uppercase tracking-tight">Payment Tip</AlertTitle>
               <AlertDescription className="text-[10px] font-medium">
-                Amount and Merchant details are pre-filled in the QR. Just scan and confirm.
+                Please scan this QR using PhonePe, GPay, or Paytm.
               </AlertDescription>
             </Alert>
 
@@ -322,7 +317,7 @@ export default function CartPage() {
             </div>
             
             <div className="text-center space-y-2">
-              <p className="text-3xl font-black text-primary">₹{total.toFixed(0)}</p>
+              <p className="text-3xl font-black text-primary">₹{total.toFixed(2)}</p>
               <div className="flex items-center justify-center gap-2 bg-muted/50 px-4 py-1.5 rounded-full">
                 <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />
                 <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase">{MERCHANT_UPI_ID}</p>
@@ -350,7 +345,7 @@ export default function CartPage() {
             </div>
             
             <p className="text-[9px] text-muted-foreground text-center font-bold opacity-60">
-              Supports all UPI apps: PhonePe, GPay, Paytm, Amazon Pay
+              Supports: PhonePe, GPay, Paytm, BHIM
             </p>
           </div>
         </DialogContent>
