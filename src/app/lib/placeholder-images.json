@@ -57,8 +57,8 @@
     },
     {
       "id": "payment-qr-merchant",
-      "description": "Speaker Shop Merchant Payment QR",
-      "imageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=zomatokarbi@okicici&pn=Speaker%20Shop&cu=INR",
+      "description": "Rongpi Chinese wok Merchant Payment QR",
+      "imageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=rongpichinesewok@ybl&pn=Rongpi%20Chinese%20wok&cu=INR",
       "imageHint": "qr code"
     }
   ]

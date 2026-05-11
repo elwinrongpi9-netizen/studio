@@ -25,9 +25,9 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Change this to your real Merchant UPI ID
-const MERCHANT_UPI_ID = "zomatokarbi@okicici";
-const MERCHANT_NAME = "Speaker Shop & Zomato Karbi";
+// Updated to the merchant details from your image
+const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
+const MERCHANT_NAME = "Rongpi Chinese wok";
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'Scan & Pay (UPI QR)', icon: <QrCode className="w-4 h-4" /> },
