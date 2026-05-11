@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap } from "lucide-react";
+import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -42,6 +42,10 @@ export default function AdminPage() {
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Restaurant>>({});
+
+  const pendingAmount = useMemo(() => {
+    return withdrawals.filter(w => w.status === 'Pending').reduce((acc, curr) => acc + curr.amount, 0);
+  }, [withdrawals]);
 
   if (userLoading || resLoading || withdrawLoading) {
     return (
@@ -97,7 +101,11 @@ export default function AdminPage() {
     const reqRef = doc(firestore, "withdrawalRequests", id);
     updateDoc(reqRef, { status })
       .then(() => {
-        toast({ title: `Request ${status}`, description: status === 'Completed' ? "Funds settled successfully!" : "Request has been denied." });
+        toast({ 
+          title: `Success!`, 
+          description: status === 'Completed' ? "Payment marked as success. Ledger updated." : "Request rejected.",
+          variant: status === 'Completed' ? "default" : "destructive"
+        });
       })
       .catch((err) => {
         const permissionError = new FirestorePermissionError({
@@ -111,7 +119,7 @@ export default function AdminPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "UPI Copied!", description: "Paste it in your UPI app (PhonePe/GPay) to pay." });
+    toast({ title: "UPI Copied!", description: "Paste it in PhonePe to pay the user now." });
   };
 
   return (
@@ -120,15 +128,17 @@ export default function AdminPage() {
       <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
-            <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4">
+            <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4 text-foreground">
               <ShieldCheck className="w-12 h-12 text-primary" />
               Admin Control
             </h1>
-            <p className="text-muted-foreground font-bold mt-2 uppercase text-[10px] tracking-widest">Master Dashboard for Rongpi Chinese Wok</p>
+            <p className="text-muted-foreground font-bold mt-2 uppercase text-[10px] tracking-widest">Master Dashboard for Payout Management</p>
           </div>
-          <div className="bg-primary/5 px-6 py-3 rounded-2xl border-2 border-primary/10 flex items-center gap-3">
-             <Zap className="w-5 h-5 text-primary animate-pulse" />
-             <span className="text-sm font-black text-primary">Live Terminal Active</span>
+          <div className="flex gap-4">
+            <div className="bg-primary/5 px-6 py-4 rounded-2xl border-2 border-primary/10 flex flex-col items-end gap-1">
+               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Pending Payout</span>
+               <span className="text-2xl font-black text-primary">₹{pendingAmount}</span>
+            </div>
           </div>
         </div>
 
@@ -143,7 +153,7 @@ export default function AdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="restaurants" className="rounded-xl font-black px-8 h-12 transition-all">Listings</TabsTrigger>
-            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway</TabsTrigger>
+            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway Status</TabsTrigger>
           </TabsList>
 
           <TabsContent value="withdrawals">
@@ -151,9 +161,9 @@ export default function AdminPage() {
               <div className="bg-primary/5 p-8 rounded-[2.5rem] border-2 border-primary/10 flex items-center gap-6 relative overflow-hidden group">
                 <Shield className="w-12 h-12 text-primary opacity-20 group-hover:scale-110 transition-transform" />
                 <div className="relative z-10">
-                  <h4 className="font-black text-sm uppercase tracking-widest mb-1">Settlement Protocol (1 Coin = ₹1):</h4>
+                  <h4 className="font-black text-sm uppercase tracking-widest mb-1">Settlement Protocol:</h4>
                   <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed max-w-2xl">
-                    1. Click Copy UPI. 2. Open PhonePe Business/Personal. 3. Transfer Amount. 4. Return here and click "Mark Paid". All settlements logged in real-time.
+                    Copy UPI ID -> Pay using PhonePe/GPay -> Mark "Paid" here. This will update the user's ledger and confirm success.
                   </p>
                 </div>
               </div>
@@ -166,11 +176,11 @@ export default function AdminPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-6">
                   {withdrawals.map((req) => (
-                    <Card key={req.id} className="rounded-[3rem] border-2 shadow-sm overflow-hidden bg-white hover:border-primary/20 transition-all hover:shadow-2xl">
+                    <Card key={req.id} className={`rounded-[3rem] border-2 shadow-sm overflow-hidden bg-white transition-all hover:shadow-2xl ${req.status === 'Pending' ? 'border-orange-100 hover:border-primary/20' : 'border-muted opacity-80'}`}>
                       <div className="flex flex-col md:flex-row md:items-center justify-between p-10 gap-8">
                         <div className="flex items-start gap-8">
                           <div className={`p-6 rounded-[2rem] shadow-sm ${req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-                            <ArrowDownToLine className="w-10 h-10" />
+                            <TrendingUp className="w-10 h-10" />
                           </div>
                           <div className="space-y-2">
                             <div className="flex items-center gap-4">
@@ -188,9 +198,11 @@ export default function AdminPage() {
                               </p>
                             </div>
                             <div className="flex items-center gap-3 mt-6">
-                              <div className="bg-muted px-6 py-3 rounded-2xl flex items-center gap-4 border-2 group hover:border-primary/30 transition-all cursor-pointer" onClick={() => copyToClipboard(req.upiId)}>
-                                <span className="text-lg font-black text-foreground select-all tracking-tight">{req.upiId}</span>
-                                <Copy className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                              <div className="bg-muted px-6 py-4 rounded-2xl flex items-center gap-6 border-2 group hover:border-primary transition-all cursor-pointer" onClick={() => copyToClipboard(req.upiId)}>
+                                <span className="text-xl font-black text-foreground select-all tracking-tight font-mono">{req.upiId}</span>
+                                <div className="p-2 bg-white rounded-lg shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
+                                  <Copy className="w-5 h-5" />
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -203,7 +215,7 @@ export default function AdminPage() {
                                 onClick={() => handleWithdrawalStatus(req.id, 'Completed')}
                                 className="rounded-2xl font-black bg-green-600 hover:bg-green-700 gap-3 h-16 px-10 shadow-2xl shadow-green-600/30 text-lg uppercase tracking-widest"
                               >
-                                <CheckCircle2 className="w-6 h-6" /> Mark Paid
+                                <CheckCircle2 className="w-6 h-6" /> Success (Mark Paid)
                               </Button>
                               <Button 
                                 variant="outline"
@@ -215,7 +227,7 @@ export default function AdminPage() {
                             </div>
                           )}
                           <div className="text-right text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">
-                            {new Date(req.createdAt).toLocaleDateString()} • {new Date(req.createdAt).toLocaleTimeString()}
+                            Request Date: {new Date(req.createdAt).toLocaleDateString()} • {new Date(req.createdAt).toLocaleTimeString()}
                           </div>
                         </div>
                       </div>
@@ -274,26 +286,26 @@ export default function AdminPage() {
             <Card className="border-4 border-primary/20 bg-primary/[0.03] rounded-[4rem] p-12 shadow-2xl max-w-3xl">
               <CardTitle className="text-4xl font-black italic tracking-tighter flex items-center gap-4 mb-8">
                 <Globe className="w-12 h-12 text-primary" />
-                PhonePe Gateway Terminal
+                PhonePe Gateway Match
               </CardTitle>
               <div className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Network Status</Label>
-                    <p className="font-black text-2xl text-primary italic">Mode 02 (Secure)</p>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Merchant Category</Label>
+                    <p className="font-black text-2xl text-primary italic">MC 5812 (Matched)</p>
                   </div>
                   <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Merchant Category</Label>
-                    <p className="font-black text-2xl text-foreground italic">MC 5812 (Dining)</p>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Transaction Mode</Label>
+                    <p className="font-black text-2xl text-foreground italic">Mode 02 (Secure)</p>
                   </div>
                 </div>
                 
                 <div className="bg-white p-8 rounded-[2.5rem] border-2 border-dashed border-primary/20">
                   <h4 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-primary" /> Verified Endpoint Sync
+                    <Shield className="w-5 h-5 text-primary" /> Settlement Logic Verified
                   </h4>
                   <p className="text-xs font-bold text-muted-foreground uppercase leading-relaxed tracking-tight">
-                    All QR codes generated within the Karbi Anglong domain are signed with MC 5812 and Mode 02. This ensures that every transaction is identified as a Verified Merchant Payout by the PhonePe Business ecosystem for instant dashboard visibility and zero-fee settlements.
+                    Every QR generated is strictly matched with Merchant ID Q297152786@ybl. This ensures payments reach your PhonePe Business account directly. Withdrawal requests are separate and require manual bank transfer from the owner to ensure high security and zero automated fraud risks.
                   </p>
                 </div>
               </div>
