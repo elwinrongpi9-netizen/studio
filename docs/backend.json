@@ -11,7 +11,8 @@
         "rating": { "type": "number" },
         "deliveryTime": { "type": "string" },
         "image": { "type": "string" },
-        "priceRange": { "type": "string" }
+        "priceRange": { "type": "string" },
+        "priceForTwo": { "type": "number" }
       },
       "required": ["name", "cuisine", "image"]
     },
@@ -38,7 +39,8 @@
         "displayName": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "photoURL": { "type": "string" },
-        "address": { "type": "string" }
+        "address": { "type": "string" },
+        "lastLogin": { "type": "object" }
       }
     }
   },
@@ -47,15 +49,15 @@
   },
   "firestore": {
     "/restaurants/{restaurantId}": {
-      "schema": "#/entities/Restaurant",
+      "schema": "#/backend/entities/Restaurant",
       "description": "Global collection of restaurants."
     },
     "/users/{userId}/orders/{orderId}": {
-      "schema": "#/entities/Order",
+      "schema": "#/backend/entities/Order",
       "description": "User-specific order history."
     },
     "/users/{userId}": {
-      "schema": "#/entities/UserProfile",
+      "schema": "#/backend/entities/UserProfile",
       "description": "User profile data."
     }
   }
