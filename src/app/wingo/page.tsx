@@ -11,7 +11,9 @@ import {
   ArrowLeft, 
   Info, 
   Sparkles,
-  Zap
+  Zap,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc } from "@/firebase";
@@ -20,12 +22,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
-type BetType = "green" | "red" | "violet" | number;
+type BetType = "green" | "red" | "violet" | "big" | "small" | number;
 
 interface GameResult {
   periodId: string;
   number: number;
   colors: ("green" | "red" | "violet")[];
+  size: "Big" | "Small";
 }
 
 export default function WingoPage() {
@@ -51,6 +54,10 @@ export default function WingoPage() {
     return ["green"]; // 1, 3, 7, 9 are Green
   };
 
+  const getSizeForNumber = (num: number): "Big" | "Small" => {
+    return num >= 5 ? "Big" : "Small";
+  };
+
   // Initialize Period ID and History
   useEffect(() => {
     const now = new Date();
@@ -62,7 +69,8 @@ export default function WingoPage() {
       return {
         periodId: (parseInt(pid) - (i + 1)).toString(),
         number: num,
-        colors: getColorsForNumber(num)
+        colors: getColorsForNumber(num),
+        size: getSizeForNumber(num)
       };
     });
     setHistory(mockHistory);
@@ -85,11 +93,13 @@ export default function WingoPage() {
   const handleRoundEnd = async () => {
     const winNumber = Math.floor(Math.random() * 10);
     const winColors = getColorsForNumber(winNumber);
+    const winSize = getSizeForNumber(winNumber);
 
     const result: GameResult = {
       periodId: periodId,
       number: winNumber,
-      colors: winColors
+      colors: winColors,
+      size: winSize
     };
 
     setHistory(prev => [result, ...prev].slice(0, 10));
@@ -102,11 +112,12 @@ export default function WingoPage() {
       activeBets.forEach(bet => {
         if (typeof bet.type === 'number') {
           if (bet.type === winNumber) totalWinning += bet.amount * 9;
+        } else if (bet.type === 'big' || bet.type === 'small') {
+          if ((bet.type === 'big' && winSize === 'Big') || (bet.type === 'small' && winSize === 'Small')) {
+            totalWinning += bet.amount * 2;
+          }
         } else {
-          // If the color bet is among the winning colors
           if (winColors.includes(bet.type as any)) {
-            // Standard odds: Violet wins 4.5x on 0/5, Green/Red wins 1.5x on 0/5
-            // Simplified odds for MVP: 2x for color win
             totalWinning += bet.amount * 2;
           }
         }
@@ -123,7 +134,7 @@ export default function WingoPage() {
       } else {
         toast({
           title: "Round Ended",
-          description: `Result: ${winNumber} (${winColors.join(' & ')}). Better luck next time!`,
+          description: `Result: ${winNumber} (${winSize}, ${winColors.join(' & ')}). Better luck next time!`,
           variant: "destructive"
         });
       }
@@ -159,7 +170,7 @@ export default function WingoPage() {
         walletBalance: increment(-betAmount)
       });
       setActiveBets(prev => [...prev, { type, amount: betAmount }]);
-      toast({ title: "Bet Placed!", description: `₹${betAmount} on ${typeof type === 'string' ? type.toUpperCase() : type}` });
+      toast({ title: "Bet Placed!", description: `₹${betAmount} on ${typeof type === 'string' ? type.toUpperCase() : `Number ${type}`}` });
     } catch (e) {
       console.error(e);
       toast({ title: "Bet Failed", variant: "destructive" });
@@ -208,27 +219,46 @@ export default function WingoPage() {
       <main className="flex-1 container mx-auto px-4 -mt-6 max-w-2xl pb-20">
         {/* Betting Controls */}
         <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-4 border-primary/10">
+          
+          {/* Big Small Controls */}
+          <div className="flex gap-4 mb-6">
+            <Button 
+              onClick={() => placeBet("big")} 
+              disabled={isBetting || timeLeft < 5}
+              className="flex-1 h-14 rounded-2xl bg-orange-500 hover:bg-orange-600 font-black text-lg shadow-lg shadow-orange-500/20"
+            >
+              Big
+            </Button>
+            <Button 
+              onClick={() => placeBet("small")} 
+              disabled={isBetting || timeLeft < 5}
+              className="flex-1 h-14 rounded-2xl bg-blue-500 hover:bg-blue-600 font-black text-lg shadow-lg shadow-blue-500/20"
+            >
+              Small
+            </Button>
+          </div>
+
           <div className="flex justify-between gap-4 mb-8">
             <Button 
               onClick={() => placeBet("green")} 
               disabled={isBetting || timeLeft < 5}
               className="flex-1 h-16 rounded-2xl bg-green-500 hover:bg-green-600 font-black text-lg shadow-lg shadow-green-500/20"
             >
-              Join Green
+              Green
             </Button>
             <Button 
               onClick={() => placeBet("violet")} 
               disabled={isBetting || timeLeft < 5}
               className="flex-1 h-16 rounded-2xl bg-purple-500 hover:bg-purple-600 font-black text-lg shadow-lg shadow-purple-500/20"
             >
-              Join Violet
+              Violet
             </Button>
             <Button 
               onClick={() => placeBet("red")} 
               disabled={isBetting || timeLeft < 5}
               className="flex-1 h-16 rounded-2xl bg-red-500 hover:bg-red-600 font-black text-lg shadow-lg shadow-red-500/20"
             >
-              Join Red
+              Red
             </Button>
           </div>
 
@@ -255,7 +285,7 @@ export default function WingoPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase text-muted-foreground tracking-widest">Bet Amount (₹)</span>
               <div className="flex gap-2">
-                {[10, 50, 100, 500].map(amt => (
+                {[10, 50, 100, 500, 1000].map(amt => (
                   <Button 
                     key={amt} 
                     size="sm" 
@@ -285,8 +315,8 @@ export default function WingoPage() {
             </h3>
             <div className="flex flex-wrap gap-3">
               {activeBets.map((bet, i) => (
-                <Badge key={i} className="px-4 py-2 rounded-xl bg-white text-primary border-2 border-primary/10 shadow-sm font-black">
-                   {typeof bet.type === 'string' ? bet.type.toUpperCase() : `No. ${bet.type}`} : ₹{bet.amount}
+                <Badge key={i} className="px-4 py-2 rounded-xl bg-white text-primary border-2 border-primary/10 shadow-sm font-black uppercase">
+                   {typeof bet.type === 'string' ? bet.type : `No. ${bet.type}`} : ₹{bet.amount}
                 </Badge>
               ))}
             </div>
@@ -305,15 +335,18 @@ export default function WingoPage() {
                   <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{res.periodId}</p>
                 </div>
                 <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
-                      res.colors[0] === 'green' ? 'bg-green-500' : 'bg-red-500'
-                    }`}>
-                      {res.number}
-                    </span>
-                    {res.colors.length > 1 && (
-                      <div className="w-4 h-4 rounded-full bg-purple-500 shadow-sm border-2 border-white -ml-3" />
-                    )}
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mb-1">{res.size}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
+                        res.colors[0] === 'green' ? 'bg-green-500' : 'bg-red-500'
+                      }`}>
+                        {res.number}
+                      </span>
+                      {res.colors.length > 1 && (
+                        <div className="w-4 h-4 rounded-full bg-purple-500 shadow-sm border-2 border-white -ml-3" />
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-1.5">
                     {res.colors.map((color, ci) => (
@@ -337,7 +370,7 @@ export default function WingoPage() {
           <div className="space-y-1">
              <p className="text-[10px] font-black uppercase tracking-widest text-foreground">Wingo 1M Rules</p>
              <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed">
-               0 & 5 are dual colors. Payout: Number (9x), Color (2x). 1 Coin = ₹1. Safe & Transparent payouts within 24H.
+               Big: 5-9 | Small: 0-4. Payouts: Number (9x), Color/Size (2x). 1 Coin = ₹1. Safe & Transparent payouts within 24H.
              </p>
           </div>
         </div>
