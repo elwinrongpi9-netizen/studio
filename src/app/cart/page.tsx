@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Navbar } from "@/components/navbar";
@@ -60,15 +59,14 @@ export default function CartPage() {
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `ZK${Date.now().toString().slice(-10)}`; // Longer unique ref
+    const tr = `ZK${Date.now().toString().slice(-10)}`; // Unique ref
     const tn = encodeURIComponent("ZomatoKarbi Order");
     
-    // Comprehensive Business UPI Format
+    // Business Optimized URI for PhonePe Business
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
   }, [total]);
 
   const qrCodeUrl = useMemo(() => {
-    // High resolution QR with error correction for better scanning on mobile screens
     return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H`;
   }, [upiUrl]);
 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -21,7 +20,7 @@ const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-
 // REAL MERCHANT DETAILS - Verified for Rongpi Chinese wok
 const MERCHANT_UPI_ID = "rongpichinesewok@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
-const MERCHANT_CODE = "5812";
+const MERCHANT_CODE = "5812"; // Restaurant Category
 
 export default function GameZonePage() {
   const [gameState, setGameState] = useState<"start" | "playing" | "gameover" | "success">("start");
@@ -35,7 +34,7 @@ export default function GameZonePage() {
   const [timeLeft, setTimeLeft] = useState(300);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  // Optimized UPI Payment URI for Gamer's Deal with Merchant Category Code
+  // Optimized UPI Payment URI for Gamer's Deal with PhonePe Business specs
   const upiUrl = useMemo(() => {
     const amount = "100.00"; 
     const pa = MERCHANT_UPI_ID;
@@ -44,7 +43,7 @@ export default function GameZonePage() {
     const tr = `GAME${Date.now().toString().slice(-10)}`;
     const tn = encodeURIComponent("Gamer Combo Payment");
     
-    // Business Optimized URI
+    // Business Optimized URI for PhonePe Business (mode 02)
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
   }, []);
 
@@ -223,9 +222,12 @@ export default function GameZonePage() {
             <DialogDescription className="text-center font-bold">Merchant: <span className="text-primary">{MERCHANT_NAME}</span></DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-6">
-            <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs">Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</div>
+            <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs animate-pulse">
+              <Timer className="w-4 h-4" />
+              <span>Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
+            </div>
             <div className="relative w-72 h-72 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
-              <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain" unoptimized />
+              <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-2" unoptimized />
             </div>
             <div className="text-center">
               <p className="text-4xl font-black text-primary">₹100.00</p>
