@@ -111,7 +111,7 @@ export default function WingoPage() {
     let winNumber = Math.floor(Math.random() * 10);
     const currentPeriod = periodId;
     
-    // Check for Admin Override
+    // Check for Admin Override with high priority
     try {
       const controlRef = doc(firestore, "wingoConfig", currentPeriod);
       const controlSnap = await getDoc(controlRef);
@@ -147,7 +147,7 @@ export default function WingoPage() {
       let totalWinning = 0;
       activeBets.forEach(bet => {
         if (typeof bet.type === 'number') {
-          // Number Prediction (9x)
+          // Number Prediction (9x PROFIT)
           if (bet.type === winNumber) {
             totalWinning += bet.amount * 9;
           }
@@ -166,13 +166,14 @@ export default function WingoPage() {
 
       if (totalWinning > 0) {
         const uRef = doc(firestore, "users", user.uid);
+        // Instant Wallet Update using increment
         updateDoc(uRef, {
           walletBalance: increment(totalWinning)
         })
         .then(() => {
           toast({
             title: "VICTORY! 🎉",
-            description: `Round ${result.periodId} won! ₹${totalWinning} added to wallet.`,
+            description: `Round ${result.periodId} won! Result: ${winNumber}. ₹${totalWinning} added to wallet.`,
             className: "bg-green-600 text-white font-black border-none"
           });
         })
@@ -187,7 +188,7 @@ export default function WingoPage() {
       } else {
         toast({
           title: "LOSS 😞",
-          description: `Better luck next time! Result: ${winNumber} (${winSize})`,
+          description: `Result: ${winNumber} (${winSize}). Better luck next time!`,
           variant: "destructive",
           className: "font-black"
         });
@@ -209,7 +210,7 @@ export default function WingoPage() {
 
     const currentBalance = profile?.walletBalance || 0;
     if (betAmount > currentBalance) {
-      toast({ title: "Insufficient Balance", description: "Earn coins in Game Zone first!", variant: "destructive" });
+      toast({ title: "Insufficient Balance", description: "Recharge coins in Game Zone or Wallet first!", variant: "destructive" });
       return;
     }
 
@@ -240,6 +241,7 @@ export default function WingoPage() {
       return;
     }
 
+    // Set Result Instantly (Skip loading spinner)
     const configRef = doc(firestore, "wingoConfig", adminTargetPeriod);
     setDoc(configRef, {
       periodId: adminTargetPeriod,
@@ -247,7 +249,7 @@ export default function WingoPage() {
       updatedAt: new Date().toISOString()
     })
     .then(() => {
-      toast({ title: "Manual Override Set!", description: `Round ${adminTargetPeriod} fixed to ${num}.` });
+      toast({ title: "SUCCESS!", description: `Round ${adminTargetPeriod} fixed to ${num}.` });
       setAdminTargetNumber("");
     })
     .catch((err) => {
@@ -381,7 +383,7 @@ export default function WingoPage() {
                     className="bg-white/5 border-white/10 h-10 rounded-xl text-[10px] font-mono text-white"
                   />
                   <div className="flex flex-col gap-1">
-                    <span className="text-[8px] font-bold text-primary opacity-80 cursor-pointer hover:opacity-100" onClick={() => setAdminTargetPeriod(periodId)}>Set Current: {periodId}</span>
+                    <span className="text-[8px] font-bold text-primary opacity-80 cursor-pointer hover:opacity-100" onClick={() => setAdminTargetPeriod(periodId)}>Current: {periodId}</span>
                   </div>
                 </div>
               </div>
@@ -396,7 +398,7 @@ export default function WingoPage() {
                     className="bg-white/5 border-white/10 h-10 rounded-xl text-xs font-mono text-white w-20"
                   />
                   <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/80 h-10 rounded-xl px-4 flex-1 text-[10px] font-black uppercase transition-transform active:scale-95">
-                    Fix Result
+                    Set Result
                   </Button>
                 </div>
               </div>
