@@ -52,8 +52,8 @@ export default function GameZonePage() {
     const tr = `TRX${Date.now()}`;
     const tid = `TID${Date.now()}`;
     
-    // Optimized URI for PhonePe Business Settlement
-    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tid=${tid}&tr=${tr}&am=${amount}&cu=INR&mode=02&purpose=00&orgid=000000`;
+    // Matched URI for official PhonePe Business visibility (Mode 02, MC 5812)
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tid=${tid}&tr=${tr}&am=${amount}&cu=INR&mode=02&purpose=00`;
   }, []);
 
   const qrCodeUrl = useMemo(() => {
@@ -123,7 +123,7 @@ export default function GameZonePage() {
         }, { merge: true });
         toast({ 
           title: "Coins Earned!", 
-          description: `₹${earnedCoins} added to your real balance.` 
+          description: `₹${earnedCoins} added to your wallet.` 
         });
       } catch (e) {
         console.error("Wallet save failed", e);

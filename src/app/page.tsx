@@ -45,6 +45,7 @@ export default function Home() {
           });
         }
       } catch (error) {
+        // Gracefully handle potential offline/initialization errors
         console.warn("Seeding skipped: Client might be offline or initializing.", error);
       }
     };
@@ -79,7 +80,7 @@ export default function Home() {
                 zomatokarbi<span className="text-primary">.com</span>
               </h1>
               <p className="text-muted-foreground text-center text-xl mb-10 max-w-2xl font-medium">
-                The best food discovery in <span className="font-bold text-foreground underline decoration-accent/30 underline-offset-4">Diphu, Karbi Anglong</span>
+                Delicious food discovery in <span className="font-bold text-foreground underline decoration-accent/30 underline-offset-4">Diphu, Karbi Anglong</span>
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-3xl bg-background rounded-2xl border shadow-xl overflow-hidden ring-1 ring-border">

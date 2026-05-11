@@ -191,7 +191,7 @@ export default function CartPage() {
                         <Sparkles className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h4 className="font-black text-sm">Withdraw Karbi Coins</h4>
+                        <h4 className="font-black text-sm">Pay using Karbi Coins</h4>
                         <p className="text-xs font-bold text-muted-foreground">Available: <span className="text-primary font-black">₹{walletBalance}</span></p>
                       </div>
                     </div>
@@ -253,12 +253,12 @@ export default function CartPage() {
                   <div className="space-y-4 text-sm border-b border-dashed pb-6 mb-6">
                     <div className="flex justify-between font-bold"><span className="text-muted-foreground">Total Bill</span><span>₹{billTotal.toFixed(0)}</span></div>
                     {walletDeduction > 0 && (
-                      <div className="flex justify-between font-black text-primary"><span>Coin Discount</span><span>-₹{walletDeduction}</span></div>
+                      <div className="flex justify-between font-black text-primary"><span>Wallet Used</span><span>-₹{walletDeduction}</span></div>
                     )}
                   </div>
                   <div className="flex justify-between font-black text-2xl mb-8"><span>Final Pay</span><span className="text-primary">₹{total.toFixed(0)}</span></div>
                   <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20" onClick={handleCheckout}>
-                    {total <= 0 ? 'Place Order (Withdraw)' : 'Secure Scan & Pay'}
+                    {total <= 0 ? 'Place Order (Wallet)' : 'Secure Scan & Pay'}
                   </Button>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export default function CartPage() {
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
           <DialogHeader className="mb-4">
-            <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
+            <DialogTitle className="text-3xl font-black text-center">Scan & Pay</DialogTitle>
             <DialogDescription className="text-center font-bold text-muted-foreground">
               Merchant: <span className="text-primary">{MERCHANT_NAME}</span>
             </DialogDescription>

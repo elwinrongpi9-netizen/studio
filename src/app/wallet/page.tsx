@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Sparkles, ShieldCheck, Zap } from "lucide-react";
+import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Sparkles, ShieldCheck, Zap, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -91,7 +91,7 @@ export default function WalletPage() {
 
         toast({ 
           title: "Request Success!", 
-          description: `₹${withdrawAmount} deducted. Settlement starts now.` 
+          description: `₹${withdrawAmount} deducted. Expected payout in 24 hours.` 
         });
         setAmount("");
         setUpiId("");
@@ -115,7 +115,7 @@ export default function WalletPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="mt-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Verifying Payout Ledger...</p>
+          <p className="mt-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Syncing Ledger...</p>
         </div>
       </div>
     );
@@ -133,7 +133,7 @@ export default function WalletPage() {
           </Link>
           <div>
             <h1 className="text-4xl font-black italic tracking-tighter">Karbi <span className="text-primary not-italic">Wallet</span></h1>
-            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">1 Karbi Coin = ₹1 Indian Rupee</p>
+            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">1 Coin = ₹1 Indian Rupee</p>
           </div>
         </div>
 
@@ -144,13 +144,13 @@ export default function WalletPage() {
                 <Wallet className="w-32 h-32" />
               </div>
               <CardContent className="p-10 relative z-10">
-                <p className="text-primary-foreground/80 font-black uppercase tracking-widest text-[10px] mb-2">Available Balance</p>
+                <p className="text-primary-foreground/80 font-black uppercase tracking-widest text-[10px] mb-2">Total Balance</p>
                 <h2 className="text-6xl font-black mb-8 flex items-center gap-2">
                   ₹{profile?.walletBalance || 0}
                   <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
                 </h2>
                 <div className="flex items-center gap-2 bg-white/10 px-5 py-3 rounded-xl border border-white/10 backdrop-blur-sm">
-                  <Clock className="w-5 h-5 text-white animate-spin-slow" />
+                  <Clock className="w-5 h-5 text-white" />
                   <p className="text-[10px] font-black uppercase tracking-widest leading-none">Settlement Promise: 24 Hours</p>
                 </div>
               </CardContent>
@@ -160,12 +160,16 @@ export default function WalletPage() {
               <CardHeader className="p-0 mb-8">
                 <CardTitle className="text-2xl font-black flex items-center gap-3">
                   <ArrowUpRight className="w-7 h-7 text-primary" />
-                  Request Success Payout
+                  Request Payout
                 </CardTitle>
+                <div className="flex items-start gap-2 bg-muted/50 p-3 rounded-xl mt-2">
+                  <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase">Withdrawal requests are processed manually within 24 hours to your UPI ID.</p>
+                </div>
               </CardHeader>
               <form onSubmit={handleWithdraw} className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Cash Amount (₹)</Label>
+                  <Label className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Amount to withdraw (₹)</Label>
                   <Input 
                     type="number" 
                     placeholder="Min ₹10" 
@@ -176,9 +180,9 @@ export default function WalletPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Destination UPI ID</Label>
+                  <Label className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Your UPI ID (PhonePe/GPay)</Label>
                   <Input 
-                    placeholder="e.g. username@upi" 
+                    placeholder="e.g. mobileNumber@ybl" 
                     value={upiId} 
                     onChange={e => setUpiId(e.target.value)}
                     className="h-16 rounded-2xl font-black bg-muted/30 border-2 focus:border-primary transition-all text-lg"
@@ -186,12 +190,12 @@ export default function WalletPage() {
                   />
                 </div>
                 <Button className="w-full h-18 rounded-2xl font-black text-xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all py-8" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Initiate Withdrawal"}
+                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Initiate 24H Payout"}
                 </Button>
                 <div className="bg-primary/5 p-5 rounded-2xl border border-primary/20 flex items-start gap-3">
                    <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                    <p className="text-[10px] font-black text-primary uppercase leading-normal tracking-wider">
-                     Verification starts immediately. Our admin will transfer the funds to your UPI account within 24 hours.
+                     Secure verification system active. 100% Guaranteed payout.
                    </p>
                 </div>
               </form>
@@ -203,7 +207,7 @@ export default function WalletPage() {
               <div className="flex items-center justify-between mb-10">
                 <h3 className="text-2xl font-black flex items-center gap-3 italic">
                   <History className="w-7 h-7 text-primary not-italic" />
-                  Success Ledger
+                  Payout Ledger
                 </h3>
                 <Badge variant="outline" className="rounded-full px-5 py-1.5 font-black text-[10px] border-primary/30 text-primary uppercase">
                   {withdrawals.length} Entries
@@ -213,12 +217,12 @@ export default function WalletPage() {
               {historyLoading ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-4">
                   <Loader2 className="animate-spin text-primary w-12 h-12" />
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Syncing Ledger...</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Syncing History...</p>
                 </div>
               ) : withdrawals.length === 0 ? (
                 <div className="text-center py-32 bg-muted/10 rounded-[3rem] border-2 border-dashed flex flex-col items-center">
                   <Zap className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
-                  <p className="font-black text-muted-foreground uppercase text-xs tracking-widest italic">No requests recorded.</p>
+                  <p className="font-black text-muted-foreground uppercase text-xs tracking-widest italic">No payout history yet.</p>
                 </div>
               ) : (
                 <div className="space-y-5">

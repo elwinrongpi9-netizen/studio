@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap, TrendingUp } from "lucide-react";
+import { ShieldCheck, Edit2, Loader2, Save, X, Globe, Shield, ArrowDownToLine, Banknote, User, CheckCircle2, Copy, ShieldAlert, Zap, TrendingUp, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -53,7 +53,7 @@ export default function AdminPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest">Syncing Command Center...</p>
+          <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest">Syncing Master Node...</p>
         </div>
       </div>
     );
@@ -65,9 +65,9 @@ export default function AdminPage() {
         <Navbar />
         <div className="flex-1 container mx-auto px-4 py-20 text-center">
           <ShieldAlert className="w-20 h-20 text-destructive mx-auto mb-6" />
-          <h1 className="text-4xl font-black mb-4 uppercase italic tracking-tighter">Unauthorized Access</h1>
-          <p className="text-muted-foreground mb-8 font-medium">This cockpit is restricted to: <span className="text-foreground font-black">{ADMIN_EMAIL}</span></p>
-          <Button onClick={() => router.push("/")} className="rounded-2xl px-12 h-14 font-black uppercase tracking-widest shadow-xl">Return to Base</Button>
+          <h1 className="text-4xl font-black mb-4 uppercase italic tracking-tighter">Access Denied</h1>
+          <p className="text-muted-foreground mb-8 font-medium">This terminal is only for: <span className="text-foreground font-black">{ADMIN_EMAIL}</span></p>
+          <Button onClick={() => router.push("/")} className="rounded-2xl px-12 h-14 font-black uppercase tracking-widest shadow-xl">Return Home</Button>
         </div>
       </div>
     );
@@ -103,7 +103,7 @@ export default function AdminPage() {
       .then(() => {
         toast({ 
           title: `Success!`, 
-          description: status === 'Completed' ? "Payment marked as success. Ledger updated." : "Request rejected.",
+          description: status === 'Completed' ? "Request marked as paid. User ledger updated." : "Request rejected.",
           variant: status === 'Completed' ? "default" : "destructive"
         });
       })
@@ -119,7 +119,7 @@ export default function AdminPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "UPI Copied!", description: "Paste it in PhonePe to pay the user now." });
+    toast({ title: "UPI Copied!", description: "Paste it in your UPI app to pay the user now." });
   };
 
   return (
@@ -130,9 +130,9 @@ export default function AdminPage() {
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4 text-foreground">
               <ShieldCheck className="w-12 h-12 text-primary" />
-              Admin Control
+              Owner Terminal
             </h1>
-            <p className="text-muted-foreground font-bold mt-2 uppercase text-[10px] tracking-widest">Master Dashboard for Payout Management</p>
+            <p className="text-muted-foreground font-bold mt-2 uppercase text-[10px] tracking-widest">Manage Restaurant Listings and User Payouts</p>
           </div>
           <div className="flex gap-4">
             <div className="bg-primary/5 px-6 py-4 rounded-2xl border-2 border-primary/10 flex flex-col items-end gap-1">
@@ -153,17 +153,17 @@ export default function AdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="restaurants" className="rounded-xl font-black px-8 h-12 transition-all">Listings</TabsTrigger>
-            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway Status</TabsTrigger>
+            <TabsTrigger value="config" className="rounded-xl font-black px-8 h-12 transition-all">Gateway Config</TabsTrigger>
           </TabsList>
 
           <TabsContent value="withdrawals">
             <div className="space-y-6">
               <div className="bg-primary/5 p-8 rounded-[2.5rem] border-2 border-primary/10 flex items-center gap-6 relative overflow-hidden group">
-                <Shield className="w-12 h-12 text-primary opacity-20 group-hover:scale-110 transition-transform" />
+                <Info className="w-12 h-12 text-primary opacity-20 group-hover:scale-110 transition-transform" />
                 <div className="relative z-10">
-                  <h4 className="font-black text-sm uppercase tracking-widest mb-1">Settlement Protocol:</h4>
+                  <h4 className="font-black text-sm uppercase tracking-widest mb-1">Manual Payout Guide:</h4>
                   <p className="text-[11px] font-bold text-muted-foreground uppercase leading-relaxed max-w-2xl">
-                    Copy UPI ID -> Pay using PhonePe/GPay -> Mark "Paid" here. This will update the user's ledger and confirm success.
+                    1. Copy User's UPI ID. 2. Open PhonePe/GPay and pay the amount. 3. Click "Success (Mark Paid)" here to update user's history.
                   </p>
                 </div>
               </div>
@@ -286,26 +286,26 @@ export default function AdminPage() {
             <Card className="border-4 border-primary/20 bg-primary/[0.03] rounded-[4rem] p-12 shadow-2xl max-w-3xl">
               <CardTitle className="text-4xl font-black italic tracking-tighter flex items-center gap-4 mb-8">
                 <Globe className="w-12 h-12 text-primary" />
-                PhonePe Gateway Match
+                PhonePe Gateway Status
               </CardTitle>
               <div className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Merchant Category</Label>
-                    <p className="font-black text-2xl text-primary italic">MC 5812 (Matched)</p>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Merchant ID</Label>
+                    <p className="font-black text-2xl text-primary italic">Q297152786@ybl</p>
                   </div>
                   <div className="bg-white p-8 rounded-3xl border-2 shadow-sm">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Transaction Mode</Label>
-                    <p className="font-black text-2xl text-foreground italic">Mode 02 (Secure)</p>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] block mb-2">Settlement Mode</Label>
+                    <p className="font-black text-2xl text-foreground italic">Mode 02 (Business)</p>
                   </div>
                 </div>
                 
                 <div className="bg-white p-8 rounded-[2.5rem] border-2 border-dashed border-primary/20">
                   <h4 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-primary" /> Settlement Logic Verified
+                    <Shield className="w-5 h-5 text-primary" /> Automated Reconciliation Active
                   </h4>
                   <p className="text-xs font-bold text-muted-foreground uppercase leading-relaxed tracking-tight">
-                    Every QR generated is strictly matched with Merchant ID Q297152786@ybl. This ensures payments reach your PhonePe Business account directly. Withdrawal requests are separate and require manual bank transfer from the owner to ensure high security and zero automated fraud risks.
+                    Every payment scanned via QR code in this app is tagged with Merchant Category Code 5812. This ensures the funds go directly to your PhonePe Business account linked with your Merchant ID. Withdrawal requests are manual to ensure 100% bank-verified payouts to users.
                   </p>
                 </div>
               </div>
