@@ -13,7 +13,7 @@ import { useFirestore, useUser } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
@@ -52,6 +52,22 @@ export default function CartPage() {
   const deliveryFee = subtotal > 0 ? 40 : 0;
   const platformFee = subtotal > 0 ? 5 : 0;
   const total = subtotal + deliveryFee + platformFee;
+
+  // Generate a valid UPI Payment URI
+  const upiUrl = useMemo(() => {
+    const baseUrl = "upi://pay";
+    const params = new URLSearchParams({
+      pa: MERCHANT_UPI_ID,
+      pn: MERCHANT_NAME,
+      am: total.toFixed(2),
+      cu: "INR",
+      tn: "Food Order - zomatokarbi.com"
+    });
+    return `${baseUrl}?${params.toString()}`;
+  }, [total]);
+
+  // QR Code generator URL (must double encode the data parameter)
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiUrl)}`;
 
   const processOrder = async (confirmedPayment = false) => {
     if (!user) {
@@ -114,7 +130,6 @@ export default function CartPage() {
       setShowQrModal(true);
     } else {
       setIsPlacingOrder(true);
-      // Simulate general payment gateway
       setTimeout(() => {
         processOrder(true);
       }, 1500);
@@ -297,7 +312,7 @@ export default function CartPage() {
 
             <div className="relative w-64 h-64 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
               <Image 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${total}&cu=INR`} 
+                src={qrCodeUrl} 
                 alt="Payment QR Code" 
                 fill 
                 className="object-contain p-2"
@@ -334,7 +349,7 @@ export default function CartPage() {
             </div>
             
             <p className="text-[9px] text-muted-foreground text-center font-bold opacity-60">
-              Supports all UPI apps: GPay, PhonePe, Paytm, Amazon Pay
+              Supports all UPI apps: PhonePe, GPay, Paytm, Amazon Pay
             </p>
           </div>
         </DialogContent>
