@@ -56,9 +56,9 @@
       "imageHint": "butter chicken"
     },
     {
-      "id": "qr-code",
-      "description": "Payment QR Code",
-      "imageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=zomatokarbi@okicici&pn=Zomato%20Karbi&cu=INR",
+      "id": "payment-qr-merchant",
+      "description": "Speaker Shop Merchant Payment QR",
+      "imageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=zomatokarbi@okicici&pn=Speaker%20Shop&cu=INR",
       "imageHint": "qr code"
     }
   ]

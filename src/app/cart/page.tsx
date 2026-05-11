@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2, Smartphone, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, X } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Loader2, Smartphone, Building2, Wallet, ShieldCheck, CheckCircle, QrCode, X, Info } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -23,9 +23,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Change this to your real Merchant UPI ID
+const MERCHANT_UPI_ID = "zomatokarbi@okicici";
+const MERCHANT_NAME = "Speaker Shop & Zomato Karbi";
 
 const PAYMENT_METHODS = [
-  { id: 'upi', name: 'Scan UPI QR Code', icon: <QrCode className="w-4 h-4" /> },
+  { id: 'upi', name: 'Scan & Pay (UPI QR)', icon: <QrCode className="w-4 h-4" /> },
   { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard className="w-4 h-4" /> },
   { id: 'netbanking', name: 'Net Banking', icon: <Building2 className="w-4 h-4" /> },
   { id: 'cod', name: 'Cash on Delivery', icon: <Wallet className="w-4 h-4" /> },
@@ -257,12 +262,12 @@ export default function CartPage() {
                         <span>Processing...</span>
                       </div>
                     ) : (
-                      paymentMethod === 'upi' ? 'Scan & Pay' : 'Place Order'
+                      paymentMethod === 'upi' ? 'Scan & Pay Now' : 'Place Order'
                     )}
                   </Button>
                   <div className="flex items-center justify-center gap-2 mt-6 text-[10px] text-muted-foreground font-bold uppercase tracking-widest text-center">
                     <ShieldCheck className="w-3 h-3 text-primary" />
-                    100% Secure Checkout
+                    100% Secure Transaction
                   </div>
                 </div>
               </div>
@@ -273,48 +278,64 @@ export default function CartPage() {
 
       {/* UPI QR Modal */}
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="sm:max-w-[400px] rounded-3xl p-8">
-          <DialogHeader className="mb-6">
+        <DialogContent className="sm:max-w-[420px] rounded-3xl p-8 overflow-hidden">
+          <DialogHeader className="mb-4">
             <DialogTitle className="text-3xl font-black text-center">Scan to Pay</DialogTitle>
-            <DialogDescription className="text-center font-medium">
-              Scan the QR code below using any UPI app (GPay, PhonePe, etc.)
+            <DialogDescription className="text-center font-bold text-muted-foreground">
+              Merchant: <span className="text-primary">{MERCHANT_NAME}</span>
             </DialogDescription>
           </DialogHeader>
           
           <div className="flex flex-col items-center gap-6">
-            <div className="relative w-64 h-64 bg-white p-4 rounded-3xl shadow-xl border-4 border-primary/20">
+            <Alert className="bg-primary/5 border-primary/20 rounded-2xl py-2">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertTitle className="text-xs font-black uppercase tracking-tight">Payment Tip</AlertTitle>
+              <AlertDescription className="text-[10px] font-medium">
+                Amount and Merchant details are pre-filled in the QR. Just scan and confirm.
+              </AlertDescription>
+            </Alert>
+
+            <div className="relative w-64 h-64 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
               <Image 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=zomatokarbi@okicici&pn=Zomato%20Karbi&am=${total}&cu=INR`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${total}&cu=INR`} 
                 alt="Payment QR Code" 
                 fill 
                 className="object-contain p-2"
+                unoptimized
               />
             </div>
             
             <div className="text-center space-y-2">
-              <p className="text-2xl font-black text-primary">₹{total.toFixed(0)}</p>
-              <p className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Payable to: Zomato Karbi</p>
+              <p className="text-3xl font-black text-primary">₹{total.toFixed(0)}</p>
+              <div className="flex items-center justify-center gap-2 bg-muted/50 px-4 py-1.5 rounded-full">
+                <Smartphone className="w-3.5 h-3.5 text-muted-foreground" />
+                <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase">{MERCHANT_UPI_ID}</p>
+              </div>
             </div>
 
-            <div className="w-full space-y-3 pt-4">
+            <div className="w-full space-y-3 pt-2">
               <Button 
-                className="w-full py-6 rounded-xl font-black text-lg shadow-lg"
+                className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 transition-all"
                 onClick={() => {
                   setShowQrModal(false);
                   setIsPlacingOrder(true);
-                  setTimeout(() => processOrder(true), 1000);
+                  setTimeout(() => processOrder(true), 1200);
                 }}
               >
-                I have paid
+                I have paid ₹{total.toFixed(0)}
               </Button>
               <Button 
                 variant="ghost" 
-                className="w-full rounded-xl text-muted-foreground font-bold"
+                className="w-full rounded-2xl text-muted-foreground font-bold hover:bg-transparent"
                 onClick={() => setShowQrModal(false)}
               >
-                Cancel
+                Go Back
               </Button>
             </div>
+            
+            <p className="text-[9px] text-muted-foreground text-center font-bold opacity-60">
+              Supports all UPI apps: GPay, PhonePe, Paytm, Amazon Pay
+            </p>
           </div>
         </DialogContent>
       </Dialog>
