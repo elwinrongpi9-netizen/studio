@@ -25,10 +25,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// MERCHANT DETAILS
+// MERCHANT DETAILS - Exact as per PhonePe Business
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese Wok";
-const MERCHANT_CODE = "5812"; 
+const MERCHANT_CODE = "5812"; // MC Code for Eating Places
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'Scan & Pay (UPI QR)', icon: <QrCode className="w-4 h-4" /> },
@@ -69,14 +69,17 @@ export default function CartPage() {
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `ZK${Date.now().toString().slice(-10)}`; 
-    const tn = encodeURIComponent("ZomatoKarbi Order Payment");
+    // Simple unique transaction ID
+    const tr = `ZK${Date.now().toString().slice(-8)}`; 
+    const tn = encodeURIComponent(`Order from ${user?.displayName || 'User'}`);
     
-    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
-  }, [total]);
+    // Optimized for PhonePe Business (pa, pn, mc, tr, tn, am, cu, mode)
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
+  }, [total, user]);
 
   const qrCodeUrl = useMemo(() => {
-    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H`;
+    // High quality QR encoding for clear scanning
+    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=M|2`;
   }, [upiUrl]);
 
   useEffect(() => {
@@ -117,23 +120,24 @@ export default function CartPage() {
       walletUsed: walletDeduction
     };
 
-    // Deduct from real wallet if used
-    if (walletDeduction > 0) {
+    if (walletDeduction > 0 && firestore) {
       updateDoc(doc(firestore, "users", user.uid), {
         walletBalance: increment(-walletDeduction)
       });
     }
 
-    const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
-    setDoc(orderRef, orderData)
-      .catch(async () => {
-        const permissionError = new FirestorePermissionError({
-          path: orderRef.path,
-          operation: "create",
-          requestResourceData: orderData,
+    if (firestore) {
+      const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
+      setDoc(orderRef, orderData)
+        .catch(async () => {
+          const permissionError = new FirestorePermissionError({
+            path: orderRef.path,
+            operation: "create",
+            requestResourceData: orderData,
+          });
+          errorEmitter.emit("permission-error", permissionError);
         });
-        errorEmitter.emit("permission-error", permissionError);
-      });
+    }
 
     clearCart();
     toast({

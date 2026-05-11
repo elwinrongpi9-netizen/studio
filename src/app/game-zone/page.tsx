@@ -21,7 +21,7 @@ import {
 const FOOD_ITEMS = ["🥟", "🍕", "🍔", "🍣", "🍛", "🍩", "🍦"];
 const COLORS = ["bg-primary", "bg-accent", "bg-orange-500", "bg-green-500", "bg-yellow-500"];
 
-// UPDATED MERCHANT DETAILS from the provided screenshot
+// MERCHANT DETAILS
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese Wok";
 const MERCHANT_CODE = "5812";
@@ -46,21 +46,22 @@ export default function GameZonePage() {
   const [isSaving, setIsSaving] = useState(false);
   const gameAreaRef = useRef<HTMLDivElement>(null);
 
-  // 10 points = 1 Coin = ₹1
   const earnedCoins = Math.floor(score / 10); 
 
   const upiUrl = useMemo(() => {
-    const amount = "100.00"; // Fixed Gamer Combo Price
+    const amount = "100.00"; 
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
     const mc = MERCHANT_CODE;
-    const tr = `GAME${Date.now().toString().slice(-10)}`;
-    const tn = encodeURIComponent("ZomatoKarbi Gamer Combo Payment");
-    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&am=${amount}&cu=INR&tr=${tr}&tn=${tn}&mode=02&purpose=00`;
-  }, []);
+    const tr = `GAME${Date.now().toString().slice(-8)}`;
+    const tn = encodeURIComponent(`Gamer Combo - ${user?.displayName || 'User'}`);
+    
+    // Standard PhonePe Business URI
+    return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tr=${tr}&tn=${tn}&am=${amount}&cu=INR&mode=02`;
+  }, [user]);
 
   const qrCodeUrl = useMemo(() => {
-    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H`;
+    return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=M|2`;
   }, [upiUrl]);
 
   useEffect(() => {
@@ -117,7 +118,7 @@ export default function GameZonePage() {
 
   const handleGameOver = async () => {
     setGameState("gameover");
-    if (user && earnedCoins > 0) {
+    if (user && firestore && earnedCoins > 0) {
       setIsSaving(true);
       try {
         await updateDoc(doc(firestore, "users", user.uid), {
