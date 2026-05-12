@@ -16,7 +16,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import Link from "next/link";
-import { useUser, useFirestore, useDoc } from "@/firebase";
+import { useUser, useFirestore, useDoc, useAuth } from "@/firebase";
 import { doc, increment, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ const ADMIN_EMAIL = "elwinrongpi9@gmail.com";
 
 export default function WingoPage() {
   const { user } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   
@@ -49,7 +50,6 @@ export default function WingoPage() {
   const [isBetting, setIsBetting] = useState(false);
   const [activeBets, setActiveBets] = useState<{ type: BetType; amount: number }[]>([]);
   
-  // Use a ref to always have the latest bets available in the timer-triggered function
   const activeBetsRef = useRef<{ type: BetType; amount: number }[]>([]);
   useEffect(() => {
     activeBetsRef.current = activeBets;
@@ -94,7 +94,6 @@ export default function WingoPage() {
   }, []);
 
   useEffect(() => {
-    // Round transition at 00 seconds (which translates to timeLeft being 60)
     if (timeLeft === 60) {
       handleRoundEnd();
     }
@@ -133,13 +132,16 @@ export default function WingoPage() {
     setHistory(prev => [result, ...prev].slice(0, 10));
     setPeriodId(generatePeriodId());
 
-    // Process Payouts using the Ref
+    // Process Payouts
     const betsToProcess = activeBetsRef.current;
-    if (betsToProcess.length > 0 && user) {
+    const currentUser = auth.currentUser;
+
+    if (betsToProcess.length > 0 && currentUser) {
       let totalWinning = 0;
       betsToProcess.forEach(bet => {
         if (typeof bet.type === 'number') {
-          if (bet.type === winNumber) totalWinning += bet.amount * 9;
+          // 9x profit for exact number match
+          if (Number(bet.type) === winNumber) totalWinning += bet.amount * 9;
         } else if (bet.type === 'big' || bet.type === 'small') {
           if ((bet.type === 'big' && winSize === 'Big') || (bet.type === 'small' && winSize === 'Small')) {
             totalWinning += bet.amount * 2;
@@ -150,24 +152,25 @@ export default function WingoPage() {
       });
 
       if (totalWinning > 0) {
-        const uRef = doc(firestore, "users", user.uid);
-        updateDoc(uRef, {
+        const uRef = doc(firestore, "users", currentUser.uid);
+        // Use setDoc with merge to ensure wallet document is updated correctly
+        setDoc(uRef, {
           walletBalance: increment(totalWinning)
-        })
+        }, { merge: true })
         .then(() => {
           toast({
             title: "VICTORY! 🎉",
-            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added to wallet.`,
+            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added to wallet!`,
             className: "bg-green-600 text-white font-black"
           });
         })
         .catch((err) => {
-          const permissionError = new FirestorePermissionError({
+          console.error("Payout failed", err);
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: uRef.path,
             operation: 'update',
             requestResourceData: { walletBalance: totalWinning },
-          });
-          errorEmitter.emit('permission-error', permissionError);
+          }));
         });
       } else {
         toast({
