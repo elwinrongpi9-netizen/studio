@@ -135,16 +135,15 @@ export default function WingoPage() {
     if (lastProcessedPeriod.current === finishedPeriod) return;
     lastProcessedPeriod.current = finishedPeriod;
     
-    setIsCalculating(true);
-    
-    // Take snapshot of current bets immediately
+    // 1. CAPTURE BETS IMMEDIATELY
     const betsToProcess = [...activeBetsRef.current];
-    // Clear for next round
     setActiveBets([]);
     activeBetsRef.current = [];
 
-    let winNumber = Math.floor(Math.random() * 10);
+    setIsCalculating(true);
     
+    // 2. DETERMINE WINNING NUMBER (FAST SYNC)
+    let winNumber = Math.floor(Math.random() * 10);
     try {
       const controlRef = doc(firestore, "wingoConfig", finishedPeriod);
       const controlSnap = await getDoc(controlRef);
@@ -162,81 +161,77 @@ export default function WingoPage() {
     const winSize = getSizeForNumber(winNumber);
     const result: GameResult = { periodId: finishedPeriod, number: winNumber, colors: winColors, size: winSize };
 
-    // Update public trend history
+    // 3. UPDATE PUBLIC HISTORY
     setHistory(prev => [result, ...prev].slice(0, 15));
 
-    // Fast Result Processing (~500ms delay for UI feeling)
-    setTimeout(async () => {
-      if (user && firestore) {
-        let totalWinning = 0;
-        const uRef = doc(firestore, "users", user.uid);
+    // 4. PROCESS PAYOUTS (INSTANT PLUS)
+    if (user && firestore && betsToProcess.length > 0) {
+      let totalWinning = 0;
+      const uRef = doc(firestore, "users", user.uid);
 
-        if (betsToProcess.length > 0) {
-          for (const bet of betsToProcess) {
-            let isWin = false;
-            let profit = 0;
+      for (const bet of betsToProcess) {
+        let isWin = false;
+        let profit = 0;
 
-            // Robust matching logic for 9x Numbers, 2x Colors/Size
-            if (typeof bet.type === 'number' || !isNaN(Number(bet.type))) {
-              if (Number(bet.type) === winNumber) {
-                profit = bet.amount * 9; 
-                isWin = true;
-              }
-            } else if (bet.type === 'big' || bet.type === 'small') {
-              if ((bet.type === 'big' && winSize === 'Big') || (bet.type === 'small' && winSize === 'Small')) {
-                profit = bet.amount * 2; 
-                isWin = true;
-              }
-            } else {
-              if (winColors.includes(bet.type as any)) {
-                profit = bet.amount * 2; 
-                isWin = true;
-              }
-            }
-
-            if (isWin) totalWinning += profit;
-
-            // Record this specific bet result in user's subcollection
-            const betId = Math.random().toString(36).substr(2, 9).toUpperCase();
-            const betRef = doc(firestore, "users", user.uid, "bets", betId);
-            setDoc(betRef, {
-              periodId: finishedPeriod,
-              type: bet.type,
-              amount: bet.amount,
-              winAmount: isWin ? profit : 0,
-              status: isWin ? "Win" : "Loss",
-              resultNumber: winNumber,
-              createdAt: new Date().toISOString()
-            }, { merge: true });
+        // Multiplier Logic: Numbers 9x, Color/Size 2x
+        if (typeof bet.type === 'number' || !isNaN(Number(bet.type))) {
+          if (Number(bet.type) === winNumber) {
+            profit = bet.amount * 9; 
+            isWin = true;
           }
-
-          if (totalWinning > 0) {
-            const finalProfit = totalWinning;
-            // Atomic Update: Guaranteed Balance PLUS
-            setDoc(uRef, { walletBalance: increment(finalProfit) }, { merge: true })
-              .then(() => {
-                setWinningStats({ amount: finalProfit, result });
-                setShowWinPopup(true);
-              })
-              .catch(err => {
-                const permissionError = new FirestorePermissionError({
-                  path: uRef.path,
-                  operation: 'update',
-                  requestResourceData: { walletBalance: finalProfit },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-              });
-          } else {
-            toast({
-              title: "Better luck next time!",
-              description: `Round #${finishedPeriod} result was ${winNumber} (${winSize})`,
-              variant: "destructive"
-            });
+        } else if (bet.type === 'big' || bet.type === 'small') {
+          if ((bet.type === 'big' && winSize === 'Big') || (bet.type === 'small' && winSize === 'Small')) {
+            profit = bet.amount * 2; 
+            isWin = true;
+          }
+        } else {
+          if (winColors.includes(bet.type as any)) {
+            profit = bet.amount * 2; 
+            isWin = true;
           }
         }
+
+        if (isWin) totalWinning += profit;
+
+        // Record bet result in user's subcollection
+        const betId = Math.random().toString(36).substr(2, 9).toUpperCase();
+        const betRef = doc(firestore, "users", user.uid, "bets", betId);
+        setDoc(betRef, {
+          periodId: finishedPeriod,
+          type: bet.type,
+          amount: bet.amount,
+          winAmount: isWin ? profit : 0,
+          status: isWin ? "Win" : "Loss",
+          resultNumber: winNumber,
+          createdAt: new Date().toISOString()
+        }, { merge: true });
       }
-      setIsCalculating(false);
-    }, 500); 
+
+      if (totalWinning > 0) {
+        // ATOMIC WALLET PLUS (NO ARTIFICIAL DELAY)
+        setDoc(uRef, { walletBalance: increment(totalWinning) }, { merge: true })
+          .then(() => {
+            setWinningStats({ amount: totalWinning, result });
+            setShowWinPopup(true);
+          })
+          .catch(err => {
+            const permissionError = new FirestorePermissionError({
+              path: uRef.path,
+              operation: 'update',
+              requestResourceData: { walletBalance: totalWinning },
+            });
+            errorEmitter.emit('permission-error', permissionError);
+          });
+      } else {
+        toast({
+          title: "Round Result",
+          description: `Period #${finishedPeriod}: The result was ${winNumber} (${winSize})`,
+          variant: "destructive"
+        });
+      }
+    }
+    
+    setIsCalculating(false);
   };
 
   const placeBet = async (type: BetType) => {
@@ -246,7 +241,7 @@ export default function WingoPage() {
     }
     
     if (timeLeft <= 5) {
-      toast({ title: "Round Locked", description: "Wait for the next round to start.", variant: "destructive" });
+      toast({ title: "Round Locked", description: "Wait for the next round to shuru.", variant: "destructive" });
       return;
     }
     
@@ -264,7 +259,7 @@ export default function WingoPage() {
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
     
-    // Deduct stake immediately (Atomic)
+    // INSTANT DEDUCTION (ATOMIC CUT)
     setDoc(uRef, { walletBalance: increment(-betAmount) }, { merge: true })
       .then(() => {
         const newBet = { type, amount: betAmount };
@@ -288,6 +283,7 @@ export default function WingoPage() {
     <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-body">
       <Navbar />
       
+      {/* Header Area */}
       <div className="bg-primary text-white p-6 pb-20 rounded-b-[5rem] shadow-2xl relative">
         <div className="container mx-auto max-w-2xl flex items-center justify-between mb-8">
           <Link href="/">
@@ -304,6 +300,7 @@ export default function WingoPage() {
           </div>
         </div>
 
+        {/* Timer Card */}
         <div className="container mx-auto max-w-2xl bg-white rounded-[4rem] p-12 shadow-2xl flex justify-between items-center text-foreground relative z-10 border-b-[12px] border-primary/10">
           <div className="space-y-1">
             <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.4em] opacity-60">Issue ID</p>
@@ -427,7 +424,7 @@ export default function WingoPage() {
           </div>
         )}
 
-        {/* Trend & My History Tabs */}
+        {/* History Tabs */}
         <Tabs defaultValue="records" className="space-y-10">
           <TabsList className="bg-white p-3 rounded-[3rem] h-24 w-full shadow-2xl border-b-8 border-muted ring-1 ring-black/5">
             <TabsTrigger value="records" className="rounded-[2.2rem] font-black flex-1 h-18 uppercase text-[12px] tracking-[0.3em] data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">Round Trend</TabsTrigger>
@@ -523,13 +520,13 @@ export default function WingoPage() {
         </Tabs>
       </main>
 
-      {/* WINNING POPUP OVERLAY */}
+      {/* CONGRATULATIONS POPUP */}
       <Dialog open={showWinPopup} onOpenChange={setShowWinPopup}>
         <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-transparent border-none shadow-none focus:outline-none z-[100] rounded-none">
           <div className="relative flex flex-col items-center pt-32 pb-20 px-10">
              <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl -z-10 rounded-[6rem] ring-4 ring-yellow-500/20" />
              
-             {/* Trophy Head */}
+             {/* Trophy Icon */}
              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 pointer-events-none">
                <div className="absolute inset-0 bg-yellow-400/40 rounded-full animate-ping duration-1000" />
                <div className="relative w-full h-full bg-gradient-to-b from-yellow-100 via-yellow-500 to-yellow-900 rounded-full shadow-[0_0_120px_rgba(234,179,8,0.6)] border-[12px] border-yellow-200/50 flex items-center justify-center overflow-hidden">
@@ -573,7 +570,7 @@ export default function WingoPage() {
              <div className="bg-[#050505] w-full p-10 rounded-b-[4rem] text-center border-x-4 border-b-4 border-yellow-500/40 mb-12 shadow-2xl">
                 <p className="text-[11px] font-black text-gray-800 uppercase tracking-[0.4em] flex items-center justify-center gap-5">
                   <Sparkles className="w-5 h-5 text-yellow-500/10" />
-                  Period ID: {winningStats.result?.periodId}
+                  Issue ID: {winningStats.result?.periodId}
                   <Sparkles className="w-5 h-5 text-yellow-500/10" />
                 </p>
              </div>
@@ -605,4 +602,3 @@ export default function WingoPage() {
       });
   }
 }
-
