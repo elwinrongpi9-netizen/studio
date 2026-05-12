@@ -32,6 +32,8 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 type BetType = "green" | "red" | "violet" | "big" | "small" | number;
 
@@ -76,10 +78,6 @@ export default function WingoPage() {
   
   const activeBetsRef = useRef<{ type: BetType; amount: number }[]>([]);
   const lastProcessedPeriod = useRef("");
-
-  useEffect(() => {
-    activeBetsRef.current = activeBets;
-  }, [activeBets]);
 
   const [adminTargetNumber, setAdminTargetNumber] = useState("");
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -139,7 +137,9 @@ export default function WingoPage() {
     
     setIsCalculating(true);
     
+    // Critical: Snapshot pichle round ki bets
     const betsToProcess = [...activeBetsRef.current];
+    // Clear for naya round
     setActiveBets([]);
     activeBetsRef.current = [];
 
@@ -164,7 +164,7 @@ export default function WingoPage() {
 
     setHistory(prev => [result, ...prev].slice(0, 15));
 
-    // Dramatic delay for result opening
+    // Suspend for a bit before opening results
     setTimeout(async () => {
       if (user && firestore) {
         let totalWinning = 0;
@@ -175,7 +175,8 @@ export default function WingoPage() {
             let isWin = false;
             let profit = 0;
 
-            if (typeof bet.type === 'number') {
+            // Robust matching logic
+            if (typeof bet.type === 'number' || !isNaN(Number(bet.type))) {
               if (Number(bet.type) === winNumber) {
                 profit = bet.amount * 9; // 9x Payout for Numbers
                 isWin = true;
@@ -194,6 +195,7 @@ export default function WingoPage() {
 
             if (isWin) totalWinning += profit;
 
+            // Record pichli bet ka result
             const betId = Math.random().toString(36).substr(2, 9).toUpperCase();
             const betRef = doc(firestore, "users", user.uid, "bets", betId);
             setDoc(betRef, {
@@ -208,25 +210,32 @@ export default function WingoPage() {
           }
 
           if (totalWinning > 0) {
-            // Atomic Payout: Increase wallet balance
-            setDoc(uRef, { walletBalance: increment(totalWinning) }, { merge: true })
+            const finalProfit = totalWinning;
+            // Atomic Update: Guaranteed Coins Plus
+            setDoc(uRef, { walletBalance: increment(finalProfit) }, { merge: true })
               .then(() => {
-                setWinningStats({ amount: totalWinning, result });
+                setWinningStats({ amount: finalProfit, result });
                 setShowWinPopup(true);
               })
-              .catch(err => console.error("Wallet Payout Error:", err));
+              .catch(err => {
+                const permissionError = new FirestorePermissionError({
+                  path: uRef.path,
+                  operation: 'update',
+                  requestResourceData: { walletBalance: finalProfit },
+                });
+                errorEmitter.emit('permission-error', permissionError);
+              });
           } else {
             toast({
               title: "Better luck next time!",
-              description: `Round #${finishedPeriod} result: ${winNumber} (${winSize})`,
+              description: `Round #${finishedPeriod} result was ${winNumber} (${winSize})`,
               variant: "destructive"
             });
           }
         }
       }
       setIsCalculating(false);
-      setIsBetting(false); // Ensure UI unlocks for next round
-    }, 2500);
+    }, 2000);
   };
 
   const placeBet = async (type: BetType) => {
@@ -254,14 +263,14 @@ export default function WingoPage() {
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
     
-    // Deduct stake immediately
+    // Atomic stake deduction
     setDoc(uRef, { walletBalance: increment(-betAmount) }, { merge: true })
       .then(() => {
-        setActiveBets(prev => {
-          const newBets = [...prev, { type, amount: betAmount }];
-          activeBetsRef.current = newBets;
-          return newBets;
-        });
+        // Safe update: Ref first, then State
+        const newBet = { type, amount: betAmount };
+        activeBetsRef.current = [...activeBetsRef.current, newBet];
+        setActiveBets([...activeBetsRef.current]);
+        
         toast({ title: "Bet Placed! 🎉", description: `₹${betAmount} on ${type.toString().toUpperCase()}` });
       })
       .catch((err) => {
@@ -323,7 +332,7 @@ export default function WingoPage() {
                   <p className="text-3xl font-black text-primary uppercase tracking-[0.4em] animate-pulse">
                     {isLockTime ? "Locking bets..." : "Opening Result..."}
                   </p>
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Generating Random Payout ID</p>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Wingo Manual Gateway Syncing</p>
                 </div>
              </div>
           )}
