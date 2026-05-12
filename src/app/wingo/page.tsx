@@ -40,6 +40,7 @@ export default function WingoPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const auth = useAuth();
   
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
   const { data: profile } = useDoc<any>(userRef);
@@ -51,17 +52,13 @@ export default function WingoPage() {
   const [isBetting, setIsBetting] = useState(false);
   const [activeBets, setActiveBets] = useState<{ type: BetType; amount: number }[]>([]);
   
-  // Use ref to keep track of bets across timer cycles
+  // Use refs for stable access in async payout logic
   const activeBetsRef = useRef<{ type: BetType; amount: number }[]>([]);
-  const userRefForPayout = useRef<any>(null);
+  const lastProcessedPeriod = useRef("");
 
   useEffect(() => {
     activeBetsRef.current = activeBets;
   }, [activeBets]);
-
-  useEffect(() => {
-    userRefForPayout.current = user;
-  }, [user]);
 
   // Admin Controller State
   const [adminTargetNumber, setAdminTargetNumber] = useState("");
@@ -101,15 +98,17 @@ export default function WingoPage() {
   }, []);
 
   useEffect(() => {
-    if (timeLeft === 60) {
+    if (timeLeft === 60 && periodId && lastProcessedPeriod.current !== periodId) {
       handleRoundEnd();
     }
-  }, [timeLeft]);
+  }, [timeLeft, periodId]);
 
   const handleRoundEnd = async () => {
     if (!firestore || !periodId) return;
-
+    
     const currentPeriod = periodId;
+    lastProcessedPeriod.current = currentPeriod;
+    
     let winNumber = Math.floor(Math.random() * 10);
     
     // 1. Check for Admin Manual Override
@@ -139,9 +138,9 @@ export default function WingoPage() {
     setHistory(prev => [result, ...prev].slice(0, 10));
     setPeriodId(generatePeriodId());
 
-    // 2. Process Payouts
+    // 2. Process Payouts using latest bets from Ref
     const betsToProcess = activeBetsRef.current;
-    const currentUser = userRefForPayout.current;
+    const currentUser = auth.currentUser;
 
     if (betsToProcess.length > 0 && currentUser && firestore) {
       let totalWinning = 0;
@@ -166,7 +165,7 @@ export default function WingoPage() {
 
       if (totalWinning > 0) {
         const uRef = doc(firestore, "users", currentUser.uid);
-        // Guaranteed Plus in Wallet
+        // Guaranteed PLUS in Wallet using Atomic Increment
         setDoc(uRef, {
           walletBalance: increment(totalWinning)
         }, { merge: true })
@@ -178,12 +177,12 @@ export default function WingoPage() {
           });
         })
         .catch((err) => {
-          console.error("Payout failed:", err);
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
+          const permissionError = new FirestorePermissionError({
             path: uRef.path,
             operation: 'update',
             requestResourceData: { walletBalance: totalWinning },
-          }));
+          });
+          errorEmitter.emit('permission-error', permissionError);
         });
       } else {
         toast({
@@ -194,7 +193,7 @@ export default function WingoPage() {
       }
     }
     
-    // Clear bets for new round
+    // Clear bets for new round after processing
     setActiveBets([]);
     activeBetsRef.current = [];
   };
@@ -224,7 +223,11 @@ export default function WingoPage() {
       walletBalance: increment(-betAmount)
     })
     .then(() => {
-      setActiveBets(prev => [...prev, { type, amount: betAmount }]);
+      setActiveBets(prev => {
+        const newBets = [...prev, { type, amount: betAmount }];
+        activeBetsRef.current = newBets;
+        return newBets;
+      });
       toast({ 
         title: "Bet Success", 
         description: `₹${betAmount} on ${typeof type === 'string' ? type.toUpperCase() : `Number ${type}`}` 
@@ -245,7 +248,6 @@ export default function WingoPage() {
       return;
     }
 
-    // Direct result setting (No spinner)
     const configRef = doc(firestore, "wingoConfig", periodId);
     setDoc(configRef, {
       periodId: periodId,
