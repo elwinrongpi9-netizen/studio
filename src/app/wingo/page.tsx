@@ -18,8 +18,7 @@ import {
   X,
   Sparkles,
   Clock,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useCollection, useDoc } from "@/firebase";
@@ -54,7 +53,6 @@ export default function WingoPage() {
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
   const { data: profile } = useDoc<any>(userRef);
 
-  // User Bet History
   const userBetsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
@@ -102,78 +100,62 @@ export default function WingoPage() {
     return dateStr + totalMinutes.toString().padStart(4, '0');
   };
 
+  // Timer & Period Sync
   useEffect(() => {
-    setPeriodId(generatePeriodId());
-    const syncTimer = () => {
+    const interval = setInterval(() => {
       const now = new Date();
       const seconds = now.getSeconds();
-      const currentSecondsLeft = 60 - seconds;
-      setTimeLeft(currentSecondsLeft);
+      const currentPeriod = generatePeriodId(now);
       
-      if (seconds === 0) {
-        setPeriodId(generatePeriodId(now));
+      setTimeLeft(60 - seconds);
+      
+      if (currentPeriod !== periodId) {
+        if (periodId !== "") {
+          handleRoundEnd(periodId);
+        }
+        setPeriodId(currentPeriod);
       }
-    };
-    syncTimer();
-    const interval = setInterval(syncTimer, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (timeLeft === 60 && periodId) {
-      handleRoundEnd();
-    }
-  }, [timeLeft, periodId]);
-
-  const handleRoundEnd = async () => {
-    if (!firestore || !periodId) return;
+    }, 1000);
     
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - 1);
-    const finishedPeriod = generatePeriodId(now);
+    return () => clearInterval(interval);
+  }, [periodId]);
 
-    if (lastProcessedPeriod.current === finishedPeriod) return;
+  const handleRoundEnd = async (finishedPeriod: string) => {
+    if (!firestore || !finishedPeriod || lastProcessedPeriod.current === finishedPeriod) return;
     lastProcessedPeriod.current = finishedPeriod;
     
-    // 1. CAPTURE BETS IMMEDIATELY
     const betsToProcess = [...activeBetsRef.current];
-    setActiveBets([]);
     activeBetsRef.current = [];
-
+    setActiveBets([]);
+    
     setIsCalculating(true);
     
-    // 2. DETERMINE WINNING NUMBER (FAST SYNC)
+    // 1. Determine Win Number
     let winNumber = Math.floor(Math.random() * 10);
     try {
-      const controlRef = doc(firestore, "wingoConfig", finishedPeriod);
-      const controlSnap = await getDoc(controlRef);
-      if (controlSnap.exists()) {
-        const controlledData = controlSnap.data();
-        if (controlledData && controlledData.number !== undefined) {
-          winNumber = Number(controlledData.number);
-        }
+      const configRef = doc(firestore, "wingoConfig", finishedPeriod);
+      const snap = await getDoc(configRef);
+      if (snap.exists()) {
+        winNumber = Number(snap.data().number);
       }
     } catch (e) {
-      console.warn("Manual result fetch skipped:", e);
+      console.warn("Manual result fetch skipped", e);
     }
 
     const winColors = getColorsForNumber(winNumber);
     const winSize = getSizeForNumber(winNumber);
     const result: GameResult = { periodId: finishedPeriod, number: winNumber, colors: winColors, size: winSize };
 
-    // 3. UPDATE PUBLIC HISTORY
     setHistory(prev => [result, ...prev].slice(0, 15));
 
-    // 4. PROCESS PAYOUTS (INSTANT PLUS)
+    // 2. Process Payouts
     if (user && firestore && betsToProcess.length > 0) {
       let totalWinning = 0;
-      const uRef = doc(firestore, "users", user.uid);
 
       for (const bet of betsToProcess) {
         let isWin = false;
         let profit = 0;
 
-        // Multiplier Logic: Numbers 9x, Color/Size 2x
         if (typeof bet.type === 'number' || !isNaN(Number(bet.type))) {
           if (Number(bet.type) === winNumber) {
             profit = bet.amount * 9; 
@@ -193,8 +175,8 @@ export default function WingoPage() {
 
         if (isWin) totalWinning += profit;
 
-        // Record bet result in user's subcollection
-        const betId = Math.random().toString(36).substr(2, 9).toUpperCase();
+        // Record Bet History
+        const betId = `BET_${finishedPeriod}_${Math.random().toString(36).substr(2, 5)}`;
         const betRef = doc(firestore, "users", user.uid, "bets", betId);
         setDoc(betRef, {
           periodId: finishedPeriod,
@@ -208,24 +190,27 @@ export default function WingoPage() {
       }
 
       if (totalWinning > 0) {
-        // ATOMIC WALLET PLUS (NO ARTIFICIAL DELAY)
-        setDoc(uRef, { walletBalance: increment(totalWinning) }, { merge: true })
-          .then(() => {
-            setWinningStats({ amount: totalWinning, result });
-            setShowWinPopup(true);
-          })
-          .catch(err => {
-            const permissionError = new FirestorePermissionError({
-              path: uRef.path,
-              operation: 'update',
-              requestResourceData: { walletBalance: totalWinning },
-            });
-            errorEmitter.emit('permission-error', permissionError);
-          });
+        const uRef = doc(firestore, "users", user.uid);
+        // INSTANT ATOMIC WALLET PLUS
+        setDoc(uRef, { 
+          walletBalance: increment(totalWinning) 
+        }, { merge: true })
+        .then(() => {
+          setWinningStats({ amount: totalWinning, result });
+          setShowWinPopup(true);
+        })
+        .catch(err => {
+          console.error("Payout failed", err);
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: uRef.path,
+            operation: 'update',
+            requestResourceData: { walletBalance: totalWinning }
+          }));
+        });
       } else {
         toast({
           title: "Round Result",
-          description: `Period #${finishedPeriod}: The result was ${winNumber} (${winSize})`,
+          description: `Period #${finishedPeriod}: Result was ${winNumber} (${winSize})`,
           variant: "destructive"
         });
       }
@@ -241,12 +226,7 @@ export default function WingoPage() {
     }
     
     if (timeLeft <= 5) {
-      toast({ title: "Round Locked", description: "Wait for the next round to shuru.", variant: "destructive" });
-      return;
-    }
-    
-    if (betAmount <= 0) {
-      toast({ title: "Invalid Amount", variant: "destructive" });
+      toast({ title: "Round Locked", description: "Wait for the next round.", variant: "destructive" });
       return;
     }
 
@@ -259,13 +239,12 @@ export default function WingoPage() {
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
     
-    // INSTANT DEDUCTION (ATOMIC CUT)
+    // INSTANT ATOMIC DEDUCTION
     setDoc(uRef, { walletBalance: increment(-betAmount) }, { merge: true })
       .then(() => {
         const newBet = { type, amount: betAmount };
         activeBetsRef.current = [...activeBetsRef.current, newBet];
         setActiveBets([...activeBetsRef.current]);
-        
         toast({ title: "Bet Placed! 🎉", description: `₹${betAmount} on ${type.toString().toUpperCase()}` });
       })
       .catch((err) => {
@@ -283,7 +262,6 @@ export default function WingoPage() {
     <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-body">
       <Navbar />
       
-      {/* Header Area */}
       <div className="bg-primary text-white p-6 pb-20 rounded-b-[5rem] shadow-2xl relative">
         <div className="container mx-auto max-w-2xl flex items-center justify-between mb-8">
           <Link href="/">
@@ -300,7 +278,6 @@ export default function WingoPage() {
           </div>
         </div>
 
-        {/* Timer Card */}
         <div className="container mx-auto max-w-2xl bg-white rounded-[4rem] p-12 shadow-2xl flex justify-between items-center text-foreground relative z-10 border-b-[12px] border-primary/10">
           <div className="space-y-1">
             <p className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.4em] opacity-60">Issue ID</p>
@@ -321,33 +298,29 @@ export default function WingoPage() {
       <main className="flex-1 container mx-auto px-4 -mt-12 max-w-2xl pb-24 relative z-20">
         <div className="bg-white rounded-[4rem] p-12 shadow-2xl border-t-4 border-primary/5 mb-10 overflow-hidden relative">
           
-          {/* Waiting/Lock Overlay */}
           {(isCalculating || isLockTime) && (
-             <div className="absolute inset-0 bg-white/95 backdrop-blur-xl z-50 flex flex-col items-center justify-center animate-in fade-in duration-500">
+             <div className="absolute inset-0 bg-white/95 backdrop-blur-xl z-50 flex flex-col items-center justify-center">
                 <Loader2 className="w-20 h-20 text-primary animate-spin mb-8" />
                 <div className="text-center space-y-2">
                   <p className="text-3xl font-black text-primary uppercase tracking-[0.4em] animate-pulse">
                     {isLockTime ? "Locking bets..." : "Opening Result..."}
                   </p>
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Processing Payouts...</p>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Instant Payout Active</p>
                 </div>
              </div>
           )}
 
-          {/* Size Betting */}
           <div className="flex gap-8 mb-12">
             <Button onClick={() => placeBet("big")} disabled={isBetting || isLockTime} className="flex-1 h-24 rounded-[2.5rem] bg-[#ff9933] hover:bg-[#e68a00] font-black text-3xl shadow-xl border-b-8 border-[#cc7a00] active:border-b-0 active:translate-y-2 transition-all">BIG</Button>
             <Button onClick={() => placeBet("small")} disabled={isBetting || isLockTime} className="flex-1 h-24 rounded-[2.5rem] bg-[#5c7cff] hover:bg-[#4a65cc] font-black text-3xl shadow-xl border-b-8 border-[#3c52a3] active:border-b-0 active:translate-y-2 transition-all">SMALL</Button>
           </div>
 
-          {/* Color Betting */}
           <div className="flex justify-between gap-6 mb-16">
             <Button onClick={() => placeBet("green")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2.2rem] bg-[#18b663] hover:bg-[#149c55] font-black text-xl shadow-xl border-b-8 border-[#108246] active:border-b-0 transition-all">Green</Button>
             <Button onClick={() => placeBet("violet")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2.2rem] bg-[#9c27b0] hover:bg-[#862196] font-black text-xl shadow-xl border-b-8 border-[#6d1b7b] active:border-b-0 transition-all">Violet</Button>
             <Button onClick={() => placeBet("red")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2.2rem] bg-[#ff4b4b] hover:bg-[#e64343] font-black text-xl shadow-xl border-b-8 border-[#cc3c3c] active:border-b-0 transition-all">Red</Button>
           </div>
 
-          {/* Number Betting (9x Profit) */}
           <div className="grid grid-cols-5 gap-6 mb-16">
             {Array.from({ length: 10 }).map((_, n) => (
               <Button 
@@ -365,7 +338,6 @@ export default function WingoPage() {
             ))}
           </div>
 
-          {/* Stake Control */}
           <div className="space-y-10">
             <div className="flex items-center justify-between px-6">
               <span className="text-xs font-black uppercase text-muted-foreground tracking-[0.2em] flex items-center gap-2">
@@ -398,52 +370,44 @@ export default function WingoPage() {
           </div>
         </div>
 
-        {/* Admin Manual Control */}
         {isAdmin && (
-          <div className="mb-12 bg-[#0a0a0a] text-white rounded-[4rem] p-12 shadow-2xl border-4 border-primary/30 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5"><ShieldAlert className="w-32 h-32" /></div>
+          <div className="mb-12 bg-[#0a0a0a] text-white rounded-[4rem] p-12 shadow-2xl border-4 border-primary/30 relative">
             <div className="flex items-center gap-5 mb-10">
-              <div className="p-4 bg-primary rounded-3xl shadow-xl shadow-primary/30 animate-pulse"><ShieldAlert className="w-8 h-8 text-white" /></div>
+              <div className="p-4 bg-primary rounded-3xl animate-pulse"><ShieldAlert className="w-8 h-8 text-white" /></div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Master Controller Active</span>
-                <span className="text-2xl font-black text-primary mt-1 italic tracking-tighter">Fix Round: {periodId}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Admin Override</span>
+                <span className="text-2xl font-black text-primary mt-1 italic tracking-tighter">Issue: {periodId}</span>
               </div>
             </div>
-            <div className="flex gap-8 relative z-10">
+            <div className="flex gap-8">
               <Input 
                 type="number" 
                 placeholder="0-9" 
                 value={adminTargetNumber} 
                 onChange={e => setAdminTargetNumber(e.target.value)}
-                className="bg-white/5 border-white/10 h-20 rounded-3xl text-4xl font-mono text-white flex-1 focus:ring-8 focus:ring-primary/20 text-center font-black"
+                className="bg-white/5 border-white/10 h-20 rounded-3xl text-4xl font-mono text-white flex-1 text-center font-black"
               />
-              <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/90 h-20 rounded-3xl px-16 font-black uppercase text-sm tracking-widest shadow-[0_0_40px_rgba(139,92,246,0.3)]">
-                FORCE RESULT
+              <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/90 h-20 rounded-3xl px-16 font-black uppercase text-sm tracking-widest">
+                FIX RESULT
               </Button>
             </div>
           </div>
         )}
 
-        {/* History Tabs */}
         <Tabs defaultValue="records" className="space-y-10">
-          <TabsList className="bg-white p-3 rounded-[3rem] h-24 w-full shadow-2xl border-b-8 border-muted ring-1 ring-black/5">
-            <TabsTrigger value="records" className="rounded-[2.2rem] font-black flex-1 h-18 uppercase text-[12px] tracking-[0.3em] data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">Round Trend</TabsTrigger>
-            <TabsTrigger value="mybets" className="rounded-[2.2rem] font-black flex-1 h-18 uppercase text-[12px] tracking-[0.3em] data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all">My Records</TabsTrigger>
+          <TabsList className="bg-white p-3 rounded-[3rem] h-24 w-full shadow-2xl border-b-8 border-muted">
+            <TabsTrigger value="records" className="rounded-[2.2rem] font-black flex-1 h-18 uppercase text-[12px] tracking-[0.3em] data-[state=active]:bg-primary data-[state=active]:text-white">Trends</TabsTrigger>
+            <TabsTrigger value="mybets" className="rounded-[2.2rem] font-black flex-1 h-18 uppercase text-[12px] tracking-[0.3em] data-[state=active]:bg-primary data-[state=active]:text-white">My Records</TabsTrigger>
           </TabsList>
 
           <TabsContent value="records">
-            <div className="bg-white rounded-[4rem] p-12 shadow-2xl border-t-4 border-primary/5 min-h-[600px]">
-              <div className="flex items-center justify-between mb-12">
-                <h3 className="text-4xl font-black italic tracking-tighter flex items-center gap-5">
-                  <History className="w-10 h-10 text-primary not-italic" /> Trends
-                </h3>
-              </div>
+            <div className="bg-white rounded-[4rem] p-12 shadow-2xl min-h-[600px]">
               <div className="space-y-8">
                 {history.map((res, i) => (
-                  <div key={i} className="flex items-center justify-between p-8 rounded-[3rem] bg-muted/20 border-2 border-transparent hover:border-primary/20 transition-all hover:bg-white hover:shadow-2xl group">
+                  <div key={i} className="flex items-center justify-between p-8 rounded-[3rem] bg-muted/20 border-2 border-transparent hover:border-primary/20 transition-all hover:bg-white hover:shadow-2xl">
                     <div className="space-y-3">
-                      <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] font-mono opacity-50 group-hover:opacity-100">{res.periodId}</p>
-                      <Badge variant="outline" className="rounded-2xl px-5 py-1.5 text-[10px] font-black text-primary border-primary/20 bg-primary/5 uppercase">Standard 1M</Badge>
+                      <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] font-mono opacity-50">{res.periodId}</p>
+                      <Badge variant="outline" className="rounded-2xl px-5 py-1.5 text-[10px] font-black text-primary border-primary/20">Standard 1M</Badge>
                     </div>
                     <div className="flex items-center gap-12">
                       <div className="flex flex-col items-center">
@@ -459,13 +423,6 @@ export default function WingoPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-3">
-                        {res.colors.map((color, ci) => (
-                          <div key={ci} className={`w-6 h-6 rounded-full shadow-inner ring-2 ring-white ${
-                            color === 'green' ? 'bg-[#18b663]' : color === 'red' ? 'bg-[#ff4b4b]' : 'bg-[#9c27b0]'
-                          }`} />
-                        ))}
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -474,44 +431,34 @@ export default function WingoPage() {
           </TabsContent>
 
           <TabsContent value="mybets">
-            <div className="bg-white rounded-[4rem] p-12 shadow-2xl border-t-4 border-primary/5 min-h-[600px]">
-              <div className="flex items-center justify-between mb-12">
-                <h3 className="text-4xl font-black italic tracking-tighter flex items-center gap-5">
-                  <User className="w-10 h-10 text-primary not-italic" /> My Bets
-                </h3>
-              </div>
+            <div className="bg-white rounded-[4rem] p-12 shadow-2xl min-h-[600px]">
               <div className="space-y-8">
                 {myBets?.map((bet, i) => (
-                  <div key={i} className="flex items-center justify-between p-10 rounded-[3.5rem] bg-muted/30 border-2 border-transparent hover:border-primary/30 transition-all hover:bg-white hover:shadow-2xl">
+                  <div key={i} className="flex items-center justify-between p-10 rounded-[3.5rem] bg-muted/30 border-2 border-transparent hover:bg-white hover:shadow-2xl transition-all">
                     <div className="space-y-5">
                       <div className="flex items-center gap-5">
                          <p className="text-[12px] font-black text-muted-foreground uppercase tracking-widest font-mono">#{bet.periodId}</p>
-                         <Badge className="bg-primary/10 text-primary text-[11px] font-black border-none px-4 py-1 rounded-xl">Stake: ₹{bet.amount}</Badge>
+                         <Badge className="bg-primary/10 text-primary text-[11px] font-black border-none px-4 py-1 rounded-xl">₹{bet.amount}</Badge>
                       </div>
                       <div className="flex items-center gap-8">
                          <div className="flex flex-col">
                            <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 mb-1">Target</span>
-                           <span className="font-black text-3xl uppercase tracking-tighter text-foreground">{bet.type}</span>
+                           <span className="font-black text-3xl uppercase tracking-tighter">{bet.type}</span>
                          </div>
                          <div className="h-12 w-[2px] bg-border/40 mx-2" />
                          <div className="flex flex-col">
-                           <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 mb-1">Profit/Loss</span>
+                           <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 mb-1">Result</span>
                            <span className={`font-black text-3xl uppercase tracking-tighter ${bet.status === 'Win' ? 'text-green-600' : 'text-muted-foreground'}`}>
                              {bet.status === 'Win' ? `+₹${bet.winAmount}` : `-₹${bet.amount}`}
                            </span>
                          </div>
                       </div>
                     </div>
-                    <div className="text-right flex flex-col items-end gap-5">
-                      <Badge className={`rounded-[1.5rem] px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl scale-110 ${
-                        bet.status === 'Win' ? 'bg-[#18b663] shadow-[#18b663]/30' : 'bg-destructive/60 shadow-destructive/10'
+                    <Badge className={`rounded-[1.5rem] px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] shadow-xl ${
+                        bet.status === 'Win' ? 'bg-[#18b663]' : 'bg-destructive/60'
                       }`}>
                         {bet.status}
-                      </Badge>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase opacity-30 flex items-center gap-2">
-                         <Clock className="w-3 h-3" /> {new Date(bet.createdAt).toLocaleTimeString()}
-                      </p>
-                    </div>
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -520,66 +467,50 @@ export default function WingoPage() {
         </Tabs>
       </main>
 
-      {/* CONGRATULATIONS POPUP */}
+      {/* WIN POPUP */}
       <Dialog open={showWinPopup} onOpenChange={setShowWinPopup}>
-        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-transparent border-none shadow-none focus:outline-none z-[100] rounded-none">
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-transparent border-none shadow-none z-[100]">
           <div className="relative flex flex-col items-center pt-32 pb-20 px-10">
-             <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl -z-10 rounded-[6rem] ring-4 ring-yellow-500/20" />
+             <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl -z-10 rounded-[6rem]" />
              
-             {/* Trophy Icon */}
-             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 pointer-events-none">
-               <div className="absolute inset-0 bg-yellow-400/40 rounded-full animate-ping duration-1000" />
-               <div className="relative w-full h-full bg-gradient-to-b from-yellow-100 via-yellow-500 to-yellow-900 rounded-full shadow-[0_0_120px_rgba(234,179,8,0.6)] border-[12px] border-yellow-200/50 flex items-center justify-center overflow-hidden">
-                 <Trophy className="w-32 h-32 text-white drop-shadow-[0_12px_24px_rgba(0,0,0,0.7)] animate-bounce" />
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72">
+               <div className="absolute inset-0 bg-yellow-400/40 rounded-full animate-ping" />
+               <div className="relative w-full h-full bg-gradient-to-b from-yellow-500 to-yellow-900 rounded-full border-[12px] border-yellow-200/50 flex items-center justify-center">
+                 <Trophy className="w-32 h-32 text-white animate-bounce" />
                </div>
              </div>
 
              <div className="bg-[#111] w-full rounded-t-[4rem] p-14 text-center border-x-4 border-t-4 border-yellow-500/50">
-               <h2 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-yellow-400 to-yellow-100 italic tracking-tighter animate-pulse uppercase">
-                 Victory! 🎉
-               </h2>
-               <p className="text-[12px] font-black uppercase text-yellow-500/60 tracking-[0.6em] mt-6">Bonus Balance Credited</p>
+               <h2 className="text-6xl font-black text-yellow-400 italic tracking-tighter uppercase">Victory! 🎉</h2>
+               <p className="text-[12px] font-black uppercase text-yellow-500/60 tracking-[0.6em] mt-6">Bonus Balance Added</p>
              </div>
 
              <div className="bg-[#181818] w-full p-14 border-x-4 border-yellow-500/40 flex flex-col items-center gap-12">
                 <div className="flex items-center gap-10">
-                   <div className={`px-12 py-5 rounded-[2rem] font-black text-white uppercase text-sm shadow-2xl tracking-[0.3em] border-b-[10px] border-black/40 ${
-                     winningStats.result?.colors.includes('red') ? 'bg-[#ff4b4b]' : 'bg-[#18b663]'
-                   }`}>
+                   <div className="px-12 py-5 rounded-[2rem] font-black text-white bg-green-600 shadow-2xl tracking-[0.3em]">
                      {winningStats.result?.colors[0]}
                    </div>
-                   <div className="relative">
-                     <div className="absolute inset-0 bg-yellow-500/40 blur-[80px] scale-150 animate-pulse" />
-                     <div className="w-28 h-28 rounded-full bg-gradient-to-br from-yellow-300 via-yellow-500 to-yellow-800 flex items-center justify-center text-7xl font-black text-white shadow-2xl border-[6px] border-white/40 relative z-10 scale-125 ring-8 ring-yellow-500/20">
-                       {winningStats.result?.number}
-                     </div>
+                   <div className="w-28 h-28 rounded-full bg-yellow-500 flex items-center justify-center text-7xl font-black text-white shadow-2xl scale-125 ring-8 ring-yellow-500/20">
+                     {winningStats.result?.number}
                    </div>
-                   <div className="px-12 py-5 rounded-[2rem] bg-blue-600 font-black text-white uppercase text-sm shadow-2xl tracking-[0.3em] border-b-[10px] border-black/40">
+                   <div className="px-12 py-5 rounded-[2rem] bg-blue-600 font-black text-white shadow-2xl tracking-[0.3em]">
                      {winningStats.result?.size}
                    </div>
                 </div>
              </div>
 
-             <div className="bg-[#111] w-full p-14 text-center border-x-4 border-yellow-500/50">
-                <span className="text-[12px] font-black uppercase text-yellow-500/30 tracking-[0.8em] mb-8 block">Total Bonus Payout</span>
-                <h3 className="text-9xl font-black text-yellow-400 italic tracking-tighter flex items-center justify-center gap-6 drop-shadow-[0_20px_30px_rgba(0,0,0,0.9)]">
+             <div className="bg-[#111] w-full p-14 text-center border-x-4 border-yellow-500/50 rounded-b-[4rem]">
+                <h3 className="text-9xl font-black text-yellow-400 italic tracking-tighter flex items-center justify-center gap-6">
                    <span className="text-5xl not-italic font-black text-yellow-500/20">₹</span>{winningStats.amount.toFixed(0)}
                 </h3>
-             </div>
-
-             <div className="bg-[#050505] w-full p-10 rounded-b-[4rem] text-center border-x-4 border-b-4 border-yellow-500/40 mb-12 shadow-2xl">
-                <p className="text-[11px] font-black text-gray-800 uppercase tracking-[0.4em] flex items-center justify-center gap-5">
-                  <Sparkles className="w-5 h-5 text-yellow-500/10" />
-                  Issue ID: {winningStats.result?.periodId}
-                  <Sparkles className="w-5 h-5 text-yellow-500/10" />
-                </p>
+                <p className="text-[11px] font-black text-gray-600 uppercase tracking-[0.4em] mt-10">Issue: {winningStats.result?.periodId}</p>
              </div>
 
              <button 
                 onClick={() => setShowWinPopup(false)}
-                className="w-24 h-24 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center border-4 border-white/10 transition-all active:scale-90 shadow-2xl group ring-4 ring-yellow-500/10"
+                className="mt-12 w-20 h-20 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center border-4 border-white/10 transition-all active:scale-90"
              >
-                <X className="w-14 h-14 text-white group-hover:rotate-90 transition-transform" />
+                <X className="w-10 h-10 text-white" />
              </button>
           </div>
         </DialogContent>
@@ -597,7 +528,7 @@ export default function WingoPage() {
     const configRef = doc(firestore, "wingoConfig", periodId);
     setDoc(configRef, { periodId, number: num, updatedAt: new Date().toISOString() }, { merge: true })
       .then(() => {
-        toast({ title: "ADMIN OVERRIDE SUCCESS!", description: `Round ${periodId} will open Number ${num}`, className: "bg-primary text-white font-black rounded-2xl" });
+        toast({ title: "RESULT FIXED!", description: `Round ${periodId} will open Number ${num}` });
         setAdminTargetNumber("");
       });
   }
