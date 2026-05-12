@@ -14,7 +14,8 @@ import {
   ShieldAlert,
   Trophy,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc, useAuth } from "@/firebase";
@@ -37,7 +38,6 @@ const ADMIN_EMAIL = "elwinrongpi9@gmail.com";
 
 export default function WingoPage() {
   const { user } = useUser();
-  const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   
@@ -51,11 +51,17 @@ export default function WingoPage() {
   const [isBetting, setIsBetting] = useState(false);
   const [activeBets, setActiveBets] = useState<{ type: BetType; amount: number }[]>([]);
   
+  // Use ref to keep track of bets across timer cycles
   const activeBetsRef = useRef<{ type: BetType; amount: number }[]>([]);
-  
+  const userRefForPayout = useRef<any>(null);
+
   useEffect(() => {
     activeBetsRef.current = activeBets;
   }, [activeBets]);
+
+  useEffect(() => {
+    userRefForPayout.current = user;
+  }, [user]);
 
   // Admin Controller State
   const [adminTargetNumber, setAdminTargetNumber] = useState("");
@@ -65,7 +71,7 @@ export default function WingoPage() {
     if (num === 0) return ["red", "violet"];
     if (num === 5) return ["green", "violet"];
     if ([2, 4, 6, 8].includes(num)) return ["red"];
-    return ["green"];
+    return ["green"]; // 1, 3, 7, 9
   };
 
   const getSizeForNumber = (num: number): "Big" | "Small" => {
@@ -82,8 +88,7 @@ export default function WingoPage() {
   };
 
   useEffect(() => {
-    const pid = generatePeriodId();
-    setPeriodId(pid);
+    setPeriodId(generatePeriodId());
 
     const syncTimer = () => {
       const seconds = new Date().getSeconds();
@@ -96,7 +101,6 @@ export default function WingoPage() {
   }, []);
 
   useEffect(() => {
-    // When seconds reach 00 (timeLeft is 60), trigger round end
     if (timeLeft === 60) {
       handleRoundEnd();
     }
@@ -108,18 +112,18 @@ export default function WingoPage() {
     const currentPeriod = periodId;
     let winNumber = Math.floor(Math.random() * 10);
     
-    // Check for Admin Override (Manual Control)
+    // 1. Check for Admin Manual Override
     try {
       const controlRef = doc(firestore, "wingoConfig", currentPeriod);
       const controlSnap = await getDoc(controlRef);
       if (controlSnap.exists()) {
         const controlledData = controlSnap.data();
-        if (controlledData && typeof controlledData.number === 'number') {
-          winNumber = controlledData.number;
+        if (controlledData && controlledData.number !== undefined) {
+          winNumber = Number(controlledData.number);
         }
       }
     } catch (e) {
-      console.warn("Manual override fetch failed", e);
+      console.warn("Manual result fetch error:", e);
     }
 
     const winColors = getColorsForNumber(winNumber);
@@ -135,40 +139,46 @@ export default function WingoPage() {
     setHistory(prev => [result, ...prev].slice(0, 10));
     setPeriodId(generatePeriodId());
 
-    // Process Payouts using the ref for latest bet state
+    // 2. Process Payouts
     const betsToProcess = activeBetsRef.current;
-    
-    if (betsToProcess.length > 0 && user) {
+    const currentUser = userRefForPayout.current;
+
+    if (betsToProcess.length > 0 && currentUser && firestore) {
       let totalWinning = 0;
       betsToProcess.forEach(bet => {
         if (typeof bet.type === 'number') {
-          // 9x profit for exact number match
-          if (Number(bet.type) === winNumber) totalWinning += bet.amount * 9;
+          // Exact number: 9x Payout
+          if (Number(bet.type) === winNumber) {
+            totalWinning += bet.amount * 9;
+          }
         } else if (bet.type === 'big' || bet.type === 'small') {
+          // Size: 2x Payout
           if ((bet.type === 'big' && winSize === 'Big') || (bet.type === 'small' && winSize === 'Small')) {
             totalWinning += bet.amount * 2;
           }
         } else {
-          // Color logic: green, red, violet
-          if (winColors.includes(bet.type as any)) totalWinning += bet.amount * 2;
+          // Color: 2x Payout
+          if (winColors.includes(bet.type as any)) {
+            totalWinning += bet.amount * 2;
+          }
         }
       });
 
       if (totalWinning > 0) {
-        const uRef = doc(firestore, "users", user.uid);
-        // CRITICAL: Atomic addition to wallet balance
+        const uRef = doc(firestore, "users", currentUser.uid);
+        // Guaranteed Plus in Wallet
         setDoc(uRef, {
           walletBalance: increment(totalWinning)
         }, { merge: true })
         .then(() => {
           toast({
             title: "VICTORY! 🏆",
-            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added to your wallet!`,
+            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added to wallet!`,
             className: "bg-green-600 text-white font-black border-none"
           });
         })
         .catch((err) => {
-          console.error("Payout update failed", err);
+          console.error("Payout failed:", err);
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: uRef.path,
             operation: 'update',
@@ -186,6 +196,7 @@ export default function WingoPage() {
     
     // Clear bets for new round
     setActiveBets([]);
+    activeBetsRef.current = [];
   };
 
   const placeBet = async (type: BetType) => {
@@ -208,7 +219,7 @@ export default function WingoPage() {
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
     
-    // Atomically subtract bet amount from wallet
+    // Atomic deduction
     updateDoc(uRef, {
       walletBalance: increment(-betAmount)
     })
@@ -220,7 +231,7 @@ export default function WingoPage() {
       });
     })
     .catch((err) => {
-       console.error("Bet placement failed", err);
+       console.error("Bet error:", err);
        toast({ title: "Bet Failed", variant: "destructive" });
     })
     .finally(() => setIsBetting(false));
@@ -234,6 +245,7 @@ export default function WingoPage() {
       return;
     }
 
+    // Direct result setting (No spinner)
     const configRef = doc(firestore, "wingoConfig", periodId);
     setDoc(configRef, {
       periodId: periodId,
@@ -417,4 +429,3 @@ export default function WingoPage() {
     </div>
   );
 }
-
