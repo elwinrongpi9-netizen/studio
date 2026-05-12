@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, UtensilsCrossed, LogOut, User, Lock, Mail, Loader2, ShieldCheck, Wallet, ArrowUpRight } from "lucide-react";
+import { ShoppingBag, UtensilsCrossed, LogOut, User, Lock, Mail, Loader2, ShieldCheck, Wallet, ArrowUpRight, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
@@ -62,8 +62,12 @@ export function Navbar() {
             role: user.email === ADMIN_EMAIL ? "admin" : "user"
           };
 
-          if (!snap.exists() || (snap.data() && snap.data().walletBalance === undefined)) {
+          const existingData = snap.data();
+          if (!snap.exists() || existingData?.walletBalance === undefined) {
             userData.walletBalance = 0;
+          }
+          if (!snap.exists() || existingData?.wingoBalance === undefined) {
+            userData.wingoBalance = 0;
           }
 
           await setDoc(uRef, userData, { merge: true });
@@ -134,23 +138,31 @@ export function Navbar() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-8">
+        <div className="flex items-center gap-4 md:gap-6">
           {user && (
-             <Link href="/wallet" className="group">
-               <div className="flex items-center gap-3 hover:scale-105 transition-all">
-                 <div className="flex items-center gap-2 bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 group-hover:border-primary/30 group-hover:bg-primary/10 transition-all">
-                    <Wallet className="w-4 h-4 text-primary" />
+            <div className="hidden sm:flex items-center gap-3">
+               <Link href="/wallet" className="group">
+                 <div className="flex items-center gap-2 bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 group-hover:bg-primary/10 transition-all">
+                    <Wallet className="w-3.5 h-3.5 text-primary" />
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-black uppercase text-muted-foreground leading-none">Wallet</span>
-                      <span className="text-sm font-black text-primary">₹{profile?.walletBalance || 0}</span>
+                      <span className="text-[8px] font-black uppercase text-muted-foreground leading-none">Main</span>
+                      <span className="text-xs font-black text-primary">₹{profile?.walletBalance || 0}</span>
                     </div>
-                    <ArrowUpRight className="w-3 h-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                  </div>
-               </div>
-             </Link>
+               </Link>
+               <Link href="/wingo" className="group">
+                 <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-100 group-hover:bg-purple-100 transition-all">
+                    <Zap className="w-3.5 h-3.5 text-purple-600" />
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black uppercase text-muted-foreground leading-none">Wingo</span>
+                      <span className="text-xs font-black text-purple-600">₹{profile?.wingoBalance || 0}</span>
+                    </div>
+                 </div>
+               </Link>
+            </div>
           )}
           
-          <div className="flex items-center gap-2 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-4">
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative hover:text-primary hover:bg-primary/5 rounded-xl transition-all">
                 <ShoppingBag className="w-5 h-5" />

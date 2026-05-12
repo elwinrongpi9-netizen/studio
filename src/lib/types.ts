@@ -45,6 +45,7 @@ export interface UserProfile {
   address?: string;
   role: 'user' | 'admin';
   walletBalance?: number;
+  wingoBalance?: number;
 }
 
 export interface WithdrawalRequest {

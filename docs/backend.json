@@ -41,7 +41,8 @@
         "photoURL": { "type": "string" },
         "address": { "type": "string" },
         "role": { "type": "string", "enum": ["user", "admin"] },
-        "walletBalance": { "type": "number", "description": "The current balance of Karbi Coins." },
+        "walletBalance": { "type": "number", "description": "The current balance for food and withdrawals." },
+        "wingoBalance": { "type": "number", "description": "The current balance for Wingo games." },
         "lastLogin": { "type": "object" }
       }
     },

@@ -3,13 +3,13 @@
 
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { doc, collection, query, where, orderBy, addDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, collection, query, where, orderBy, addDoc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
 import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Sparkles, ShieldCheck, Zap, Info, QrCode, Timer, CheckCircle } from "lucide-react";
+import { Wallet, ArrowUpRight, History, Clock, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Sparkles, ShieldCheck, Zap, Info, QrCode, Timer, CheckCircle, ArrowRightLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import Image from "next/image";
@@ -48,10 +48,11 @@ export default function WalletPage() {
   const { data: withdrawals, loading: historyLoading } = useCollection<any>(withdrawalsQuery);
 
   const [amount, setAmount] = useState("");
-  const [upiId, setUpiId] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
   
-  // QR Modal States (Game Zone style)
+  // QR Modal States
   const [showQrModal, setShowQrModal] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
   const [transferState, setTransferState] = useState<"idle" | "success">("idle");
@@ -82,7 +83,12 @@ export default function WalletPage() {
   const handleMaxAmount = () => {
     if (profile?.walletBalance) {
       setAmount(profile.walletBalance.toString());
-      setUpiId(MERCHANT_UPI_ID);
+    }
+  };
+
+  const handleMaxWingoTransfer = () => {
+    if (profile?.walletBalance) {
+      setTransferAmount(profile.walletBalance.toString());
     }
   };
 
@@ -118,7 +124,7 @@ export default function WalletPage() {
       userEmail: user.email,
       amount: withdrawAmount,
       upiId: MERCHANT_UPI_ID,
-      status: "Completed", // Merchant transfers are marked completed instantly for UX
+      status: "Completed",
       createdAt: timestamp,
       type: "Merchant Transfer"
     };
@@ -130,30 +136,49 @@ export default function WalletPage() {
       .then(() => {
         updateDoc(userDocRef, {
           walletBalance: increment(-withdrawAmount)
-        }).catch((err) => {
-          const permissionError = new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'update',
-            requestResourceData: { walletBalance: -withdrawAmount },
-          });
-          errorEmitter.emit('permission-error', permissionError);
         });
-
         setTransferState("success");
         setTimeout(() => {
           setShowQrModal(false);
           setTransferState("idle");
           setAmount("");
-          setUpiId("");
         }, 2000);
       })
-      .catch((serverError) => {
-        console.error(serverError);
+      .catch((err) => {
+        console.error(err);
         toast({ title: "Transfer Failed", variant: "destructive" });
       })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
+      .finally(() => setIsSubmitting(false));
+  };
+
+  const handleWingoWalletTransfer = async () => {
+    if (!user || !firestore || !profile) return;
+    const amt = parseFloat(transferAmount);
+    if (isNaN(amt) || amt < 1) {
+      toast({ title: "Invalid amount", variant: "destructive" });
+      return;
+    }
+    if (amt > (profile.walletBalance || 0)) {
+      toast({ title: "Insufficient Main Balance", variant: "destructive" });
+      return;
+    }
+
+    setIsTransferring(true);
+    const userDocRef = doc(firestore, "users", user.uid);
+    
+    updateDoc(userDocRef, {
+      walletBalance: increment(-amt),
+      wingoBalance: increment(amt)
+    })
+    .then(() => {
+      toast({ title: "Wingo Balance Added!", description: `₹${amt} transferred to Wingo wallet.` });
+      setTransferAmount("");
+    })
+    .catch((err) => {
+      console.error(err);
+      toast({ title: "Transfer Failed", variant: "destructive" });
+    })
+    .finally(() => setIsTransferring(false));
   };
 
   if (userLoading || profileLoading) {
@@ -162,7 +187,6 @@ export default function WalletPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="mt-4 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Syncing Ledger...</p>
         </div>
       </div>
     );
@@ -174,172 +198,155 @@ export default function WalletPage() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl">
         <div className="flex items-center gap-4 mb-10">
           <Link href="/">
-            <Button variant="ghost" size="icon" className="rounded-full bg-white shadow-sm hover:scale-110 transition-transform">
+            <Button variant="ghost" size="icon" className="rounded-full bg-white shadow-sm">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-4xl font-black italic tracking-tighter">Karbi <span className="text-primary not-italic">Wallet</span></h1>
-            <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">Transfer All Coins to Merchant QR</p>
-          </div>
+          <h1 className="text-4xl font-black italic">Karbi <span className="text-primary not-italic">Wallets</span></h1>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          {/* Main Wallet */}
+          <Card className="rounded-[2.5rem] bg-primary text-white border-none shadow-2xl overflow-hidden p-10 relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Wallet className="w-24 h-24" />
+            </div>
+            <p className="text-primary-foreground/80 font-black uppercase text-[10px] tracking-widest mb-2">Main Balance</p>
+            <div className="flex items-end justify-between">
+              <h2 className="text-6xl font-black">₹{profile?.walletBalance || 0}</h2>
+              <Button onClick={handleMaxAmount} variant="outline" className="bg-white/10 border-white/20 text-white rounded-xl font-black text-[10px] h-8">USE MAX</Button>
+            </div>
+            <p className="text-[9px] mt-6 opacity-60 uppercase font-black">For food and real withdrawals</p>
+          </Card>
+
+          {/* Wingo Wallet */}
+          <Card className="rounded-[2.5rem] bg-purple-600 text-white border-none shadow-2xl overflow-hidden p-10 relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Zap className="w-24 h-24" />
+            </div>
+            <p className="text-purple-100 font-black uppercase text-[10px] tracking-widest mb-2">Wingo Balance</p>
+            <div className="flex items-end justify-between">
+              <h2 className="text-6xl font-black">₹{profile?.wingoBalance || 0}</h2>
+              <Link href="/wingo"><Button variant="outline" className="bg-white/10 border-white/20 text-white rounded-xl font-black text-[10px] h-8">PLAY NOW</Button></Link>
+            </div>
+            <p className="text-[9px] mt-6 opacity-60 uppercase font-black">For Wingo 1M Game Only</p>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-5 space-y-6">
-            <Card className="rounded-[2.5rem] bg-primary text-white border-none shadow-2xl overflow-hidden relative group">
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Wallet className="w-32 h-32" />
-              </div>
-              <CardContent className="p-10 relative z-10">
-                <p className="text-primary-foreground/80 font-black uppercase tracking-widest text-[10px] mb-2">Total Balance</p>
-                <div className="flex items-end justify-between">
-                  <h2 className="text-6xl font-black flex items-center gap-2">
-                    ₹{profile?.walletBalance || 0}
-                    <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
-                  </h2>
-                  <Button 
-                    onClick={handleMaxAmount}
-                    variant="outline" 
-                    className="bg-white/10 border-white/20 text-white rounded-xl font-black text-[10px] uppercase h-8 hover:bg-white/20"
-                  >
-                    Use Max
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
+          <div className="lg:col-span-5 space-y-8">
+            {/* Transfer to Wingo */}
             <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white p-8">
-              <CardHeader className="p-0 mb-8">
-                <CardTitle className="text-2xl font-black flex items-center gap-3">
-                  <QrCode className="w-7 h-7 text-primary" />
-                  Quick Transfer
+              <CardHeader className="p-0 mb-6">
+                <CardTitle className="text-xl font-black flex items-center gap-3">
+                  <ArrowRightLeft className="w-6 h-6 text-purple-600" />
+                  Load Wingo Wallet
                 </CardTitle>
-                <div className="flex items-start gap-2 bg-muted/50 p-3 rounded-xl mt-2">
-                  <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase">Instantly transfer your coins to Rongpi Chinese Wok Merchant QR.</p>
-                </div>
               </CardHeader>
-              <form onSubmit={initiateTransfer} className="space-y-6">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="font-black text-[10px] uppercase tracking-widest text-muted-foreground ml-1">Transfer Amount (₹)</Label>
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Transfer to Game (₹)</Label>
                   <Input 
                     type="number" 
                     placeholder="Enter amount" 
+                    value={transferAmount}
+                    onChange={e => setTransferAmount(e.target.value)}
+                    className="h-14 rounded-2xl text-xl font-black bg-muted/30"
+                  />
+                </div>
+                <div className="flex gap-2">
+                   <Button onClick={handleMaxWingoTransfer} variant="outline" className="flex-1 h-12 rounded-xl font-black text-[10px]">ALL MAIN</Button>
+                   <Button onClick={handleWingoWalletTransfer} disabled={isTransferring} className="flex-[2] h-12 rounded-xl bg-purple-600 hover:bg-purple-700 font-black uppercase text-xs">
+                     {isTransferring ? <Loader2 className="animate-spin" /> : "Move to Wingo"}
+                   </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Merchant Transfer */}
+            <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white p-8">
+              <CardHeader className="p-0 mb-6">
+                <CardTitle className="text-xl font-black flex items-center gap-3">
+                  <QrCode className="w-6 h-6 text-primary" />
+                  Merchant Payout
+                </CardTitle>
+              </CardHeader>
+              <form onSubmit={initiateTransfer} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Main Withdrawal (₹)</Label>
+                  <Input 
+                    type="number" 
+                    placeholder="Amount to withdraw" 
                     value={amount} 
                     onChange={e => setAmount(e.target.value)}
-                    className="h-16 rounded-2xl text-2xl font-black bg-muted/30 border-2 focus:border-primary transition-all"
+                    className="h-14 rounded-2xl text-xl font-black bg-muted/30"
                     required
                   />
                 </div>
-                <Button className="w-full h-18 rounded-2xl font-black text-xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all py-8" disabled={isSubmitting}>
-                  <Zap className="w-6 h-6 mr-2 fill-yellow-300 text-yellow-300" />
-                  Open Merchant QR
+                <Button className="w-full h-14 rounded-2xl font-black shadow-lg" disabled={isSubmitting}>
+                   Confirm Payout QR
                 </Button>
-                <div className="bg-primary/5 p-5 rounded-2xl border border-primary/20 flex items-start gap-3">
-                   <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                   <p className="text-[10px] font-black text-primary uppercase leading-normal tracking-wider">
-                     Secure Merchant Gateway Active. Instant Verification.
-                   </p>
-                </div>
               </form>
             </Card>
           </div>
 
           <div className="lg:col-span-7">
-            <div className="bg-white rounded-[2.5rem] shadow-xl p-10 min-h-[600px] border-2">
-              <div className="flex items-center justify-between mb-10">
-                <h3 className="text-2xl font-black flex items-center gap-3 italic">
-                  <History className="w-7 h-7 text-primary not-italic" />
-                  Transfer History
+            <Card className="bg-white rounded-[2.5rem] shadow-xl p-8 min-h-[500px] border-2">
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-xl font-black flex items-center gap-3 italic">
+                  <History className="w-6 h-6 text-primary not-italic" />
+                  Payout History
                 </h3>
-                <Badge variant="outline" className="rounded-full px-5 py-1.5 font-black text-[10px] border-primary/30 text-primary uppercase">
-                  {withdrawals.length} Entries
-                </Badge>
               </div>
-
               {historyLoading ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-4">
-                  <Loader2 className="animate-spin text-primary w-12 h-12" />
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Syncing History...</p>
-                </div>
+                <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>
               ) : withdrawals.length === 0 ? (
-                <div className="text-center py-32 bg-muted/10 rounded-[3rem] border-2 border-dashed flex flex-col items-center">
-                  <Zap className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-10" />
-                  <p className="font-black text-muted-foreground uppercase text-xs tracking-widest italic">No transfers yet.</p>
-                </div>
+                <div className="text-center py-20 opacity-20"><Zap className="w-12 h-12 mx-auto mb-4" /><p className="font-black uppercase text-[10px]">No History</p></div>
               ) : (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {withdrawals.map((req: any) => (
-                    <div key={req.id} className="flex items-center justify-between p-7 rounded-[2rem] bg-muted/30 border-2 border-transparent hover:border-primary/20 transition-all group">
-                      <div className="flex items-center gap-6">
-                        <div className={`p-5 rounded-2xl shadow-sm transition-transform group-hover:scale-110 ${
-                          req.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 
-                          req.status === 'Completed' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                        }`}>
-                          {req.status === 'Completed' ? <CheckCircle2 className="w-8 h-8" /> : <Clock className="w-8 h-8" />}
+                    <div key={req.id} className="flex items-center justify-between p-6 rounded-[2rem] bg-muted/30 border-2 border-transparent">
+                      <div className="flex items-center gap-4">
+                        <div className="p-4 rounded-2xl bg-white shadow-sm text-primary">
+                          <CheckCircle2 className="w-6 h-6" />
                         </div>
-                        <div className="space-y-1">
-                          <p className="font-black text-3xl tracking-tighter text-foreground italic">₹{req.amount}</p>
-                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{req.type || "Payout"}</p>
+                        <div>
+                          <p className="font-black text-2xl tracking-tighter italic">₹{req.amount}</p>
+                          <p className="text-[9px] font-black uppercase text-muted-foreground">{req.type || "Payout"}</p>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-3">
-                        <Badge className={`rounded-full px-5 py-1.5 text-[10px] font-black uppercase ${
-                          req.status === 'Pending' ? 'bg-orange-500' : 'bg-green-600'
-                        }`}>
-                          {req.status}
-                        </Badge>
-                        <p className="text-[9px] font-black text-muted-foreground uppercase">
-                          {new Date(req.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
+                      <Badge className="rounded-full bg-green-600 uppercase text-[9px] px-3 font-black">COMPLETED</Badge>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         </div>
       </main>
 
-      {/* Merchant QR Modal (Game Zone style) */}
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-3xl font-black text-center">Transfer QR</DialogTitle>
-            <DialogDescription className="text-center font-bold text-muted-foreground">
-              Merchant: <span className="text-primary">{MERCHANT_NAME}</span>
-            </DialogDescription>
+            <DialogDescription className="text-center font-bold">Merchant: <span className="text-primary">{MERCHANT_NAME}</span></DialogDescription>
           </DialogHeader>
-          
           <div className="flex flex-col items-center gap-6">
             {transferState === "success" ? (
               <div className="flex flex-col items-center justify-center py-20 text-green-600 animate-in zoom-in">
-                <CheckCircle className="w-24 h-24 mb-6 fill-green-100" />
-                <h2 className="text-5xl font-black italic">SUCCESS!</h2>
-                <p className="font-bold uppercase tracking-widest text-[10px] mt-2">Coins Transferred</p>
+                <CheckCircle className="w-24 h-24 mb-6" />
+                <h2 className="text-4xl font-black italic">SUCCESS!</h2>
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs animate-pulse">
-                  <Timer className="w-4 h-4" />
-                  <span>Session Expires: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
-                </div>
-
-                <div className="relative w-80 h-80 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
+                <div className="relative w-72 h-72 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
                   <Image src={qrCodeUrl} alt="Merchant QR" fill className="object-contain p-2" unoptimized />
                 </div>
-                
                 <div className="text-center">
                   <p className="text-4xl font-black text-primary">₹{parseFloat(amount || "0").toFixed(2)}</p>
-                  <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase mt-2">{MERCHANT_UPI_ID}</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase mt-2">{MERCHANT_UPI_ID}</p>
                 </div>
-
-                <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg flex gap-2" onClick={confirmTransfer} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
-                  Confirm & Transfer ₹{amount}
-                </Button>
-                <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Secure Merchant Gateway • Mode 02 • MC 5812</p>
+                <Button className="w-full py-7 rounded-2xl font-black text-lg" onClick={confirmTransfer} disabled={isSubmitting}>Confirm & Transfer</Button>
               </>
             )}
           </div>
