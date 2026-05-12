@@ -22,7 +22,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import Link from "next/link";
-import { useUser, useFirestore, useAuth, useCollection, useDoc } from "@/firebase";
+import { useUser, useFirestore, useCollection, useDoc } from "@/firebase";
 import { doc, increment, setDoc, getDoc, query, collection, orderBy, limit } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -137,9 +137,9 @@ export default function WingoPage() {
     
     setIsCalculating(true);
     
-    // Critical: Snapshot pichle round ki bets
+    // Take snapshot of current bets immediately
     const betsToProcess = [...activeBetsRef.current];
-    // Clear for naya round
+    // Clear for next round
     setActiveBets([]);
     activeBetsRef.current = [];
 
@@ -162,9 +162,10 @@ export default function WingoPage() {
     const winSize = getSizeForNumber(winNumber);
     const result: GameResult = { periodId: finishedPeriod, number: winNumber, colors: winColors, size: winSize };
 
+    // Update public trend history
     setHistory(prev => [result, ...prev].slice(0, 15));
 
-    // Suspend for a bit before opening results
+    // Fast Result Processing (~500ms delay for UI feeling)
     setTimeout(async () => {
       if (user && firestore) {
         let totalWinning = 0;
@@ -175,10 +176,10 @@ export default function WingoPage() {
             let isWin = false;
             let profit = 0;
 
-            // Robust matching logic
+            // Robust matching logic for 9x Numbers, 2x Colors/Size
             if (typeof bet.type === 'number' || !isNaN(Number(bet.type))) {
               if (Number(bet.type) === winNumber) {
-                profit = bet.amount * 9; // 9x Payout for Numbers
+                profit = bet.amount * 9; 
                 isWin = true;
               }
             } else if (bet.type === 'big' || bet.type === 'small') {
@@ -195,7 +196,7 @@ export default function WingoPage() {
 
             if (isWin) totalWinning += profit;
 
-            // Record pichli bet ka result
+            // Record this specific bet result in user's subcollection
             const betId = Math.random().toString(36).substr(2, 9).toUpperCase();
             const betRef = doc(firestore, "users", user.uid, "bets", betId);
             setDoc(betRef, {
@@ -211,7 +212,7 @@ export default function WingoPage() {
 
           if (totalWinning > 0) {
             const finalProfit = totalWinning;
-            // Atomic Update: Guaranteed Coins Plus
+            // Atomic Update: Guaranteed Balance PLUS
             setDoc(uRef, { walletBalance: increment(finalProfit) }, { merge: true })
               .then(() => {
                 setWinningStats({ amount: finalProfit, result });
@@ -235,7 +236,7 @@ export default function WingoPage() {
         }
       }
       setIsCalculating(false);
-    }, 2000);
+    }, 500); 
   };
 
   const placeBet = async (type: BetType) => {
@@ -263,10 +264,9 @@ export default function WingoPage() {
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
     
-    // Atomic stake deduction
+    // Deduct stake immediately (Atomic)
     setDoc(uRef, { walletBalance: increment(-betAmount) }, { merge: true })
       .then(() => {
-        // Safe update: Ref first, then State
         const newBet = { type, amount: betAmount };
         activeBetsRef.current = [...activeBetsRef.current, newBet];
         setActiveBets([...activeBetsRef.current]);
@@ -332,7 +332,7 @@ export default function WingoPage() {
                   <p className="text-3xl font-black text-primary uppercase tracking-[0.4em] animate-pulse">
                     {isLockTime ? "Locking bets..." : "Opening Result..."}
                   </p>
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Wingo Manual Gateway Syncing</p>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Processing Payouts...</p>
                 </div>
              </div>
           )}
@@ -605,3 +605,4 @@ export default function WingoPage() {
       });
   }
 }
+
