@@ -52,7 +52,6 @@ export default function WingoPage() {
   const [isBetting, setIsBetting] = useState(false);
   const [activeBets, setActiveBets] = useState<{ type: BetType; amount: number }[]>([]);
   
-  // Use refs for stable access in async payout logic
   const activeBetsRef = useRef<{ type: BetType; amount: number }[]>([]);
   const lastProcessedPeriod = useRef("");
 
@@ -60,7 +59,6 @@ export default function WingoPage() {
     activeBetsRef.current = activeBets;
   }, [activeBets]);
 
-  // Admin Controller State
   const [adminTargetNumber, setAdminTargetNumber] = useState("");
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -68,7 +66,7 @@ export default function WingoPage() {
     if (num === 0) return ["red", "violet"];
     if (num === 5) return ["green", "violet"];
     if ([2, 4, 6, 8].includes(num)) return ["red"];
-    return ["green"]; // 1, 3, 7, 9
+    return ["green"];
   };
 
   const getSizeForNumber = (num: number): "Big" | "Small" => {
@@ -111,7 +109,6 @@ export default function WingoPage() {
     
     let winNumber = Math.floor(Math.random() * 10);
     
-    // 1. Check for Admin Manual Override
     try {
       const controlRef = doc(firestore, "wingoConfig", currentPeriod);
       const controlSnap = await getDoc(controlRef);
@@ -138,7 +135,6 @@ export default function WingoPage() {
     setHistory(prev => [result, ...prev].slice(0, 10));
     setPeriodId(generatePeriodId());
 
-    // 2. Process Payouts using latest bets from Ref
     const betsToProcess = activeBetsRef.current;
     const currentUser = auth.currentUser;
 
@@ -146,17 +142,14 @@ export default function WingoPage() {
       let totalWinning = 0;
       betsToProcess.forEach(bet => {
         if (typeof bet.type === 'number') {
-          // Exact number: 9x Payout
           if (Number(bet.type) === winNumber) {
             totalWinning += bet.amount * 9;
           }
         } else if (bet.type === 'big' || bet.type === 'small') {
-          // Size: 2x Payout
           if ((bet.type === 'big' && winSize === 'Big') || (bet.type === 'small' && winSize === 'Small')) {
             totalWinning += bet.amount * 2;
           }
         } else {
-          // Color: 2x Payout
           if (winColors.includes(bet.type as any)) {
             totalWinning += bet.amount * 2;
           }
@@ -165,7 +158,6 @@ export default function WingoPage() {
 
       if (totalWinning > 0) {
         const uRef = doc(firestore, "users", currentUser.uid);
-        // Guaranteed PLUS in Wallet using Atomic Increment
         setDoc(uRef, {
           walletBalance: increment(totalWinning)
         }, { merge: true })
@@ -193,7 +185,6 @@ export default function WingoPage() {
       }
     }
     
-    // Clear bets for new round after processing
     setActiveBets([]);
     activeBetsRef.current = [];
   };
@@ -218,7 +209,6 @@ export default function WingoPage() {
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
     
-    // Atomic deduction
     updateDoc(uRef, {
       walletBalance: increment(-betAmount)
     })
@@ -431,3 +421,4 @@ export default function WingoPage() {
     </div>
   );
 }
+
