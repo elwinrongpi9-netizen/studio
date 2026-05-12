@@ -17,7 +17,6 @@ import {
   User,
   X,
   Sparkles,
-  Search,
   Clock
 } from "lucide-react";
 import Link from "next/link";
@@ -110,7 +109,16 @@ export default function WingoPage() {
       const seconds = new Date().getSeconds();
       const currentSecondsLeft = 60 - seconds;
       setTimeLeft(currentSecondsLeft);
-      if (seconds === 0) setPeriodId(generatePeriodId());
+      
+      // Unlock everything when a new minute/round starts
+      if (currentSecondsLeft === 60 || currentSecondsLeft === 59) {
+        setIsBetting(false);
+        setIsCalculating(false);
+      }
+      
+      if (seconds === 0) {
+        setPeriodId(generatePeriodId());
+      }
     };
     syncTimer();
     const interval = setInterval(syncTimer, 1000);
@@ -118,6 +126,7 @@ export default function WingoPage() {
   }, []);
 
   useEffect(() => {
+    // Trigger result calculation at the very start of the new minute for the previous round
     if (timeLeft === 60 && periodId && lastProcessedPeriod.current !== periodId) {
       handleRoundEnd();
     }
@@ -128,6 +137,7 @@ export default function WingoPage() {
     
     setIsCalculating(true);
     
+    // Calculate what the previous period was
     const now = new Date();
     now.setMinutes(now.getMinutes() - 1);
     const dateStr = now.getFullYear().toString() + 
@@ -166,6 +176,7 @@ export default function WingoPage() {
     const betsToProcess = activeBetsRef.current;
     const currentUser = auth.currentUser;
 
+    // Small delay to show "Waiting" state then show result
     setTimeout(async () => {
       if (betsToProcess.length > 0 && currentUser && firestore) {
         let totalWinning = 0;
@@ -193,6 +204,7 @@ export default function WingoPage() {
 
           if (isWin) totalWinning += profit;
 
+          // Log the bet result
           const betId = Math.random().toString(36).substr(2, 9).toUpperCase();
           const betRef = doc(firestore, "users", currentUser.uid, "bets", betId);
           setDoc(betRef, {
@@ -222,10 +234,12 @@ export default function WingoPage() {
         }
       }
       
+      // Clear bets and unlock UI for the next round
       setActiveBets([]);
       activeBetsRef.current = [];
       setIsCalculating(false);
-    }, 2500);
+      setIsBetting(false);
+    }, 2000);
   };
 
   const placeBet = async (type: BetType) => {
@@ -233,10 +247,12 @@ export default function WingoPage() {
       toast({ title: "Sign in first!", variant: "destructive" });
       return;
     }
+    // Lock betting in the last 5 seconds
     if (timeLeft < 5) {
-      toast({ title: "Time over!", description: "Wait for results.", variant: "destructive" });
+      toast({ title: "Time over!", description: "Wait for the next round.", variant: "destructive" });
       return;
     }
+    
     const currentBalance = profile?.walletBalance || 0;
     if (betAmount > currentBalance) {
       toast({ title: "Insufficient Balance!", variant: "destructive" });
@@ -245,6 +261,8 @@ export default function WingoPage() {
 
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
+    
+    // Atomic deduction
     setDoc(uRef, { walletBalance: increment(-betAmount) }, { merge: true })
       .then(() => {
         setActiveBets(prev => {
@@ -252,11 +270,19 @@ export default function WingoPage() {
           activeBetsRef.current = newBets;
           return newBets;
         });
-        toast({ title: "Success!", description: `₹${betAmount} on ${type.toString().toUpperCase()}` });
+        toast({ title: "Bet Success!", description: `₹${betAmount} on ${type.toString().toUpperCase()}` });
       })
-      .catch(() => toast({ title: "Bet Failed", variant: "destructive" }))
-      .finally(() => setIsBetting(false));
+      .catch((err) => {
+        console.error(err);
+        toast({ title: "Bet Failed", variant: "destructive" });
+      })
+      .finally(() => {
+        // Unlock locally so user can place another bet in the same round if they want
+        setIsBetting(false);
+      });
   };
+
+  const isLockTime = timeLeft <= 5 && timeLeft > 0;
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex flex-col font-body">
@@ -296,22 +322,24 @@ export default function WingoPage() {
       <main className="flex-1 container mx-auto px-4 -mt-10 max-w-2xl pb-24 relative z-20">
         <div className="bg-white rounded-[4rem] p-12 shadow-2xl border-t-4 border-primary/5 mb-8 overflow-hidden relative">
           
-          {isCalculating && (
+          {(isCalculating || isLockTime) && (
              <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center animate-in fade-in duration-500">
                 <Loader2 className="w-16 h-16 text-primary animate-spin mb-6" />
-                <p className="text-2xl font-black text-primary uppercase tracking-[0.4em] animate-pulse">Waiting for result...</p>
+                <p className="text-2xl font-black text-primary uppercase tracking-[0.4em] animate-pulse">
+                   {isLockTime ? "Betting Locked" : "Processing Result..."}
+                </p>
              </div>
           )}
 
           <div className="flex gap-6 mb-10">
-            <Button onClick={() => placeBet("big")} disabled={isBetting || timeLeft < 5} className="flex-1 h-20 rounded-[2rem] bg-[#ff9933] hover:bg-[#e68a00] font-black text-2xl shadow-xl border-b-8 border-[#cc7a00] active:border-b-0 active:translate-y-1 transition-all">BIG</Button>
-            <Button onClick={() => placeBet("small")} disabled={isBetting || timeLeft < 5} className="flex-1 h-20 rounded-[2rem] bg-[#5c7cff] hover:bg-[#4a65cc] font-black text-2xl shadow-xl border-b-8 border-[#3c52a3] active:border-b-0 active:translate-y-1 transition-all">SMALL</Button>
+            <Button onClick={() => placeBet("big")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2rem] bg-[#ff9933] hover:bg-[#e68a00] font-black text-2xl shadow-xl border-b-8 border-[#cc7a00] active:border-b-0 active:translate-y-1 transition-all">BIG</Button>
+            <Button onClick={() => placeBet("small")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2rem] bg-[#5c7cff] hover:bg-[#4a65cc] font-black text-2xl shadow-xl border-b-8 border-[#3c52a3] active:border-b-0 active:translate-y-1 transition-all">SMALL</Button>
           </div>
 
           <div className="flex justify-between gap-6 mb-12">
-            <Button onClick={() => placeBet("green")} disabled={isBetting || timeLeft < 5} className="flex-1 h-20 rounded-[2rem] bg-[#18b663] hover:bg-[#149c55] font-black text-lg shadow-xl border-b-8 border-[#108246] active:border-b-0 transition-all">Green</Button>
-            <Button onClick={() => placeBet("violet")} disabled={isBetting || timeLeft < 5} className="flex-1 h-20 rounded-[2rem] bg-[#9c27b0] hover:bg-[#862196] font-black text-lg shadow-xl border-b-8 border-[#6d1b7b] active:border-b-0 transition-all">Violet</Button>
-            <Button onClick={() => placeBet("red")} disabled={isBetting || timeLeft < 5} className="flex-1 h-20 rounded-[2rem] bg-[#ff4b4b] hover:bg-[#e64343] font-black text-lg shadow-xl border-b-8 border-[#cc3c3c] active:border-b-0 transition-all">Red</Button>
+            <Button onClick={() => placeBet("green")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2rem] bg-[#18b663] hover:bg-[#149c55] font-black text-lg shadow-xl border-b-8 border-[#108246] active:border-b-0 transition-all">Green</Button>
+            <Button onClick={() => placeBet("violet")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2rem] bg-[#9c27b0] hover:bg-[#862196] font-black text-lg shadow-xl border-b-8 border-[#6d1b7b] active:border-b-0 transition-all">Violet</Button>
+            <Button onClick={() => placeBet("red")} disabled={isBetting || isLockTime} className="flex-1 h-20 rounded-[2rem] bg-[#ff4b4b] hover:bg-[#e64343] font-black text-lg shadow-xl border-b-8 border-[#cc3c3c] active:border-b-0 transition-all">Red</Button>
           </div>
 
           <div className="grid grid-cols-5 gap-5 mb-14">
@@ -319,7 +347,7 @@ export default function WingoPage() {
               <Button 
                 key={n}
                 onClick={() => placeBet(n)}
-                disabled={isBetting || timeLeft < 5}
+                disabled={isBetting || isLockTime}
                 variant="outline"
                 className={`h-20 rounded-[1.8rem] font-black text-3xl border-4 transition-all hover:scale-110 active:scale-95 shadow-sm ${
                   n === 0 || n === 5 ? 'text-purple-600 border-purple-100 bg-purple-50/30' :
@@ -372,7 +400,7 @@ export default function WingoPage() {
             <div className="flex gap-6">
               <Input 
                 type="number" 
-                placeholder="Choose Win (0-9)" 
+                placeholder="Win Number" 
                 value={adminTargetNumber} 
                 onChange={e => setAdminTargetNumber(e.target.value)}
                 className="bg-white/5 border-white/10 h-18 rounded-2xl text-2xl font-mono text-white flex-1 focus:ring-4 focus:ring-primary/20 text-center"
@@ -454,7 +482,7 @@ export default function WingoPage() {
                          </div>
                          <div className="h-10 w-[2px] bg-border/50 mx-2" />
                          <div className="flex flex-col">
-                           <span className="text-[9px] font-black text-muted-foreground uppercase opacity-50">Payout</span>
+                           <span className="text-[9px] font-black text-muted-foreground uppercase opacity-50">Multiplier</span>
                            <span className="font-black text-2xl uppercase tracking-tighter">{typeof bet.type === 'number' ? '9.0x' : '2.0x'}</span>
                          </div>
                       </div>
@@ -510,7 +538,7 @@ export default function WingoPage() {
                        {winningStats.result?.number}
                      </div>
                    </div>
-                   <div className="px-10 py-4 rounded-3xl bg-[#ff4b4b] font-black text-white uppercase text-xs shadow-2xl tracking-[0.2em] border-b-8 border-black/30">
+                   <div className="px-10 py-4 rounded-3xl bg-blue-600 font-black text-white uppercase text-xs shadow-2xl tracking-[0.2em] border-b-8 border-black/30">
                      {winningStats.result?.size}
                    </div>
                 </div>
