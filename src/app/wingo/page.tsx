@@ -13,7 +13,8 @@ import {
   Loader2,
   ShieldAlert,
   Trophy,
-  AlertCircle
+  AlertCircle,
+  TrendingUp
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc, useAuth } from "@/firebase";
@@ -51,6 +52,7 @@ export default function WingoPage() {
   const [activeBets, setActiveBets] = useState<{ type: BetType; amount: number }[]>([]);
   
   const activeBetsRef = useRef<{ type: BetType; amount: number }[]>([]);
+  
   useEffect(() => {
     activeBetsRef.current = activeBets;
   }, [activeBets]);
@@ -94,6 +96,7 @@ export default function WingoPage() {
   }, []);
 
   useEffect(() => {
+    // When seconds reach 00 (timeLeft is 60), trigger round end
     if (timeLeft === 60) {
       handleRoundEnd();
     }
@@ -116,7 +119,7 @@ export default function WingoPage() {
         }
       }
     } catch (e) {
-      console.warn("Manual override check failed", e);
+      console.warn("Manual override fetch failed", e);
     }
 
     const winColors = getColorsForNumber(winNumber);
@@ -132,11 +135,10 @@ export default function WingoPage() {
     setHistory(prev => [result, ...prev].slice(0, 10));
     setPeriodId(generatePeriodId());
 
-    // Process Payouts
+    // Process Payouts using the ref for latest bet state
     const betsToProcess = activeBetsRef.current;
-    const currentUser = auth.currentUser;
-
-    if (betsToProcess.length > 0 && currentUser) {
+    
+    if (betsToProcess.length > 0 && user) {
       let totalWinning = 0;
       betsToProcess.forEach(bet => {
         if (typeof bet.type === 'number') {
@@ -147,25 +149,26 @@ export default function WingoPage() {
             totalWinning += bet.amount * 2;
           }
         } else {
+          // Color logic: green, red, violet
           if (winColors.includes(bet.type as any)) totalWinning += bet.amount * 2;
         }
       });
 
       if (totalWinning > 0) {
-        const uRef = doc(firestore, "users", currentUser.uid);
-        // Use setDoc with merge to ensure wallet document is updated correctly
+        const uRef = doc(firestore, "users", user.uid);
+        // CRITICAL: Atomic addition to wallet balance
         setDoc(uRef, {
           walletBalance: increment(totalWinning)
         }, { merge: true })
         .then(() => {
           toast({
-            title: "VICTORY! 🎉",
-            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added to wallet!`,
-            className: "bg-green-600 text-white font-black"
+            title: "VICTORY! 🏆",
+            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added to your wallet!`,
+            className: "bg-green-600 text-white font-black border-none"
           });
         })
         .catch((err) => {
-          console.error("Payout failed", err);
+          console.error("Payout update failed", err);
           errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: uRef.path,
             operation: 'update',
@@ -174,12 +177,14 @@ export default function WingoPage() {
         });
       } else {
         toast({
-          title: "LOSS 😞",
-          description: `Result: ${winNumber} (${winSize}). Better luck next round!`,
+          title: "ROUND OVER",
+          description: `Result: ${winNumber} (${winSize}). Better luck next time!`,
           variant: "destructive"
         });
       }
     }
+    
+    // Clear bets for new round
     setActiveBets([]);
   };
 
@@ -202,6 +207,8 @@ export default function WingoPage() {
 
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
+    
+    // Atomically subtract bet amount from wallet
     updateDoc(uRef, {
       walletBalance: increment(-betAmount)
     })
@@ -213,6 +220,7 @@ export default function WingoPage() {
       });
     })
     .catch((err) => {
+       console.error("Bet placement failed", err);
        toast({ title: "Bet Failed", variant: "destructive" });
     })
     .finally(() => setIsBetting(false));
@@ -221,7 +229,10 @@ export default function WingoPage() {
   const handleAdminSetResult = async () => {
     if (!firestore || !periodId || adminTargetNumber === "") return;
     const num = parseInt(adminTargetNumber);
-    if (isNaN(num) || num < 0 || num > 9) return;
+    if (isNaN(num) || num < 0 || num > 9) {
+      toast({ title: "Invalid Number", description: "Choose 0-9", variant: "destructive" });
+      return;
+    }
 
     const configRef = doc(firestore, "wingoConfig", periodId);
     setDoc(configRef, {
@@ -230,7 +241,7 @@ export default function WingoPage() {
       updatedAt: new Date().toISOString()
     }, { merge: true })
     .then(() => {
-      toast({ title: "SUCCESS!", description: `Period ${periodId} fixed to Number ${num}.` });
+      toast({ title: "SUCCESS!", description: `Period ${periodId} fixed to Number ${num}.`, className: "bg-primary text-white font-black" });
       setAdminTargetNumber("");
     })
     .catch((err) => {
@@ -332,12 +343,17 @@ export default function WingoPage() {
                 ))}
               </div>
             </div>
-            <Input 
-              type="number" 
-              value={betAmount} 
-              onChange={e => setBetAmount(parseInt(e.target.value) || 0)}
-              className="h-14 rounded-xl text-center font-black text-2xl bg-muted/30 border-none focus:ring-2 focus:ring-primary"
-            />
+            <div className="relative">
+              <Input 
+                type="number" 
+                value={betAmount} 
+                onChange={e => setBetAmount(parseInt(e.target.value) || 0)}
+                className="h-16 rounded-xl text-center font-black text-2xl bg-muted/30 border-none focus:ring-2 focus:ring-primary"
+              />
+              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -401,3 +417,4 @@ export default function WingoPage() {
     </div>
   );
 }
+
