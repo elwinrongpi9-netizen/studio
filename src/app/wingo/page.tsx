@@ -16,7 +16,9 @@ import {
   AlertCircle,
   TrendingUp,
   CheckCircle2,
-  User
+  User,
+  X,
+  Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc, useAuth, useCollection } from "@/firebase";
@@ -27,6 +29,12 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type BetType = "green" | "red" | "violet" | "big" | "small" | number;
 
@@ -66,6 +74,10 @@ export default function WingoPage() {
   const [isBetting, setIsBetting] = useState(false);
   const [activeBets, setActiveBets] = useState<{ type: BetType; amount: number }[]>([]);
   
+  // Winning Popup State
+  const [showWinPopup, setShowWinPopup] = useState(false);
+  const [winningStats, setWinningStats] = useState<{ amount: number; result: GameResult | null }>({ amount: 0, result: null });
+  
   const activeBetsRef = useRef<{ type: BetType; amount: number }[]>([]);
   const lastProcessedPeriod = useRef("");
 
@@ -104,7 +116,6 @@ export default function WingoPage() {
       const currentSecondsLeft = 60 - seconds;
       setTimeLeft(currentSecondsLeft);
       
-      // Auto trigger end if seconds is exactly 0
       if (seconds === 0) {
         setPeriodId(generatePeriodId());
       }
@@ -124,7 +135,6 @@ export default function WingoPage() {
   const handleRoundEnd = async () => {
     if (!firestore || !periodId) return;
     
-    // We process the PREVIOUS period
     const now = new Date();
     now.setMinutes(now.getMinutes() - 1);
     const dateStr = now.getFullYear().toString() + 
@@ -193,7 +203,6 @@ export default function WingoPage() {
           totalWinning += profit;
         }
 
-        // Save Bet History for User
         const betId = Math.random().toString(36).substr(2, 9);
         const betRef = doc(firestore, "users", currentUser.uid, "bets", betId);
         setDoc(betRef, {
@@ -209,15 +218,13 @@ export default function WingoPage() {
 
       if (totalWinning > 0) {
         const uRef = doc(firestore, "users", currentUser.uid);
-        updateDoc(uRef, {
+        // Use setDoc with merge for guaranteed plus
+        setDoc(uRef, {
           walletBalance: increment(totalWinning)
-        })
+        }, { merge: true })
         .then(() => {
-          toast({
-            title: "VICTORY! 🏆",
-            description: `Round ${finishedPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added!`,
-            className: "bg-green-600 text-white font-black border-none"
-          });
+          setWinningStats({ amount: totalWinning, result });
+          setShowWinPopup(true);
         });
       } else {
         toast({
@@ -310,7 +317,7 @@ export default function WingoPage() {
           <h1 className="text-3xl font-black tracking-tighter italic">Wingo <span className="not-italic text-sm font-bold bg-white/20 px-3 py-1 rounded-full">1 Min</span></h1>
           <div className="bg-white/20 px-4 py-2 rounded-2xl flex items-center gap-2 backdrop-blur-md border border-white/10">
             <Wallet className="w-4 h-4" />
-            <span className="font-black">₹{profile?.walletBalance || 0}</span>
+            <span className="font-black">₹{profile?.walletBalance?.toFixed(2) || "0.00"}</span>
           </div>
         </div>
 
@@ -481,7 +488,7 @@ export default function WingoPage() {
                   <User className="w-6 h-6 text-primary" /> Personal History
                 </h3>
                 <div className="space-y-4">
-                  {myBets.map((bet, i) => (
+                  {myBets?.map((bet, i) => (
                     <div key={i} className="flex items-center justify-between p-5 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/5 transition-all">
                       <div className="space-y-1">
                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Round: {bet.periodId}</p>
@@ -503,7 +510,7 @@ export default function WingoPage() {
                       </div>
                     </div>
                   ))}
-                  {myBets.length === 0 && (
+                  {(!myBets || myBets.length === 0) && (
                     <div className="text-center py-20 opacity-40">
                        <p className="text-xs font-black uppercase tracking-widest">No bets placed yet</p>
                     </div>
@@ -514,6 +521,72 @@ export default function WingoPage() {
           </Tabs>
         </div>
       </main>
+
+      {/* WIN POPUP OVERLAY */}
+      <Dialog open={showWinPopup} onOpenChange={setShowWinPopup}>
+        <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden bg-transparent border-none shadow-none focus:outline-none">
+          <div className="relative flex flex-col items-center pt-24 pb-12 px-6">
+             {/* Backdrop Glow */}
+             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm -z-10 rounded-[3rem]" />
+             
+             {/* Floating Gold Coin */}
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 pointer-events-none">
+               <div className="absolute inset-0 bg-yellow-400/20 rounded-full animate-ping" />
+               <div className="relative w-full h-full bg-gradient-to-b from-yellow-300 to-yellow-600 rounded-full shadow-2xl border-8 border-yellow-200 flex items-center justify-center">
+                 <Sparkles className="w-20 h-20 text-white animate-pulse" />
+               </div>
+             </div>
+
+             {/* Header */}
+             <div className="bg-[#1a1a1a] w-full rounded-t-[2rem] p-8 text-center border-x-4 border-t-4 border-yellow-500/30">
+               <h2 className="text-3xl font-black text-yellow-400 italic tracking-tight drop-shadow-lg">
+                 Congratulations on your winning
+               </h2>
+             </div>
+
+             {/* Result Badges */}
+             <div className="bg-[#262626] w-full p-8 border-x-4 border-yellow-500/20 flex flex-col items-center gap-6">
+                <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em]">Lottery Result</span>
+                <div className="flex items-center gap-4">
+                   <div className={`px-6 py-2 rounded-full font-black text-white uppercase text-xs shadow-lg ${
+                     winningStats.result?.colors.includes('red') ? 'bg-red-500' : 'bg-green-500'
+                   }`}>
+                     {winningStats.result?.colors[0]}
+                   </div>
+                   <div className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center text-3xl font-black text-white shadow-2xl border-4 border-white/10">
+                     {winningStats.result?.number}
+                   </div>
+                   <div className="px-6 py-2 rounded-full bg-red-500 font-black text-white uppercase text-xs shadow-lg">
+                     {winningStats.result?.size}
+                   </div>
+                </div>
+             </div>
+
+             {/* Bonus Section */}
+             <div className="bg-[#1a1a1a] w-full p-8 text-center border-x-4 border-yellow-500/30">
+                <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.3em] mb-4 block">Bonus</span>
+                <h3 className="text-6xl font-black text-yellow-400 italic tracking-tighter flex items-center justify-center gap-2">
+                   <span className="text-3xl">₹</span>{winningStats.amount.toFixed(2)}
+                </h3>
+             </div>
+
+             {/* Footer Period */}
+             <div className="bg-[#121212] w-full p-4 rounded-b-[2rem] text-center border-x-4 border-b-4 border-yellow-500/20 mb-6">
+                <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                  Issue: {winningStats.result?.periodId}
+                </p>
+             </div>
+
+             {/* Close Trigger */}
+             <button 
+                onClick={() => setShowWinPopup(false)}
+                className="w-14 h-14 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center border-2 border-white/20 transition-all active:scale-90"
+             >
+                <X className="w-8 h-8 text-white" />
+             </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
