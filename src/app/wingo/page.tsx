@@ -15,15 +15,18 @@ import {
   Trophy,
   AlertCircle,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  User
 } from "lucide-react";
 import Link from "next/link";
-import { useUser, useFirestore, useDoc, useAuth } from "@/firebase";
-import { doc, increment, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { useUser, useFirestore, useDoc, useAuth, useCollection } from "@/firebase";
+import { doc, increment, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type BetType = "green" | "red" | "violet" | "big" | "small" | number;
 
@@ -44,6 +47,17 @@ export default function WingoPage() {
   
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
   const { data: profile } = useDoc<any>(userRef);
+
+  // User Bet History
+  const userBetsQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, "users", user.uid, "bets"),
+      orderBy("createdAt", "desc"),
+      limit(10)
+    );
+  }, [firestore, user]);
+  const { data: myBets } = useCollection<any>(userBetsQuery);
 
   const [timeLeft, setTimeLeft] = useState(60);
   const [periodId, setPeriodId] = useState("");
@@ -87,7 +101,13 @@ export default function WingoPage() {
 
     const syncTimer = () => {
       const seconds = new Date().getSeconds();
-      setTimeLeft(60 - seconds);
+      const currentSecondsLeft = 60 - seconds;
+      setTimeLeft(currentSecondsLeft);
+      
+      // Auto trigger end if seconds is exactly 0
+      if (seconds === 0) {
+        setPeriodId(generatePeriodId());
+      }
     };
 
     syncTimer();
@@ -104,13 +124,22 @@ export default function WingoPage() {
   const handleRoundEnd = async () => {
     if (!firestore || !periodId) return;
     
-    const currentPeriod = periodId;
-    lastProcessedPeriod.current = currentPeriod;
+    // We process the PREVIOUS period
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - 1);
+    const dateStr = now.getFullYear().toString() + 
+                    (now.getMonth() + 1).toString().padStart(2, '0') + 
+                    now.getDate().toString().padStart(2, '0');
+    const prevTotalMinutes = now.getHours() * 60 + now.getMinutes();
+    const finishedPeriod = dateStr + prevTotalMinutes.toString().padStart(4, '0');
+
+    if (lastProcessedPeriod.current === finishedPeriod) return;
+    lastProcessedPeriod.current = finishedPeriod;
     
     let winNumber = Math.floor(Math.random() * 10);
     
     try {
-      const controlRef = doc(firestore, "wingoConfig", currentPeriod);
+      const controlRef = doc(firestore, "wingoConfig", finishedPeriod);
       const controlSnap = await getDoc(controlRef);
       if (controlSnap.exists()) {
         const controlledData = controlSnap.data();
@@ -126,14 +155,13 @@ export default function WingoPage() {
     const winSize = getSizeForNumber(winNumber);
 
     const result: GameResult = {
-      periodId: currentPeriod,
+      periodId: finishedPeriod,
       number: winNumber,
       colors: winColors,
       size: winSize
     };
 
     setHistory(prev => [result, ...prev].slice(0, 10));
-    setPeriodId(generatePeriodId());
 
     const betsToProcess = activeBetsRef.current;
     const currentUser = auth.currentUser;
@@ -141,40 +169,55 @@ export default function WingoPage() {
     if (betsToProcess.length > 0 && currentUser && firestore) {
       let totalWinning = 0;
       betsToProcess.forEach(bet => {
+        let isWin = false;
+        let profit = 0;
+
         if (typeof bet.type === 'number') {
           if (Number(bet.type) === winNumber) {
-            totalWinning += bet.amount * 9;
+            profit = bet.amount * 9;
+            isWin = true;
           }
         } else if (bet.type === 'big' || bet.type === 'small') {
           if ((bet.type === 'big' && winSize === 'Big') || (bet.type === 'small' && winSize === 'Small')) {
-            totalWinning += bet.amount * 2;
+            profit = bet.amount * 2;
+            isWin = true;
           }
         } else {
           if (winColors.includes(bet.type as any)) {
-            totalWinning += bet.amount * 2;
+            profit = bet.amount * 2;
+            isWin = true;
           }
         }
+
+        if (isWin) {
+          totalWinning += profit;
+        }
+
+        // Save Bet History for User
+        const betId = Math.random().toString(36).substr(2, 9);
+        const betRef = doc(firestore, "users", currentUser.uid, "bets", betId);
+        setDoc(betRef, {
+          periodId: finishedPeriod,
+          type: bet.type,
+          amount: bet.amount,
+          winAmount: isWin ? profit : 0,
+          status: isWin ? "Win" : "Loss",
+          resultNumber: winNumber,
+          createdAt: new Date().toISOString()
+        }, { merge: true });
       });
 
       if (totalWinning > 0) {
         const uRef = doc(firestore, "users", currentUser.uid);
-        setDoc(uRef, {
+        updateDoc(uRef, {
           walletBalance: increment(totalWinning)
-        }, { merge: true })
+        })
         .then(() => {
           toast({
             title: "VICTORY! 🏆",
-            description: `Round ${currentPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added to wallet!`,
+            description: `Round ${finishedPeriod} Result: ${winNumber}. Profit ₹${totalWinning} added!`,
             className: "bg-green-600 text-white font-black border-none"
           });
-        })
-        .catch((err) => {
-          const permissionError = new FirestorePermissionError({
-            path: uRef.path,
-            operation: 'update',
-            requestResourceData: { walletBalance: totalWinning },
-          });
-          errorEmitter.emit('permission-error', permissionError);
         });
       } else {
         toast({
@@ -383,42 +426,94 @@ export default function WingoPage() {
           </div>
         )}
 
-        <div className="mt-8 bg-white rounded-[2.5rem] p-8 shadow-xl">
-          <h3 className="text-xl font-black italic tracking-tighter flex items-center gap-3 mb-8">
-            <History className="w-6 h-6 text-primary" /> Game Records
-          </h3>
-          <div className="space-y-4">
-            {history.map((res, i) => (
-              <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/10 transition-all">
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{res.periodId}</p>
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-center">
-                    <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest mb-1">{res.size}</span>
-                    <div className="relative">
-                      <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
-                        res.colors[0] === 'green' ? 'bg-green-500' : 'bg-red-500'
-                      }`}>
-                        {res.number}
-                      </span>
-                      {res.colors.length > 1 && (
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-500 border-2 border-white shadow-sm" />
-                      )}
+        <div className="mt-8">
+          <Tabs defaultValue="records" className="space-y-6">
+            <TabsList className="bg-white p-1.5 rounded-2xl h-14 w-full shadow-sm">
+              <TabsTrigger value="records" className="rounded-xl font-black flex-1 h-11 uppercase text-[10px] tracking-widest">Game Records</TabsTrigger>
+              <TabsTrigger value="mybets" className="rounded-xl font-black flex-1 h-11 uppercase text-[10px] tracking-widest">My History</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="records">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-xl">
+                <h3 className="text-xl font-black italic tracking-tighter flex items-center gap-3 mb-8">
+                  <History className="w-6 h-6 text-primary" /> Global Records
+                </h3>
+                <div className="space-y-4">
+                  {history.map((res, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/10 transition-all">
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{res.periodId}</p>
+                      <div className="flex items-center gap-6">
+                        <div className="flex flex-col items-center">
+                          <span className="text-[8px] font-black uppercase text-muted-foreground tracking-widest mb-1">{res.size}</span>
+                          <div className="relative">
+                            <span className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-white shadow-lg ${
+                              res.colors[0] === 'green' ? 'bg-green-500' : 'bg-red-500'
+                            }`}>
+                              {res.number}
+                            </span>
+                            {res.colors.length > 1 && (
+                              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-purple-500 border-2 border-white shadow-sm" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {res.colors.map((color, ci) => (
+                            <div key={ci} className={`w-3.5 h-3.5 rounded-full ${
+                              color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : 'bg-purple-500'
+                            }`} />
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {res.colors.map((color, ci) => (
-                      <div key={ci} className={`w-3.5 h-3.5 rounded-full ${
-                        color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-500' : 'bg-purple-500'
-                      }`} />
-                    ))}
-                  </div>
+                  ))}
+                  {history.length === 0 && (
+                     <div className="text-center py-10 opacity-40">
+                       <p className="text-xs font-black uppercase tracking-widest">Waiting for results...</p>
+                     </div>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+            </TabsContent>
+
+            <TabsContent value="mybets">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-xl min-h-[400px]">
+                <h3 className="text-xl font-black italic tracking-tighter flex items-center gap-3 mb-8">
+                  <User className="w-6 h-6 text-primary" /> Personal History
+                </h3>
+                <div className="space-y-4">
+                  {myBets.map((bet, i) => (
+                    <div key={i} className="flex items-center justify-between p-5 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/5 transition-all">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Round: {bet.periodId}</p>
+                        <div className="flex items-center gap-2">
+                           <span className="font-black text-sm uppercase">Bet: {bet.type}</span>
+                           <span className="text-[10px] font-bold text-muted-foreground">|</span>
+                           <span className="font-black text-sm text-primary">₹{bet.amount}</span>
+                        </div>
+                      </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <Badge className={`rounded-full px-3 py-0.5 text-[9px] font-black uppercase ${
+                          bet.status === 'Win' ? 'bg-green-600 shadow-md shadow-green-600/20' : 'bg-destructive/60'
+                        }`}>
+                          {bet.status}
+                        </Badge>
+                        <p className={`text-sm font-black ${bet.status === 'Win' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                           {bet.status === 'Win' ? `+₹${bet.winAmount}` : `-₹${bet.amount}`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {myBets.length === 0 && (
+                    <div className="text-center py-20 opacity-40">
+                       <p className="text-xs font-black uppercase tracking-widest">No bets placed yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
   );
 }
-
