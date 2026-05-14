@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -30,7 +30,7 @@ const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
 
 const PAYMENT_METHODS = [
-  { id: 'upi', name: 'PhonePe Business (QR)', icon: <QrCode className="w-4 h-4" /> },
+  { id: 'upi', name: 'PhonePe Gateway (QR)', icon: <QrCode className="w-4 h-4" /> },
   { id: 'cod', name: 'Cash on Delivery', icon: <Wallet className="w-4 h-4" /> },
 ];
 
@@ -46,6 +46,7 @@ export default function CartPage() {
 
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showQrModal, setShowQrModal] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
   const [useWallet, setUseWallet] = useState(false);
 
@@ -62,15 +63,16 @@ export default function CartPage() {
   
   const total = billTotal - walletDeduction;
 
+  // SOURCE CODE FOR GATEWAY URI GENERATION
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
     const pa = MERCHANT_UPI_ID;
     const pn = encodeURIComponent(MERCHANT_NAME);
-    const mc = MERCHANT_CODE;
-    const tr = `TRX${Date.now()}`;
-    const tid = `TID${Date.now()}`;
+    const mc = MERCHANT_CODE; // Category Code for Restaurants
+    const tr = `TRX${Date.now()}`; // Unique Transaction Reference
+    const tid = `TID${Date.now()}`; // Terminal ID
     
-    // Matched URI for official PhonePe Business visibility (Mode 02, MC 5812)
+    // Official PhonePe Business URI Scheme (Mode 02)
     return `upi://pay?pa=${pa}&pn=${pn}&mc=${mc}&tid=${tid}&tr=${tr}&am=${amount}&cu=INR&mode=02&purpose=00`;
   }, [total]);
 
@@ -96,6 +98,8 @@ export default function CartPage() {
       return;
     }
 
+    setIsVerifying(true);
+
     const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
     const paymentStatus = (total === 0 || confirmedPayment) ? 'Paid' : 'Pending';
 
@@ -112,29 +116,34 @@ export default function CartPage() {
       walletUsed: walletDeduction
     };
 
-    if (walletDeduction > 0) {
-      await updateDoc(doc(firestore, "users", user.uid), {
-        walletBalance: increment(-walletDeduction)
-      });
-    }
-
-    const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
-    setDoc(orderRef, orderData)
-      .catch(async () => {
-        const permissionError = new FirestorePermissionError({
-          path: orderRef.path,
-          operation: "create",
-          requestResourceData: orderData,
+    // Simulate Gateway Feedback Delay
+    setTimeout(async () => {
+      if (walletDeduction > 0) {
+        await updateDoc(doc(firestore, "users", user.uid), {
+          walletBalance: increment(-walletDeduction)
         });
-        errorEmitter.emit("permission-error", permissionError);
-      });
+      }
 
-    clearCart();
-    toast({
-      title: "Order Successful!",
-      description: `Order #${orderId} has been placed.`,
-    });
-    router.push("/orders");
+      const orderRef = doc(firestore, "users", user.uid, "orders", orderId);
+      setDoc(orderRef, orderData)
+        .catch(async () => {
+          const permissionError = new FirestorePermissionError({
+            path: orderRef.path,
+            operation: "create",
+            requestResourceData: orderData,
+          });
+          errorEmitter.emit("permission-error", permissionError);
+        });
+
+      clearCart();
+      setIsVerifying(false);
+      setShowQrModal(false);
+      toast({
+        title: "Order Successful! 🎉",
+        description: `Order #${orderId} has been confirmed.`,
+      });
+      router.push("/orders");
+    }, 1500);
   };
 
   const handleCheckout = () => {
@@ -258,7 +267,7 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between font-black text-2xl mb-8"><span>Final Pay</span><span className="text-primary">₹{total.toFixed(0)}</span></div>
                   <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-xl shadow-primary/20" onClick={handleCheckout}>
-                    {total <= 0 ? 'Place Order (Wallet)' : 'Secure Scan & Pay'}
+                    {total <= 0 ? 'Place Order (Wallet)' : 'Secure PhonePe Gateway'}
                   </Button>
                 </div>
               </div>
@@ -268,34 +277,46 @@ export default function CartPage() {
       </main>
 
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
-        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-3xl font-black text-center">Scan & Pay</DialogTitle>
-            <DialogDescription className="text-center font-bold text-muted-foreground">
-              Merchant: <span className="text-primary">{MERCHANT_NAME}</span>
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex flex-col items-center gap-6">
-            <div className="flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs animate-pulse">
-              <Timer className="w-4 h-4" />
-              <span>Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
-            </div>
+        <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10 overflow-hidden">
+          {isVerifying ? (
+             <div className="flex flex-col items-center justify-center py-20 gap-6">
+                <Loader2 className="w-16 h-16 text-primary animate-spin" />
+                <div className="text-center">
+                  <h3 className="text-2xl font-black uppercase tracking-widest italic">Verifying Payment</h3>
+                  <p className="text-xs font-bold text-muted-foreground mt-2">Connecting to PhonePe Secure Server...</p>
+                </div>
+             </div>
+          ) : (
+            <>
+              <DialogHeader className="mb-4">
+                <DialogTitle className="text-3xl font-black text-center">Scan & Pay</DialogTitle>
+                <DialogDescription className="text-center font-bold text-muted-foreground">
+                  Merchant: <span className="text-primary">{MERCHANT_NAME}</span>
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex flex-col items-center gap-6">
+                <div className="flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-2 rounded-full font-black text-xs animate-pulse">
+                  <Timer className="w-4 h-4" />
+                  <span>Session expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
+                </div>
 
-            <div className="relative w-80 h-80 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
-              <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-2" unoptimized />
-            </div>
-            
-            <div className="text-center">
-              <p className="text-4xl font-black text-primary">₹{total.toFixed(2)}</p>
-              <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase mt-2">{MERCHANT_UPI_ID}</p>
-            </div>
+                <div className="relative w-80 h-80 bg-white p-4 rounded-3xl shadow-2xl border-4 border-primary/10">
+                  <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-2" unoptimized />
+                </div>
+                
+                <div className="text-center">
+                  <p className="text-4xl font-black text-primary">₹{total.toFixed(2)}</p>
+                  <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase mt-2">{MERCHANT_UPI_ID}</p>
+                </div>
 
-            <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => { setShowQrModal(false); processOrder(true); }}>
-              I have paid ₹{total.toFixed(0)}
-            </Button>
-            <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Official PhonePe Business Gateway (Mode 02 • MC 5812)</p>
-          </div>
+                <Button className="w-full py-7 rounded-2xl font-black text-lg shadow-lg" onClick={() => processOrder(true)}>
+                  I have paid ₹{total.toFixed(0)}
+                </Button>
+                <p className="text-[9px] text-muted-foreground text-center font-bold uppercase tracking-wider">Secure PhonePe Business Gateway (Mode 02 • MC 5812)</p>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>

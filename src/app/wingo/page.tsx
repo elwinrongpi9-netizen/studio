@@ -124,7 +124,7 @@ export default function WingoPage() {
     if (!firestore || !finishedPeriod || lastProcessedPeriod.current === finishedPeriod) return;
     lastProcessedPeriod.current = finishedPeriod;
     
-    // SNAPSHOT BETS
+    // SNAPSHOT BETS IMMEDIATELY
     const betsToProcess = [...activeBetsRef.current];
     activeBetsRef.current = [];
     setActiveBets([]);
@@ -149,7 +149,7 @@ export default function WingoPage() {
 
     setHistory(prev => [result, ...prev].slice(0, 15));
 
-    // 2. Process Payouts to Wingo Wallet
+    // 2. Process Payouts to Wingo Wallet (INSTANT ATOMIC)
     if (user && firestore && betsToProcess.length > 0) {
       let totalWinning = 0;
 
@@ -159,7 +159,7 @@ export default function WingoPage() {
 
         if (typeof bet.type === 'number' || !isNaN(Number(bet.type))) {
           if (Number(bet.type) === winNumber) {
-            profit = bet.amount * 9; 
+            profit = bet.amount * 9; // 9x Profit for Numbers
             isWin = true;
           }
         } else if (bet.type === 'big' || bet.type === 'small') {
@@ -202,22 +202,17 @@ export default function WingoPage() {
         })
         .catch(err => {
           console.error("Payout failed", err);
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: uRef.path,
-            operation: 'update',
-            requestResourceData: { wingoBalance: totalWinning }
-          }));
         });
       } else {
         toast({
           title: "Round Result",
-          description: `Period #${finishedPeriod}: Result was ${winNumber} (${winSize})`,
+          description: `Period #${finishedPeriod}: Result was ${winNumber}`,
           variant: "destructive"
         });
       }
     }
     
-    // SMALL DELAY TO FINISH UI TRANSITION
+    // Rapid Unlock
     setTimeout(() => setIsCalculating(false), 800);
   };
 
@@ -241,7 +236,7 @@ export default function WingoPage() {
     setIsBetting(true);
     const uRef = doc(firestore, "users", user.uid);
     
-    // INSTANT ATOMIC DEDUCTION FROM WINGO WALLET
+    // INSTANT ATOMIC DEDUCTION
     setDoc(uRef, { wingoBalance: increment(-betAmount) }, { merge: true })
       .then(() => {
         const newBet = { type, amount: betAmount };
@@ -308,9 +303,9 @@ export default function WingoPage() {
                 <Loader2 className="w-20 h-20 text-primary animate-spin mb-8" />
                 <div className="text-center space-y-2">
                   <p className="text-3xl font-black text-primary uppercase tracking-[0.4em] animate-pulse">
-                    {isLockTime ? "Locking bets..." : "Opening Result..."}
+                    {isLockTime ? "Locking bets..." : "Syncing Results..."}
                   </p>
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Instant Wingo Payout</p>
+                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">PhonePe Secure Processing</p>
                 </div>
              </div>
           )}
@@ -370,7 +365,7 @@ export default function WingoPage() {
                 className="h-28 rounded-[3rem] text-center font-black text-6xl bg-muted/30 border-none focus:ring-[12px] focus:ring-primary/10 transition-all shadow-inner font-mono"
               />
               <TrendingUp className="absolute left-12 top-1/2 -translate-y-1/2 w-12 h-12 text-primary opacity-20" />
-              <div className="absolute right-12 top-1/2 -translate-y-1/2 text-[10px] font-black text-primary/40 uppercase tracking-widest">Bet Wingo Amount</div>
+              <div className="absolute right-12 top-1/2 -translate-y-1/2 text-[10px] font-black text-primary/40 uppercase tracking-widest">Wingo Bet Amount</div>
             </div>
           </div>
         </div>
@@ -380,7 +375,7 @@ export default function WingoPage() {
             <div className="flex items-center gap-5 mb-10">
               <div className="p-4 bg-primary rounded-3xl animate-pulse"><ShieldAlert className="w-8 h-8 text-white" /></div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Admin Result Fixer</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Admin Gateway Terminal</span>
                 <span className="text-2xl font-black text-primary mt-1 italic tracking-tighter">Issue: {periodId}</span>
               </div>
             </div>
@@ -393,7 +388,7 @@ export default function WingoPage() {
                 className="bg-white/5 border-white/10 h-20 rounded-3xl text-4xl font-mono text-white flex-1 text-center font-black"
               />
               <Button onClick={handleAdminSetResult} className="bg-primary hover:bg-primary/90 h-20 rounded-3xl px-16 font-black uppercase text-sm tracking-widest">
-                FIX NEXT
+                FIX RESULT
               </Button>
             </div>
           </div>
@@ -447,12 +442,12 @@ export default function WingoPage() {
                       </div>
                       <div className="flex items-center gap-8">
                          <div className="flex flex-col">
-                           <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 mb-1">Target</span>
+                           <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 mb-1">Bet Type</span>
                            <span className="font-black text-3xl uppercase tracking-tighter">{bet.type}</span>
                          </div>
                          <div className="h-12 w-[2px] bg-border/40 mx-2" />
                          <div className="flex flex-col">
-                           <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 mb-1">Result</span>
+                           <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 mb-1">Net Profit</span>
                            <span className={`font-black text-3xl uppercase tracking-tighter ${bet.status === 'Win' ? 'text-green-600' : 'text-muted-foreground'}`}>
                              {bet.status === 'Win' ? `+₹${bet.winAmount}` : `-₹${bet.amount}`}
                            </span>
@@ -472,11 +467,10 @@ export default function WingoPage() {
         </Tabs>
       </main>
 
-      {/* WIN POPUP */}
       <Dialog open={showWinPopup} onOpenChange={setShowWinPopup}>
         <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-transparent border-none shadow-none z-[100]">
           <div className="relative flex flex-col items-center pt-32 pb-20 px-10">
-             <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl -z-10 rounded-[6rem]" />
+             <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl -z-10 rounded-[6rem]" />
              
              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72">
                <div className="absolute inset-0 bg-yellow-400/40 rounded-full animate-ping" />
@@ -486,8 +480,8 @@ export default function WingoPage() {
              </div>
 
              <div className="bg-[#111] w-full rounded-t-[4rem] p-14 text-center border-x-4 border-t-4 border-yellow-500/50">
-               <h2 className="text-6xl font-black text-yellow-400 italic tracking-tighter uppercase">Victory! 🎉</h2>
-               <p className="text-[12px] font-black uppercase text-yellow-500/60 tracking-[0.6em] mt-6">Wingo Balance Added</p>
+               <h2 className="text-6xl font-black text-yellow-400 italic tracking-tighter uppercase">VICTORY! 🎉</h2>
+               <p className="text-[12px] font-black uppercase text-yellow-500/60 tracking-[0.6em] mt-6">Wingo Wallet Credited</p>
              </div>
 
              <div className="bg-[#181818] w-full p-14 border-x-4 border-yellow-500/40 flex flex-col items-center gap-12">
