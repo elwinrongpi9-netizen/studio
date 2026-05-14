@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -469,6 +470,7 @@ export default function WingoPage() {
 
       <Dialog open={showWinPopup} onOpenChange={setShowWinPopup}>
         <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-transparent border-none shadow-none z-[100]">
+          <DialogTitle className="sr-only">Win Announcement</DialogTitle>
           <div className="relative flex flex-col items-center pt-32 pb-20 px-10">
              <div className="absolute inset-0 bg-black/95 backdrop-blur-2xl -z-10 rounded-[6rem]" />
              

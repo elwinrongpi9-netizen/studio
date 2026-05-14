@@ -196,6 +196,7 @@ export default function CartPage() {
 
       <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10 overflow-hidden">
+          <DialogTitle className="sr-only">PhonePe Payment Modal</DialogTitle>
           {isVerifying ? (
              <div className="flex flex-col items-center justify-center py-20 gap-6">
                 <Loader2 className="w-16 h-16 text-primary animate-spin" />
