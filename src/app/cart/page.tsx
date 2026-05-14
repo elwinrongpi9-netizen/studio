@@ -11,8 +11,6 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc } from "@/firebase";
 import { doc, setDoc, updateDoc, increment, collection } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { useState, useMemo, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -25,7 +23,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// UPDATED WITH YOUR UPI ID FROM PHP PLUGIN LOGIC
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
@@ -99,8 +96,8 @@ export default function CartPage() {
       restaurantName: cart[0]?.restaurantName || "Restaurant",
       amount: billTotal,
       state: state,
-      udf1: profile?.displayName || user.email, // Similar to PHP udf1
-      udf2: user.email, // Similar to PHP udf2
+      udf1: profile?.displayName || user.email,
+      udf2: user.email,
       items: cart,
       userId: user.uid,
       createdAt: new Date().toISOString(),
@@ -108,28 +105,35 @@ export default function CartPage() {
       paymentMethod: total === 0 ? 'Karbi Coins' : 'PhonePe UPI',
     };
 
-    // Save to Global PhonePe Orders collection (Mimicking PHP table)
-    const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
-    setDoc(globalOrderRef, orderData).catch(console.error);
+    try {
+      // Save to Global PhonePe Orders collection
+      const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
+      await setDoc(globalOrderRef, orderData);
 
-    // Save to User's private orders
-    const userOrderRef = doc(firestore, "users", user.uid, "orders", orderId);
-    setDoc(userOrderRef, orderData)
-      .then(() => {
-        if (walletDeduction > 0) {
-          updateDoc(doc(firestore, "users", user.uid), {
-            walletBalance: increment(-walletDeduction)
-          });
-        }
-        
-        setTimeout(() => {
-          clearCart();
-          setIsVerifying(false);
-          setShowQrModal(false);
-          toast({ title: "Payment Recorded!", description: `Order #${orderId} state: ${state}` });
-          router.push("/orders");
-        }, 1500);
-      });
+      // Save to User's private orders
+      const userOrderRef = doc(firestore, "users", user.uid, "orders", orderId);
+      await setDoc(userOrderRef, orderData);
+
+      if (walletDeduction > 0) {
+        await updateDoc(doc(firestore, "users", user.uid), {
+          walletBalance: increment(-walletDeduction)
+        });
+      }
+
+      // Final Transition
+      setTimeout(() => {
+        setIsVerifying(false);
+        setShowQrModal(false);
+        clearCart();
+        toast({ title: "Order Success! 🎉", description: `Order #${orderId} is ${state}` });
+        router.push("/orders");
+      }, 800);
+
+    } catch (error) {
+      console.error("Order failed", error);
+      setIsVerifying(false);
+      toast({ title: "Order Failed", variant: "destructive" });
+    }
   };
 
   return (
@@ -194,13 +198,14 @@ export default function CartPage() {
         </div>
       </main>
 
-      <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
+      <Dialog open={showQrModal} onOpenChange={(open) => !isVerifying && setShowQrModal(open)}>
         <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10 overflow-hidden">
           <DialogTitle className="sr-only">PhonePe Payment Modal</DialogTitle>
           {isVerifying ? (
              <div className="flex flex-col items-center justify-center py-20 gap-6">
                 <Loader2 className="w-16 h-16 text-primary animate-spin" />
-                <h3 className="text-2xl font-black uppercase italic">Verifying Transaction</h3>
+                <h3 className="text-2xl font-black uppercase italic animate-pulse">Verifying Transaction</h3>
+                <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase">Do not close or refresh</p>
              </div>
           ) : (
             <>
