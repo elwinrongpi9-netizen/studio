@@ -2,64 +2,34 @@
 {
   "placeholderImages": [
     {
-      "id": "res-1",
-      "description": "Italian Pasta Restaurant",
-      "imageUrl": "https://picsum.photos/seed/res1/600/400",
-      "imageHint": "italian pasta"
+      "id": "chilli-chicken",
+      "description": "Spicy Chilli Chicken",
+      "imageUrl": "https://picsum.photos/seed/chilli/400/300",
+      "imageHint": "chilli chicken"
     },
     {
-      "id": "res-2",
-      "description": "Juicy Burger Joint",
-      "imageUrl": "https://picsum.photos/seed/res2/600/400",
-      "imageHint": "gourmet burger"
+      "id": "chicken-65",
+      "description": "Chicken 65 Appetizer",
+      "imageUrl": "https://picsum.photos/seed/c65/400/300",
+      "imageHint": "fried chicken"
     },
     {
-      "id": "res-3",
-      "description": "Sushi Palace",
-      "imageUrl": "https://picsum.photos/seed/res3/600/400",
-      "imageHint": "sushi platter"
+      "id": "biryani",
+      "description": "Chicken Dum Biryani",
+      "imageUrl": "https://picsum.photos/seed/biry/400/300",
+      "imageHint": "chicken biryani"
     },
     {
-      "id": "res-4",
-      "description": "Spicy Indian Curry",
-      "imageUrl": "https://picsum.photos/seed/res4/600/400",
-      "imageHint": "indian curry"
+      "id": "noodles",
+      "description": "Chicken Stir-fry Noodles",
+      "imageUrl": "https://picsum.photos/seed/cn/400/300",
+      "imageHint": "chicken noodles"
     },
     {
-      "id": "dish-1",
-      "description": "Classic Margherita Pizza",
-      "imageUrl": "https://picsum.photos/seed/dish1/400/300",
-      "imageHint": "margherita pizza"
-    },
-    {
-      "id": "dish-2",
-      "description": "Truffle Mushroom Risotto",
-      "imageUrl": "https://picsum.photos/seed/dish2/400/300",
-      "imageHint": "mushroom risotto"
-    },
-    {
-      "id": "dish-3",
-      "description": "Bacon Cheeseburger",
-      "imageUrl": "https://picsum.photos/seed/dish3/400/300",
-      "imageHint": "cheese burger"
-    },
-    {
-      "id": "dish-4",
-      "description": "Salmon Nigiri Set",
-      "imageUrl": "https://picsum.photos/seed/dish4/400/300",
-      "imageHint": "salmon sushi"
-    },
-    {
-      "id": "dish-5",
-      "description": "Butter Chicken with Naan",
-      "imageUrl": "https://picsum.photos/seed/dish5/400/300",
-      "imageHint": "butter chicken"
-    },
-    {
-      "id": "payment-qr-merchant",
-      "description": "Rongpi Chinese Wok Merchant Payment QR",
-      "imageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=Q297152786@ybl&pn=Rongpi%20Chinese%20Wok&cu=INR",
-      "imageHint": "qr code"
+      "id": "fried-rice",
+      "description": "Chicken Fried Rice",
+      "imageUrl": "https://picsum.photos/seed/cfr/400/300",
+      "imageHint": "fried rice"
     }
   ]
 }

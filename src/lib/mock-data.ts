@@ -3,6 +3,28 @@ import { Restaurant } from './types';
 
 export const RESTAURANTS: Restaurant[] = [
   {
+    id: 'rongpi-wok',
+    name: 'Rongpi Chinese Wok',
+    cuisine: 'Chinese, North Indian, Biryani',
+    rating: 4.9,
+    deliveryTime: '20-30 min',
+    image: 'https://picsum.photos/seed/rongpi/600/400',
+    priceRange: '$$',
+    priceForTwo: 500,
+    dishes: [
+      { id: 'rp1', name: 'Chilli Chicken', description: 'Spicy stir-fried chicken with bell peppers and onions.', price: 2.25, image: 'https://picsum.photos/seed/chilli/400/300', category: 'Starters' },
+      { id: 'rp2', name: 'Chicken 65', description: 'Deep-fried spicy chicken appetizer with curry leaves.', price: 2.50, image: 'https://picsum.photos/seed/c65/400/300', category: 'Starters' },
+      { id: 'rp3', name: 'Veg Manchurian', description: 'Crispy veg balls in a tangy manchurian sauce.', price: 1.80, image: 'https://picsum.photos/seed/manch/400/300', category: 'Starters' },
+      { id: 'rp4', name: 'Chicken Lollipop', description: 'Classic fried chicken wings with schezwan dip.', price: 2.80, image: 'https://picsum.photos/seed/lolly/400/300', category: 'Starters' },
+      { id: 'rp5', name: 'Chicken Fried Rice', description: 'Fragrant rice tossed with chicken, egg and veggies.', price: 2.00, image: 'https://picsum.photos/seed/cfr/400/300', category: 'Rice' },
+      { id: 'rp6', name: 'Egg Fried Rice', description: 'Street-style fried rice with scrambled eggs.', price: 1.60, image: 'https://picsum.photos/seed/efr/400/300', category: 'Rice' },
+      { id: 'rp7', name: 'Chicken Noodle', description: 'Wok-tossed noodles with shredded chicken.', price: 1.90, image: 'https://picsum.photos/seed/cn/400/300', category: 'Noodles' },
+      { id: 'rp8', name: 'Egg Noodle', description: 'Soft noodles tossed with egg and spicy sauces.', price: 1.50, image: 'https://picsum.photos/seed/en/400/300', category: 'Noodles' },
+      { id: 'rp9', name: 'Chicken Dum Biriyani', description: 'Authentic slow-cooked dum biryani with tender chicken pieces.', price: 3.20, image: 'https://picsum.photos/seed/biry/400/300', category: 'Main Course' },
+      { id: 'rp10', name: 'Hot & Sour Soup', description: 'Zesty and spicy soup with mushrooms and bamboo shoots.', price: 1.25, image: 'https://picsum.photos/seed/soup/400/300', category: 'Soup' }
+    ]
+  },
+  {
     id: '1',
     name: 'Zomato Italiano',
     cuisine: 'Italian, Pizza, Pasta',
@@ -13,76 +35,7 @@ export const RESTAURANTS: Restaurant[] = [
     priceForTwo: 800,
     dishes: [
       { id: 'd1', name: 'Margherita Pizza', description: 'Fresh tomatoes, mozzarella, and basil.', price: 12.99, image: 'https://picsum.photos/seed/dish1/400/300', category: 'Pizza' },
-      { id: 'd2', name: 'Truffle Mushroom Risotto', description: 'Creamy Arborio rice with wild mushrooms and truffle oil.', price: 18.50, image: 'https://picsum.photos/seed/dish2/400/300', category: 'Pasta' },
-      { id: 'd3', name: 'Spaghetti Bolognese', description: 'Classic Italian meat sauce with fresh herbs.', price: 14.99, image: 'https://picsum.photos/seed/pasta/400/300', category: 'Pasta' }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Burger Haven',
-    cuisine: 'American, Fast Food, Burgers',
-    rating: 4.2,
-    deliveryTime: '15-25 min',
-    image: 'https://picsum.photos/seed/res2/600/400',
-    priceRange: '$',
-    priceForTwo: 400,
-    dishes: [
-      { id: 'd4', name: 'Bacon Cheeseburger', description: 'Crispy bacon, cheddar cheese, and signature sauce.', price: 10.99, image: 'https://picsum.photos/seed/dish3/400/300', category: 'Burgers' },
-      { id: 'd5', name: 'Spicy Chicken Burger', description: 'Zesty fried chicken breast with jalapeños.', price: 9.50, image: 'https://picsum.photos/seed/chicken/400/300', category: 'Burgers' }
-    ]
-  },
-  {
-    id: '3',
-    name: 'Sushi Zen',
-    cuisine: 'Japanese, Seafood, Sushi',
-    rating: 4.8,
-    deliveryTime: '30-45 min',
-    image: 'https://picsum.photos/seed/res3/600/400',
-    priceRange: '$$$',
-    priceForTwo: 1500,
-    dishes: [
-      { id: 'd6', name: 'Salmon Nigiri Set', description: '8 pieces of premium salmon nigiri.', price: 22.00, image: 'https://picsum.photos/seed/dish4/400/300', category: 'Sushi' },
-      { id: 'd7', name: 'Dragon Roll', description: 'Shrimp tempura, eel, avocado, and unagi sauce.', price: 16.50, image: 'https://picsum.photos/seed/dragon/400/300', category: 'Sushi' }
-    ]
-  },
-  {
-    id: '4',
-    name: 'Curry Delight',
-    cuisine: 'Indian, Curries, North Indian',
-    rating: 4.4,
-    deliveryTime: '20-30 min',
-    image: 'https://picsum.photos/seed/res4/600/400',
-    priceRange: '$$',
-    priceForTwo: 600,
-    dishes: [
-      { id: 'd8', name: 'Butter Chicken', description: 'Rich tomato-based curry with tender chicken.', price: 15.99, image: 'https://picsum.photos/seed/dish5/400/300', category: 'Main Course' },
-      { id: 'd9', name: 'Garlic Naan', description: 'Freshly baked tandoori bread with garlic butter.', price: 3.50, image: 'https://picsum.photos/seed/naan/400/300', category: 'Sides' }
-    ]
-  },
-  {
-    id: '5',
-    name: 'Bao & Dimsum',
-    cuisine: 'Chinese, Asian',
-    rating: 4.1,
-    deliveryTime: '25-40 min',
-    image: 'https://picsum.photos/seed/res5/600/400',
-    priceRange: '$$',
-    priceForTwo: 700,
-    dishes: [
-      { id: 'd10', name: 'Pork Bao', description: 'Steamed buns with juicy pork filling.', price: 8.99, image: 'https://picsum.photos/seed/bao/400/300', category: 'Starters' }
-    ]
-  },
-  {
-    id: '6',
-    name: 'Green Kitchen',
-    cuisine: 'Healthy, Salads, Vegan',
-    rating: 4.6,
-    deliveryTime: '20-35 min',
-    image: 'https://picsum.photos/seed/res6/600/400',
-    priceRange: '$$',
-    priceForTwo: 550,
-    dishes: [
-      { id: 'd11', name: 'Quinoa Bowl', description: 'Healthy quinoa with roasted vegetables.', price: 11.99, image: 'https://picsum.photos/seed/salad/400/300', category: 'Healthy' }
+      { id: 'd2', name: 'Truffle Mushroom Risotto', description: 'Creamy Arborio rice with wild mushrooms and truffle oil.', price: 18.50, image: 'https://picsum.photos/seed/dish2/400/300', category: 'Pasta' }
     ]
   }
 ];
