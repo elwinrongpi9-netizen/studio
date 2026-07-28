@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag, Info, Flame } from "lucide-react";
+import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag, Info, Flame, Timer } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirestore, useCollection } from "@/firebase";
@@ -131,7 +131,16 @@ export default function OrdersPage() {
                         ))}
                       </div>
                     </div>
-                    <div className="flex flex-col justify-end">
+                    <div className="flex flex-col justify-between">
+                      {order.status !== 'Delivered' && order.estimatedDelivery && (
+                        <div className="bg-primary/10 p-4 rounded-xl border border-primary/20 flex items-center gap-3 mb-4">
+                          <Timer className="w-5 h-5 text-primary animate-pulse" />
+                          <div>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Estimated Arrival</p>
+                            <p className="font-black text-primary">{new Date(order.estimatedDelivery).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        </div>
+                      )}
                       <div className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/10">
                         <div className="flex justify-between items-center mb-1">
                            <span className="text-sm font-bold text-muted-foreground">Grand Total</span>

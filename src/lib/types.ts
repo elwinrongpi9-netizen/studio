@@ -35,6 +35,7 @@ export interface Order {
   restaurantName: string;
   paymentMethod: string;
   paymentStatus: 'Paid' | 'Pending';
+  estimatedDelivery?: string;
 }
 
 export interface UserProfile {

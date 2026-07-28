@@ -125,6 +125,7 @@ export default function CartPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       paymentMethod: total === 0 ? 'Karbi Coins' : 'PhonePe UPI',
+      estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
 
     try {
