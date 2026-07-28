@@ -28,7 +28,9 @@ import {
   Utensils,
   Volume2,
   VolumeX,
-  BellRing
+  BellRing,
+  ShoppingBag,
+  Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -37,7 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 const ADMIN_EMAIL = "junakipi@gmail.com";
-const RINGTONE_URL = "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"; // Classic Telephone Ring
+const RINGTONE_URL = "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"; 
 
 export default function AdminPage() {
   const { user, loading: userLoading } = useUser();
@@ -45,7 +47,6 @@ export default function AdminPage() {
   const { toast } = useToast();
   const router = useRouter();
   
-  // Audio Notification State
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -63,14 +64,13 @@ export default function AdminPage() {
 
   const phonepeOrdersQuery = useMemo(() => {
     if (!firestore) return null;
-    return query(collection(firestore, "phonepe_orders"), orderBy("createdAt", "desc"), limit(50));
+    return query(collection(firestore, "phonepe_orders"), orderBy("createdAt", "desc"), limit(100));
   }, [firestore]);
 
   const { data: restaurants, loading: resLoading } = useCollection<Restaurant>(restaurantsQuery);
   const { data: withdrawals, loading: withdrawLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
   const { data: phonepeOrders, loading: ordersLoading } = useCollection<any>(phonepeOrdersQuery);
   
-  // Real-time listener for Audio Notification
   useEffect(() => {
     if (!firestore || !user || user.email !== ADMIN_EMAIL) return;
 
@@ -80,13 +80,11 @@ export default function AdminPage() {
         const latestOrder = snapshot.docs[0];
         const orderId = latestOrder.id;
 
-        // Skip the very first load
         if (lastOrderIdRef.current === null) {
           lastOrderIdRef.current = orderId;
           return;
         }
 
-        // If a new order ID appears
         if (orderId !== lastOrderIdRef.current) {
           lastOrderIdRef.current = orderId;
           if (isAudioEnabled) {
@@ -103,18 +101,17 @@ export default function AdminPage() {
     if (audioRef.current) {
       audioRef.current.play().catch(e => console.warn("Audio play blocked", e));
       setIsRinging(true);
-      setTimeout(() => setIsRinging(false), 5000); // Ring for 5 seconds
+      setTimeout(() => setIsRinging(false), 8000); 
     }
     toast({
       title: "NEW ORDER RECEIVED! 🔔",
-      description: "A user has just placed an order. Check the logs.",
+      description: "A customer just placed an order. Check the logs.",
       variant: "default",
     });
   };
 
   const toggleAudio = () => {
     if (!isAudioEnabled) {
-      // Browsers require interaction to allow audio
       if (audioRef.current) {
         audioRef.current.play().then(() => {
           audioRef.current?.pause();
@@ -130,17 +127,15 @@ export default function AdminPage() {
     }
   };
 
-  // Menu Manager State
   const [selectedResId, setSelectedResId] = useState("");
   const [newDish, setNewDish] = useState<Partial<Dish>>({
     name: "",
     description: "",
     price: 0,
-    category: "Main Course",
+    category: "Starters",
     image: "https://picsum.photos/seed/newdish/400/300"
   });
 
-  // Wingo Manual Controller State
   const [wingoPeriod, setWingoPeriod] = useState("");
   const [wingoNumber, setWingoNumber] = useState("");
   const [isWingoLoading, setIsWingoLoading] = useState(false);
@@ -151,7 +146,7 @@ export default function AdminPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest text-white">Loading Admin Logs...</p>
+          <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest text-white">Loading Master Logs...</p>
         </div>
       </div>
     );
@@ -187,7 +182,7 @@ export default function AdminPage() {
         dishes: updatedDishes
       });
       toast({ title: "Item Added Successfully! 🎉" });
-      setNewDish({ name: "", description: "", price: 0, category: "Main Course", image: "https://picsum.photos/seed/newdish/400/300" });
+      setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300" });
     } catch (e) {
       toast({ title: "Failed to add item", variant: "destructive" });
     }
@@ -214,46 +209,40 @@ export default function AdminPage() {
     .finally(() => setIsWingoLoading(false));
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied!" });
-  };
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
       <Navbar />
       
-      {/* Hidden Audio Element */}
       <audio ref={audioRef} src={RINGTONE_URL} preload="auto" />
 
-      <main className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
+      <main className="flex-1 container mx-auto px-4 py-12 max-w-7xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4 text-white">
               <ShieldCheck className="w-12 h-12 text-primary" />
-              PhonePe Dashboard
+              Admin Master Control
             </h1>
             <div className="flex items-center gap-3 mt-4">
-              <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Admin Control Center</p>
+              <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">PhonePe Order Dashboard</p>
               <div className="h-1 w-1 bg-muted-foreground rounded-full" />
               <button 
                 onClick={toggleAudio}
-                className={`flex items-center gap-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
-                  isAudioEnabled ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                  isAudioEnabled ? 'bg-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-muted text-muted-foreground'
                 }`}
               >
-                {isAudioEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-                {isAudioEnabled ? "Audio Alerts On" : "Audio Muted"}
+                {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                {isAudioEnabled ? "Ringtone Active" : "Ringtone Off"}
               </button>
             </div>
           </div>
           
           {isRinging && (
-            <div className="bg-primary/20 border-2 border-primary p-4 rounded-3xl flex items-center gap-4 animate-pulse">
-              <BellRing className="w-8 h-8 text-primary animate-bounce" />
+            <div className="bg-primary/20 border-2 border-primary p-6 rounded-[2rem] flex items-center gap-5 animate-pulse shadow-2xl shadow-primary/20">
+              <BellRing className="w-10 h-10 text-primary animate-bounce" />
               <div className="flex flex-col">
-                <span className="font-black text-xs uppercase text-primary">Incoming Order</span>
-                <span className="text-[10px] font-bold text-white/60">Telephone Ringing...</span>
+                <span className="font-black text-sm uppercase text-primary">NEW ORDER!</span>
+                <span className="text-[10px] font-bold text-white/60">Phone is Ringing...</span>
               </div>
             </div>
           )}
@@ -262,31 +251,35 @@ export default function AdminPage() {
         <Tabs defaultValue="payments" className="space-y-8">
           <TabsList className="bg-card p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto shadow-sm border border-border/50 overflow-x-auto no-scrollbar">
             <TabsTrigger value="payments" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <CreditCard className="w-4 h-4" /> PhonePe Logs
+              <ShoppingBag className="w-4 h-4" /> User Orders
             </TabsTrigger>
             <TabsTrigger value="menu" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
               <Utensils className="w-4 h-4" /> Menu Manager
             </TabsTrigger>
             <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <Zap className="w-4 h-4" /> Wingo Control
+              <Zap className="w-4 h-4" /> Wingo Terminal
             </TabsTrigger>
             <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 data-[state=active]:bg-primary">Withdrawals</TabsTrigger>
           </TabsList>
 
           <TabsContent value="payments">
             <Card className="rounded-[2.5rem] border-border/50 shadow-2xl bg-card overflow-hidden">
-              <div className="p-8 border-b border-border/50">
+              <div className="p-8 border-b border-border/50 flex justify-between items-center">
                  <h3 className="font-black text-xl uppercase tracking-widest flex items-center gap-3">
                    <TrendingUp className="w-6 h-6 text-primary" />
-                   Recent Transactions
+                   Recent User Transactions
                  </h3>
+                 <Badge variant="outline" className="rounded-full px-4 border-primary/20 text-primary font-black">
+                   {phonepeOrders.length} Orders Logged
+                 </Badge>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-muted/50 border-b border-border/50">
                     <tr>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Order ID</th>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">User</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Customer</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Items Ordered</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Amount</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">State</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Date</th>
@@ -295,22 +288,40 @@ export default function AdminPage() {
                   <tbody>
                     {phonepeOrders.map((order) => (
                       <tr key={order.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                        <td className="p-6 font-mono font-bold text-xs">{order.order_id}</td>
+                        <td className="p-6 font-mono font-bold text-xs text-primary">{order.order_id}</td>
                         <td className="p-6">
                            <div className="flex flex-col">
-                             <span className="font-bold">{order.udf1}</span>
-                             <span className="text-[10px] text-muted-foreground">{order.udf2}</span>
+                             <span className="font-black text-sm">{order.udf1}</span>
+                             <span className="text-[10px] text-muted-foreground font-bold">{order.udf2}</span>
                            </div>
                         </td>
-                        <td className="p-6 font-black text-primary text-lg">₹{order.amount}</td>
                         <td className="p-6">
-                          <Badge className={`rounded-full px-4 py-1 text-[9px] font-black ${
+                           <div className="flex flex-wrap gap-2 max-w-xs">
+                             {order.items?.map((item: any, idx: number) => (
+                               <span key={idx} className="bg-muted px-2 py-1 rounded-lg text-[10px] font-black border border-border/50">
+                                 {item.quantity}x {item.name}
+                               </span>
+                             )) || <span className="text-muted-foreground italic text-xs">No items listed</span>}
+                           </div>
+                        </td>
+                        <td className="p-6">
+                          <span className="font-black text-primary text-xl tracking-tighter italic">₹{order.amount}</span>
+                        </td>
+                        <td className="p-6">
+                          <Badge className={`rounded-full px-4 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm ${
                             order.state === 'COMPLETED' ? 'bg-green-600' : 'bg-orange-500'
                           }`}>
                             {order.state}
                           </Badge>
                         </td>
-                        <td className="p-6 text-[10px] font-black text-muted-foreground uppercase">{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td className="p-6">
+                           <div className="flex items-center gap-2 text-muted-foreground">
+                             <Clock className="w-3 h-3" />
+                             <span className="text-[10px] font-black uppercase tracking-widest">
+                               {new Date(order.createdAt).toLocaleDateString()}
+                             </span>
+                           </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -319,19 +330,20 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
+          {/* Other Tabs content remains the same but improved visually */}
           <TabsContent value="menu">
             <Card className="rounded-[3rem] bg-card p-10 shadow-2xl border border-border/50">
-              <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3">
-                <Plus className="w-8 h-8 text-primary" /> Add New Item
+              <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
+                <Plus className="w-8 h-8 text-primary" /> Add New Item to Menu
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase">Select Restaurant</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Restaurant</Label>
                     <select 
                       value={selectedResId} 
                       onChange={(e) => setSelectedResId(e.target.value)}
-                      className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-bold"
+                      className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black"
                     >
                       <option value="">Choose Restaurant</option>
                       {restaurants.map(r => (
@@ -340,56 +352,56 @@ export default function AdminPage() {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase">Item Name</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Item Name</Label>
                     <Input 
                       placeholder="e.g. Chilli Chicken" 
                       value={newDish.name}
                       onChange={e => setNewDish({...newDish, name: e.target.value})}
-                      className="h-14 rounded-2xl font-bold bg-[#0a0a0a]"
+                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase">Price (Coins)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Price (Coins/₹)</Label>
                     <Input 
                       type="number" 
                       value={newDish.price}
                       onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})}
-                      className="h-14 rounded-2xl font-bold bg-[#0a0a0a]"
+                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                     />
                   </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase">Category</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Category</Label>
                     <Input 
                       placeholder="e.g. Starters" 
                       value={newDish.category}
                       onChange={e => setNewDish({...newDish, category: e.target.value})}
-                      className="h-14 rounded-2xl font-bold bg-[#0a0a0a]"
+                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase">Image URL</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Image URL</Label>
                     <Input 
                       placeholder="https://..." 
                       value={newDish.image}
                       onChange={e => setNewDish({...newDish, image: e.target.value})}
-                      className="h-14 rounded-2xl font-bold bg-[#0a0a0a]"
+                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase">Description</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Description</Label>
                     <Input 
                       placeholder="Ingredients or details" 
                       value={newDish.description}
                       onChange={e => setNewDish({...newDish, description: e.target.value})}
-                      className="h-14 rounded-2xl font-bold bg-[#0a0a0a]"
+                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                     />
                   </div>
                 </div>
               </div>
-              <Button onClick={handleAddDish} className="w-full h-16 rounded-2xl font-black text-xl mt-10 shadow-xl">
-                Add Item to Menu
+              <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 shadow-2xl bg-primary hover:bg-primary/90">
+                Update Master Menu
               </Button>
             </Card>
           </TabsContent>
@@ -400,12 +412,12 @@ export default function AdminPage() {
                 <div className="p-4 bg-primary/10 rounded-3xl">
                   <Zap className="w-12 h-12 text-primary" />
                 </div>
-                <h2 className="text-4xl font-black italic tracking-tighter">Wingo Manual Controller</h2>
+                <h2 className="text-4xl font-black italic tracking-tighter uppercase">Wingo Manual Override</h2>
               </div>
               <div className="space-y-8">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase ml-2">Period ID</Label>
+                    <Label className="text-[10px] font-black uppercase ml-2 tracking-widest">Period ID</Label>
                     <Input 
                       placeholder="e.g. 202403151230" 
                       value={wingoPeriod} 
@@ -414,7 +426,7 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase ml-2">Winning Number (0-9)</Label>
+                    <Label className="text-[10px] font-black uppercase ml-2 tracking-widest">Winning Number (0-9)</Label>
                     <Input 
                       type="number" 
                       value={wingoNumber} 
@@ -423,32 +435,32 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
-                <Button onClick={handleSetWingoResult} className="w-full h-18 rounded-2xl font-black text-xl py-8 shadow-xl" disabled={isWingoLoading}>
-                  {isWingoLoading ? <Loader2 className="animate-spin" /> : "Fix Result"}
+                <Button onClick={handleSetWingoResult} className="w-full h-20 rounded-2xl font-black text-xl py-8 shadow-xl" disabled={isWingoLoading}>
+                  {isWingoLoading ? <Loader2 className="animate-spin" /> : "Fix Next Result"}
                 </Button>
               </div>
             </Card>
           </TabsContent>
 
           <TabsContent value="withdrawals">
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {withdrawals.map((req) => (
-                <Card key={req.id} className="rounded-[3rem] border-border/50 bg-card p-10 shadow-lg">
+                <Card key={req.id} className="rounded-[3rem] border-border/50 bg-card p-10 shadow-lg relative overflow-hidden group">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-8">
-                      <div className="p-6 bg-orange-100/10 text-orange-600 rounded-[2rem]">
-                        <Banknote className="w-10 h-10" />
+                    <div className="flex items-center gap-6">
+                      <div className="p-5 bg-orange-100/10 text-orange-600 rounded-3xl">
+                        <Banknote className="w-8 h-8" />
                       </div>
-                      <div className="space-y-2">
-                        <h3 className="font-black text-5xl tracking-tighter italic">₹{req.amount}</h3>
-                        <p className="text-xs font-black text-muted-foreground uppercase">{req.userEmail}</p>
-                        <div className="bg-[#0a0a0a] px-4 py-2 rounded-xl flex items-center gap-4 border border-border/50 cursor-pointer mt-4" onClick={() => copyToClipboard(req.upiId)}>
-                          <span className="font-mono font-bold text-sm text-white">{req.upiId}</span>
-                          <Copy className="w-4 h-4 text-muted-foreground" />
+                      <div className="space-y-1">
+                        <h3 className="font-black text-4xl tracking-tighter italic">₹{req.amount}</h3>
+                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{req.userEmail}</p>
+                        <div className="bg-[#0a0a0a] px-3 py-1.5 rounded-xl flex items-center gap-3 border border-border/50 cursor-pointer mt-2" onClick={() => { navigator.clipboard.writeText(req.upiId); toast({title:"UPI Copied!"}); }}>
+                          <span className="font-mono font-bold text-[10px] text-white/60">{req.upiId}</span>
+                          <Copy className="w-3 h-3 text-muted-foreground" />
                         </div>
                       </div>
                     </div>
-                    <Badge className="bg-orange-500 rounded-full px-6 py-2 uppercase font-black text-[10px]">{req.status}</Badge>
+                    <Badge className="bg-orange-600 rounded-full px-4 py-1.5 uppercase font-black text-[9px] tracking-widest">{req.status}</Badge>
                   </div>
                 </Card>
               ))}
@@ -459,3 +471,4 @@ export default function AdminPage() {
     </div>
   );
 }
+
