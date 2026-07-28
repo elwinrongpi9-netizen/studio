@@ -30,7 +30,7 @@ export interface Order {
   id: string;
   items: CartItem[];
   total: number;
-  status: 'Preparing' | 'Out for delivery' | 'Delivered';
+  status: 'Received' | 'Preparing' | 'Cooking' | 'On the Way' | 'Delivered';
   createdAt: string;
   restaurantName: string;
   paymentMethod: string;

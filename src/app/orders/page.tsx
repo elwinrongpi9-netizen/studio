@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag, Info } from "lucide-react";
+import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag, Info, Flame } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirestore, useCollection } from "@/firebase";
@@ -29,7 +29,8 @@ export default function OrdersPage() {
     switch (status) {
       case "Received": return <Clock className="w-5 h-5 text-zinc-400" />;
       case "Preparing": return <Package className="w-5 h-5 text-orange-400" />;
-      case "Out for delivery": return <Truck className="w-5 h-5 text-blue-400" />;
+      case "Cooking": return <Flame className="w-5 h-5 text-yellow-400" />;
+      case "On the Way": return <Truck className="w-5 h-5 text-blue-400" />;
       case "Delivered": return <CheckCircle2 className="w-5 h-5 text-green-400" />;
       default: return <Info className="w-5 h-5" />;
     }
@@ -39,7 +40,8 @@ export default function OrdersPage() {
     switch (status) {
       case "Received": return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
       case "Preparing": return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-      case "Out for delivery": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case "Cooking": return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+      case "On the Way": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
       case "Delivered": return "bg-green-500/10 text-green-400 border-green-500/20";
       default: return "bg-muted text-muted-foreground";
     }

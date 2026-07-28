@@ -27,7 +27,8 @@ import {
   CheckCircle2,
   Truck,
   Package,
-  Plus
+  Plus,
+  Flame
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -326,7 +327,8 @@ export default function AdminPage() {
                         <td className="p-6">
                           <Badge className={`rounded-full px-4 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm ${
                             order.status === 'Preparing' ? 'bg-orange-500' : 
-                            order.status === 'Out for delivery' ? 'bg-blue-500' :
+                            order.status === 'Cooking' ? 'bg-yellow-600' :
+                            order.status === 'On the Way' ? 'bg-blue-500' :
                             order.status === 'Delivered' ? 'bg-green-600' :
                             order.state === 'COMPLETED' ? 'bg-zinc-600' : 'bg-muted text-muted-foreground'
                           }`}>
@@ -349,14 +351,23 @@ export default function AdminPage() {
                             )}
                             {order.status === "Preparing" && (
                               <Button 
-                                onClick={() => updateOrderStatus(order, "Out for delivery")} 
+                                onClick={() => updateOrderStatus(order, "Cooking")} 
+                                size="sm" 
+                                className="bg-yellow-600 hover:bg-yellow-700 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
+                              >
+                                <Flame className="w-3 h-3 mr-2" /> Start Cooking
+                              </Button>
+                            )}
+                            {order.status === "Cooking" && (
+                              <Button 
+                                onClick={() => updateOrderStatus(order, "On the Way")} 
                                 size="sm" 
                                 className="bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
                               >
-                                <Truck className="w-3 h-3 mr-2" /> Start Delivery
+                                <Truck className="w-3 h-3 mr-2" /> Send for Delivery
                               </Button>
                             )}
-                            {order.status === "Out for delivery" && (
+                            {order.status === "On the Way" && (
                               <Button 
                                 onClick={() => updateOrderStatus(order, "Delivered")} 
                                 size="sm" 
