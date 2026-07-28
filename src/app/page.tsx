@@ -1,29 +1,30 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { Navbar } from "@/components/navbar";
-import { RestaurantCard } from "@/components/restaurant-card";
+import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Loader2 } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Loader2, Zap } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
 import { RESTAURANTS as MOCK_RESTAURANTS } from "@/lib/mock-data";
-import { Restaurant } from "@/lib/types";
+import { Restaurant, Dish } from "@/lib/types";
 
 const INSPIRATIONS = [
   { name: "Biryani", img: "https://picsum.photos/seed/biryani/200/200" },
-  { name: "Pizza", img: "https://picsum.photos/seed/pizza/200/200" },
-  { name: "Burgers", img: "https://picsum.photos/seed/burger/200/200" },
-  { name: "Cakes", img: "https://picsum.photos/seed/cake/200/200" },
-  { name: "North Indian", img: "https://picsum.photos/seed/curry/200/200" },
-  { name: "Chinese", img: "https://picsum.photos/seed/chinese/200/200" },
+  { name: "Chilli", img: "https://picsum.photos/seed/chilli/200/200" },
+  { name: "Noodles", img: "https://picsum.photos/seed/noodles/200/200" },
+  { name: "Lollipop", img: "https://picsum.photos/seed/lolly/200/200" },
+  { name: "Rice", img: "https://picsum.photos/seed/rice/200/200" },
+  { name: "Soup", img: "https://picsum.photos/seed/soup/200/200" },
 ];
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("Delivery");
+  const [activeCategory, setActiveCategory] = useState("All");
   const firestore = useFirestore();
 
   const restaurantsQuery = useMemo(() => {
@@ -50,19 +51,37 @@ export default function Home() {
     seedData();
   }, [firestore, loading, restaurants]);
 
-  const filteredRestaurants = useMemo(() => {
+  const allDishes = useMemo(() => {
     if (!restaurants) return [];
-    return restaurants
-      .filter((res) => {
+    return restaurants.flatMap(res => 
+      (res.dishes || []).map(dish => ({
+        ...dish,
+        restaurantId: res.id,
+        restaurantName: res.name
+      }))
+    );
+  }, [restaurants]);
+
+  const filteredDishes = useMemo(() => {
+    return allDishes
+      .filter((dish) => {
         const matchesSearch = 
-          res.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          res.cuisine.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          res.dishes?.some(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()));
+          dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dish.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dish.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dish.restaurantName.toLowerCase().includes(searchQuery.toLowerCase());
           
-        return matchesSearch;
+        const matchesCategory = activeCategory === "All" || dish.category === activeCategory;
+        
+        return matchesSearch && matchesCategory;
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [restaurants, searchQuery]);
+  }, [allDishes, searchQuery, activeCategory]);
+
+  const categories = useMemo(() => {
+    const cats = new Set(allDishes.map(d => d.category));
+    return ["All", ...Array.from(cats)];
+  }, [allDishes]);
 
   return (
     <>
@@ -75,7 +94,7 @@ export default function Home() {
                 zomatokarbi<span className="text-primary">.com</span>
               </h1>
               <p className="text-muted-foreground text-center text-xl mb-10 max-w-2xl font-medium">
-                Fresh food discovery in <span className="font-bold text-foreground underline decoration-primary/30 underline-offset-4">Diphu, Karbi Anglong</span>
+                Fresh items from <span className="font-bold text-foreground underline decoration-primary/30 underline-offset-4">Rongpi Chinese Wok</span>
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-3xl bg-card rounded-[2rem] border border-border shadow-2xl overflow-hidden ring-1 ring-border/50">
@@ -89,39 +108,21 @@ export default function Home() {
                   <input 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for restaurant, cuisine or a dish" 
+                    placeholder="Search for items, biryani, or noodles" 
                     className="w-full pl-16 pr-6 py-5 bg-transparent focus:outline-none text-lg font-bold"
                   />
                 </div>
               </div>
             </div>
-
-            <div className="flex justify-center gap-10 md:gap-16 mt-12">
-              {["Delivery", "Dining Out", "Nightlife"].map((tab) => (
-                <button 
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex flex-col items-center gap-3 transition-all group ${
-                    activeTab === tab ? "opacity-100 scale-110" : "opacity-40 hover:opacity-80"
-                  }`}
-                >
-                  <div className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all shadow-xl ${
-                    activeTab === tab ? "bg-primary text-white" : "bg-card border border-border"
-                  }`}>
-                    {tab === "Delivery" && <Clock className="w-7 h-7" />}
-                    {tab === "Dining Out" && <UtensilsCrossed className="w-7 h-7" />}
-                    {tab === "Nightlife" && <Star className="w-7 h-7" />}
-                  </div>
-                  <span className={`text-[10px] font-black tracking-[0.2em] uppercase ${activeTab === tab ? "text-primary" : "text-muted-foreground"}`}>{tab}</span>
-                </button>
-              ))}
-            </div>
           </div>
         </section>
 
-        <div className="container mx-auto px-4 py-16 max-w-6xl">
+        <div className="container mx-auto px-4 py-16 max-w-7xl">
           <section className="mb-20">
-            <h2 className="text-4xl font-black mb-10 italic tracking-tighter">Inspiration for your first order</h2>
+            <div className="flex items-center justify-between mb-10">
+              <h2 className="text-4xl font-black italic tracking-tighter">Quick Inspirations</h2>
+              <div className="h-1 flex-1 mx-8 bg-border/20 rounded-full" />
+            </div>
             <div className="flex gap-8 md:gap-12 overflow-x-auto no-scrollbar pb-6">
               {INSPIRATIONS.map((item) => (
                 <div 
@@ -139,37 +140,58 @@ export default function Home() {
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            <div className="lg:col-span-8">
-              <div className="flex items-center justify-between mb-10">
-                <h2 className="text-4xl font-black italic tracking-tighter">
-                  {searchQuery ? `Results for "${searchQuery}"` : `Best ${activeTab} in Diphu`}
+            <div className="lg:col-span-9">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+                <h2 className="text-5xl font-black italic tracking-tighter uppercase">
+                  {searchQuery ? `Searching "${searchQuery}"` : "The Menu"}
                 </h2>
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+                  {categories.map(cat => (
+                    <Button 
+                      key={cat}
+                      variant={activeCategory === cat ? "default" : "outline"}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`rounded-2xl font-black uppercase text-[9px] px-6 h-10 tracking-widest ${activeCategory === cat ? 'shadow-xl shadow-primary/20' : 'opacity-60'}`}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
               </div>
               
               {loading ? (
                 <div className="flex flex-col items-center py-24 gap-4">
                   <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                  <p className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Finding restaurants...</p>
+                  <p className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Kitchen is heating up...</p>
                 </div>
-              ) : filteredRestaurants.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
-                  {filteredRestaurants.map((res) => (
-                    <RestaurantCard key={res.id} restaurant={res} />
+              ) : filteredDishes.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12">
+                  {filteredDishes.map((dish) => (
+                    <DishCard key={dish.id} dish={dish} />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-24 bg-card rounded-[3rem] border border-dashed border-border/50">
                   <UtensilsCrossed className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
-                  <p className="text-xl font-bold text-muted-foreground">No restaurants found matching your criteria.</p>
-                  <Button variant="link" onClick={() => setSearchQuery("")} className="mt-4 text-primary font-bold">
-                    Show all restaurants
+                  <p className="text-xl font-bold text-muted-foreground">No dishes found matching your criteria.</p>
+                  <Button variant="link" onClick={() => {setSearchQuery(""); setActiveCategory("All");}} className="mt-4 text-primary font-bold">
+                    Show full menu
                   </Button>
                 </div>
               )}
             </div>
             
-            <aside className="lg:col-span-4 space-y-10">
+            <aside className="lg:col-span-3 space-y-10">
               <AIRecommendations />
+              <div className="bg-primary/10 rounded-[2.5rem] p-8 border border-primary/20 shadow-2xl relative overflow-hidden group">
+                 <Zap className="absolute -right-4 -bottom-4 w-32 h-32 text-primary opacity-5 group-hover:scale-110 transition-transform" />
+                 <h3 className="font-black text-xl italic mb-4">Fastest Delivery</h3>
+                 <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-6">Diphu Market area within 20-30 mins guaranteed.</p>
+                 <div className="flex items-center gap-3">
+                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                   <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">Active Now</span>
+                 </div>
+              </div>
             </aside>
           </div>
         </div>
