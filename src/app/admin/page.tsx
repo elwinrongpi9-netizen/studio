@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, updateDoc, query, orderBy, setDoc, limit, addDoc, onSnapshot } from "firebase/firestore";
+import { collection, doc, updateDoc, query, orderBy, setDoc, limit, onSnapshot } from "firebase/firestore";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Restaurant, WithdrawalRequest, Dish } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -12,26 +12,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
   ShieldCheck, 
-  Edit2, 
   Loader2, 
-  Save, 
-  X, 
   Zap, 
   Banknote, 
-  User, 
   Copy, 
   ShieldAlert, 
   TrendingUp, 
-  Info, 
-  CreditCard, 
-  Plus, 
   Utensils,
   Volume2,
   VolumeX,
   BellRing,
   ShoppingBag,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Truck,
+  Package,
+  Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -107,7 +103,6 @@ export default function AdminPage() {
     toast({
       title: "NEW ORDER RECEIVED! 🔔",
       description: "A customer just placed an order. Check the logs.",
-      variant: "default",
     });
   };
 
@@ -128,7 +123,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleAcceptOrder = async (order: any) => {
+  const updateOrderStatus = async (order: any, newStatus: string) => {
     if (!firestore) return;
     try {
       const orderId = order.order_id || order.id;
@@ -136,15 +131,15 @@ export default function AdminPage() {
 
       // Update in global phonepe_orders
       const globalRef = doc(firestore, "phonepe_orders", orderId);
-      await updateDoc(globalRef, { status: "Preparing" });
+      await updateDoc(globalRef, { status: newStatus });
 
       // Update in user's specific order history
       if (userId) {
         const userOrderRef = doc(firestore, "users", userId, "orders", orderId);
-        await updateDoc(userOrderRef, { status: "Preparing" });
+        await updateDoc(userOrderRef, { status: newStatus });
       }
 
-      toast({ title: "Order Accepted! 🍳", description: "Status changed to Preparing." });
+      toast({ title: `Status: ${newStatus}`, description: "Order updated successfully." });
     } catch (e) {
       console.error(e);
       toast({ title: "Update Failed", variant: "destructive" });
@@ -307,7 +302,6 @@ export default function AdminPage() {
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Status</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Amount</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Action</th>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Date</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -332,7 +326,9 @@ export default function AdminPage() {
                         <td className="p-6">
                           <Badge className={`rounded-full px-4 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm ${
                             order.status === 'Preparing' ? 'bg-orange-500' : 
-                            order.state === 'COMPLETED' ? 'bg-green-600' : 'bg-muted text-muted-foreground'
+                            order.status === 'Out for delivery' ? 'bg-blue-500' :
+                            order.status === 'Delivered' ? 'bg-green-600' :
+                            order.state === 'COMPLETED' ? 'bg-zinc-600' : 'bg-muted text-muted-foreground'
                           }`}>
                             {order.status || order.state}
                           </Badge>
@@ -341,28 +337,40 @@ export default function AdminPage() {
                           <span className="font-black text-primary text-xl tracking-tighter italic">₹{order.amount}</span>
                         </td>
                         <td className="p-6">
-                          {order.status !== "Preparing" && (
-                            <Button 
-                              onClick={() => handleAcceptOrder(order)} 
-                              size="sm" 
-                              className="bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest shadow-lg shadow-orange-500/20"
-                            >
-                              <CheckCircle2 className="w-3 h-3 mr-2" /> Accept Order
-                            </Button>
-                          )}
-                          {order.status === "Preparing" && (
-                            <span className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2">
-                              <CheckCircle2 className="w-3 h-3" /> Accepted
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-6">
-                           <div className="flex items-center gap-2 text-muted-foreground">
-                             <Clock className="w-3 h-3" />
-                             <span className="text-[10px] font-black uppercase tracking-widest">
-                               {new Date(order.createdAt).toLocaleDateString()}
-                             </span>
-                           </div>
+                          <div className="flex flex-col gap-2">
+                            {(!order.status || order.status === 'Received') && (
+                              <Button 
+                                onClick={() => updateOrderStatus(order, "Preparing")} 
+                                size="sm" 
+                                className="bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
+                              >
+                                <Package className="w-3 h-3 mr-2" /> Accept Order
+                              </Button>
+                            )}
+                            {order.status === "Preparing" && (
+                              <Button 
+                                onClick={() => updateOrderStatus(order, "Out for delivery")} 
+                                size="sm" 
+                                className="bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
+                              >
+                                <Truck className="w-3 h-3 mr-2" /> Start Delivery
+                              </Button>
+                            )}
+                            {order.status === "Out for delivery" && (
+                              <Button 
+                                onClick={() => updateOrderStatus(order, "Delivered")} 
+                                size="sm" 
+                                className="bg-green-600 hover:bg-green-700 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
+                              >
+                                <CheckCircle2 className="w-3 h-3 mr-2" /> Mark Delivered
+                              </Button>
+                            )}
+                            {order.status === "Delivered" && (
+                              <span className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2">
+                                <CheckCircle2 className="w-3 h-3" /> Completed
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

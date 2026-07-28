@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag } from "lucide-react";
+import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag, Info } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirestore, useCollection } from "@/firebase";
@@ -27,15 +27,17 @@ export default function OrdersPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case "Received": return <Clock className="w-5 h-5 text-zinc-400" />;
       case "Preparing": return <Package className="w-5 h-5 text-orange-400" />;
       case "Out for delivery": return <Truck className="w-5 h-5 text-blue-400" />;
       case "Delivered": return <CheckCircle2 className="w-5 h-5 text-green-400" />;
-      default: return <Clock className="w-5 h-5" />;
+      default: return <Info className="w-5 h-5" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case "Received": return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
       case "Preparing": return "bg-orange-500/10 text-orange-400 border-orange-500/20";
       case "Out for delivery": return "bg-blue-500/10 text-blue-400 border-blue-500/20";
       case "Delivered": return "bg-green-500/10 text-green-400 border-green-500/20";
@@ -94,8 +96,8 @@ export default function OrdersPage() {
                 <div key={order.id} className="bg-card rounded-[2rem] p-8 shadow-sm border hover:shadow-xl transition-all group border-primary/5">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-dashed">
                     <div className="flex items-center gap-5">
-                      <div className={`p-4 rounded-2xl ${getStatusColor(order.status).split(' ')[0]}`}>
-                        {getStatusIcon(order.status)}
+                      <div className={`p-4 rounded-2xl ${getStatusColor(order.status || 'Received').split(' ')[0]}`}>
+                        {getStatusIcon(order.status || 'Received')}
                       </div>
                       <div>
                         <h3 className="font-black text-2xl group-hover:text-primary transition-colors">{order.restaurantName}</h3>
@@ -106,11 +108,11 @@ export default function OrdersPage() {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                       <Badge className={`rounded-xl px-4 py-2 font-black tracking-wide uppercase text-[10px] ${getStatusColor(order.status)}`} variant="outline">
-                        {order.status}
+                       <Badge className={`rounded-xl px-4 py-2 font-black tracking-wide uppercase text-[10px] ${getStatusColor(order.status || 'Received')}`} variant="outline">
+                        {order.status || 'Received'}
                       </Badge>
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                        <CreditCard className="w-3 h-3" /> {order.paymentMethod} • {order.paymentStatus}
+                        <CreditCard className="w-3 h-3" /> {order.paymentMethod}
                       </div>
                     </div>
                   </div>

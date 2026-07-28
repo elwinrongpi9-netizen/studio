@@ -94,7 +94,7 @@ export default function CartPage() {
       `-------------------------\n` +
       `*Grand Total:* ₹${orderData.amount}\n` +
       `*Payment:* ${orderData.paymentMethod}\n` +
-      `*Status:* ${orderData.state}\n\n` +
+      `*Status:* ${orderData.status}\n\n` +
       `*Customer:* ${orderData.udf1}\n` +
       `*Contact:* ${orderData.udf2}\n\n` +
       `_Paisa verified on PhonePe Business_ ✅`;
@@ -117,6 +117,7 @@ export default function CartPage() {
       restaurantName: cart[0]?.restaurantName || "Restaurant",
       amount: billTotal,
       state: state,
+      status: 'Received',
       udf1: profile?.displayName || user.email,
       udf2: user.email,
       items: cart,
@@ -127,11 +128,9 @@ export default function CartPage() {
     };
 
     try {
-      // Save to Global PhonePe Orders collection
       const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
       await setDoc(globalOrderRef, orderData);
 
-      // Save to User's private orders
       const userOrderRef = doc(firestore, "users", user.uid, "orders", orderId);
       await setDoc(userOrderRef, orderData);
 
@@ -141,10 +140,8 @@ export default function CartPage() {
         });
       }
 
-      // Construct WhatsApp message and redirect
       sendToWhatsApp(orderData);
 
-      // Final Transition
       setTimeout(() => {
         setIsVerifying(false);
         setShowQrModal(false);
