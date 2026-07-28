@@ -144,7 +144,7 @@ export default function OrdersPage() {
                       <div className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/10">
                         <div className="flex justify-between items-center mb-1">
                            <span className="text-sm font-bold text-muted-foreground">Grand Total</span>
-                           <span className="text-2xl font-black text-primary">₹{order.total.toFixed(0)}</span>
+                           <span className="text-2xl font-black text-primary">₹{(order.amount || order.total).toFixed(0)}</span>
                         </div>
                         <p className="text-[10px] font-bold text-muted-foreground text-right uppercase tracking-widest">Inclusive of all taxes</p>
                       </div>

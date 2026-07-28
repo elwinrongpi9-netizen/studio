@@ -28,14 +28,19 @@ export interface CartItem extends Dish {
 
 export interface Order {
   id: string;
+  order_id?: string;
   items: CartItem[];
   total: number;
+  amount: number;
   status: 'Received' | 'Preparing' | 'Cooking' | 'On the Way' | 'Delivered';
   createdAt: string;
   restaurantName: string;
   paymentMethod: string;
-  paymentStatus: 'Paid' | 'Pending';
+  paymentStatus?: 'Paid' | 'Pending';
   estimatedDelivery?: string;
+  udf1?: string;
+  udf2?: string;
+  userId?: string;
 }
 
 export interface UserProfile {
@@ -57,6 +62,7 @@ export interface WithdrawalRequest {
   upiId: string;
   status: 'Pending' | 'Completed' | 'Rejected';
   createdAt: string;
+  order_id?: string;
 }
 
 export interface WingoConfig {

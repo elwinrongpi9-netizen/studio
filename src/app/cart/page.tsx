@@ -116,6 +116,7 @@ export default function CartPage() {
       order_id: orderId,
       restaurantName: cart[0]?.restaurantName || "Restaurant",
       amount: billTotal,
+      total: billTotal, // Added for redundancy/consistency
       state: state,
       status: 'Received',
       udf1: profile?.displayName || user.email,
