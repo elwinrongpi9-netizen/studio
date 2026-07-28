@@ -26,6 +26,7 @@ import {
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
+const MERCHANT_WHATSAPP = "7086505053";
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'PhonePe Payments (UPI)', icon: <QrCode className="w-4 h-4" /> },
@@ -83,6 +84,26 @@ export default function CartPage() {
 
   if (!isHydrated) return null;
 
+  const sendToWhatsApp = (orderData: any) => {
+    const itemsList = orderData.items.map((item: any) => `- ${item.quantity}x ${item.name}`).join('\n');
+    const message = `*NEW ORDER RECEIVED!* 🍱\n\n` +
+      `*Order ID:* #${orderData.order_id}\n` +
+      `*Restaurant:* ${orderData.restaurantName}\n` +
+      `-------------------------\n` +
+      `${itemsList}\n` +
+      `-------------------------\n` +
+      `*Grand Total:* ₹${orderData.amount}\n` +
+      `*Payment:* ${orderData.paymentMethod}\n` +
+      `*Status:* ${orderData.state}\n\n` +
+      `*Customer:* ${orderData.udf1}\n` +
+      `*Contact:* ${orderData.udf2}\n\n` +
+      `_Paisa verified on PhonePe Business_ ✅`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const processOrder = async (confirmedPayment = false) => {
     if (!user || !firestore) return;
 
@@ -120,12 +141,15 @@ export default function CartPage() {
         });
       }
 
+      // Construct WhatsApp message and redirect
+      sendToWhatsApp(orderData);
+
       // Final Transition
       setTimeout(() => {
         setIsVerifying(false);
         setShowQrModal(false);
         clearCart();
-        toast({ title: "Order Success! 🎉", description: `Order #${orderId} is ${state}` });
+        toast({ title: "Order Success! 🎉", description: `Details sent to WhatsApp.` });
         router.push("/orders");
       }, 800);
 
