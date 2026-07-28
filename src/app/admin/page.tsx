@@ -30,7 +30,8 @@ import {
   VolumeX,
   BellRing,
   ShoppingBag,
-  Clock
+  Clock,
+  CheckCircle2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -124,6 +125,29 @@ export default function AdminPage() {
     } else {
       setIsAudioEnabled(false);
       toast({ title: "Audio Notifications Muted 🔇" });
+    }
+  };
+
+  const handleAcceptOrder = async (order: any) => {
+    if (!firestore) return;
+    try {
+      const orderId = order.order_id || order.id;
+      const userId = order.userId;
+
+      // Update in global phonepe_orders
+      const globalRef = doc(firestore, "phonepe_orders", orderId);
+      await updateDoc(globalRef, { status: "Preparing" });
+
+      // Update in user's specific order history
+      if (userId) {
+        const userOrderRef = doc(firestore, "users", userId, "orders", orderId);
+        await updateDoc(userOrderRef, { status: "Preparing" });
+      }
+
+      toast({ title: "Order Accepted! 🍳", description: "Status changed to Preparing." });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Update Failed", variant: "destructive" });
     }
   };
 
@@ -279,9 +303,10 @@ export default function AdminPage() {
                     <tr>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Order ID</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Customer</th>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Items Ordered</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Items</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Status</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Amount</th>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">State</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Action</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Date</th>
                     </tr>
                   </thead>
@@ -305,14 +330,31 @@ export default function AdminPage() {
                            </div>
                         </td>
                         <td className="p-6">
+                          <Badge className={`rounded-full px-4 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm ${
+                            order.status === 'Preparing' ? 'bg-orange-500' : 
+                            order.state === 'COMPLETED' ? 'bg-green-600' : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {order.status || order.state}
+                          </Badge>
+                        </td>
+                        <td className="p-6">
                           <span className="font-black text-primary text-xl tracking-tighter italic">₹{order.amount}</span>
                         </td>
                         <td className="p-6">
-                          <Badge className={`rounded-full px-4 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm ${
-                            order.state === 'COMPLETED' ? 'bg-green-600' : 'bg-orange-500'
-                          }`}>
-                            {order.state}
-                          </Badge>
+                          {order.status !== "Preparing" && (
+                            <Button 
+                              onClick={() => handleAcceptOrder(order)} 
+                              size="sm" 
+                              className="bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest shadow-lg shadow-orange-500/20"
+                            >
+                              <CheckCircle2 className="w-3 h-3 mr-2" /> Accept Order
+                            </Button>
+                          )}
+                          {order.status === "Preparing" && (
+                            <span className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3" /> Accepted
+                            </span>
+                          )}
                         </td>
                         <td className="p-6">
                            <div className="flex items-center gap-2 text-muted-foreground">
@@ -330,7 +372,6 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
-          {/* Other Tabs content remains the same but improved visually */}
           <TabsContent value="menu">
             <Card className="rounded-[3rem] bg-card p-10 shadow-2xl border border-border/50">
               <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
@@ -471,4 +512,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
