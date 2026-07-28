@@ -36,7 +36,7 @@ import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
-const ADMIN_EMAIL = "elwinrongpi9@gmail.com";
+const ADMIN_EMAIL = "junakipi@gmail.com";
 const RINGTONE_URL = "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"; // Classic Telephone Ring
 
 export default function AdminPage() {

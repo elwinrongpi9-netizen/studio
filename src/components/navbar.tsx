@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -26,7 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const ADMIN_EMAIL = "elwinrongpi9@gmail.com";
+const ADMIN_EMAIL = "junakipi@gmail.com";
 
 export function Navbar() {
   const { cart } = useAppStore();

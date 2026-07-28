@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -37,7 +38,7 @@ interface GameResult {
   size: "Big" | "Small";
 }
 
-const ADMIN_EMAIL = "elwinrongpi9@gmail.com";
+const ADMIN_EMAIL = "junakipi@gmail.com";
 
 export default function WingoPage() {
   const { user } = useUser();
