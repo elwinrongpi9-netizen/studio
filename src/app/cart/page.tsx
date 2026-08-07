@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 const MERCHANT_UPI_ID = "7086505053@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
-const MERCHANT_WHATSAPP = "9170865053"; // Updated with country code
+const MERCHANT_WHATSAPP = "9170865053"; // Exact number 7086505053 with country code
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'PhonePe Payments (UPI)', icon: <QrCode className="w-4 h-4" /> },

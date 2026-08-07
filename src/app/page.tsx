@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap } from "lucide-center";
 import Image from "next/image";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
@@ -32,7 +32,7 @@ export default function Home() {
     return query(collection(firestore, "restaurants"), orderBy("name"));
   }, [firestore]);
 
-  const { data: restaurants, loading } = useCollection<Restaurant>(restaurantsQuery);
+  const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
 
   useEffect(() => {
     const seedData = async () => {
@@ -159,21 +159,21 @@ export default function Home() {
                 </div>
               </div>
               
-              {filteredDishes.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12">
-                  {filteredDishes.map((dish) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12">
+                {filteredDishes.length > 0 ? (
+                  filteredDishes.map((dish) => (
                     <DishCard key={dish.id} dish={dish} />
-                  ))}
-                </div>
-              ) : !loading ? (
-                <div className="text-center py-24 bg-card rounded-[3rem] border border-dashed border-border/50">
-                  <UtensilsCrossed className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
-                  <p className="text-xl font-bold text-muted-foreground">No dishes found matching your criteria.</p>
-                  <Button variant="link" onClick={() => {setSearchQuery(""); setActiveCategory("All");}} className="mt-4 text-primary font-bold">
-                    Show full menu
-                  </Button>
-                </div>
-              ) : null}
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-24 bg-card rounded-[3rem] border border-dashed border-border/50">
+                    <UtensilsCrossed className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
+                    <p className="text-xl font-bold text-muted-foreground">Looking for something delicious...</p>
+                    <Button variant="link" onClick={() => {setSearchQuery(""); setActiveCategory("All");}} className="mt-4 text-primary font-bold">
+                      Show full menu
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
             
             <aside className="lg:col-span-3 space-y-10">
