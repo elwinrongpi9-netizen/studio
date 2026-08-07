@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 const MERCHANT_UPI_ID = "7086505053@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
-const MERCHANT_WHATSAPP = "9170865053"; 
+const MERCHANT_WHATSAPP = "7086505053"; 
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'PhonePe Payments (UPI)', icon: <QrCode className="w-4 h-4" /> },
@@ -119,14 +119,14 @@ export default function CartPage() {
     setDoc(doc(firestore, "users", user.uid, "orders", orderId), orderData);
 
     const message = constructWhatsAppMessage(orderData);
-    // Use wa.me for more reliable external redirection
+    // Directly using the user's specified number
     const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodeURIComponent(message)}`;
     
     // Clear cart locally
     clearCart();
     
-    // Instant external redirection
-    window.location.assign(whatsappUrl);
+    // Direct redirection
+    window.location.href = whatsappUrl;
   };
 
   return (
