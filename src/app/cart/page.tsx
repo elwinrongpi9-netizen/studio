@@ -35,10 +35,9 @@ export default function CartPage() {
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
   const { data: profile } = useDoc<any>(userRef);
 
-  const [paymentMethod, setPaymentMethod] = useState('upi');
+  const [paymentMethod, setPaymentMethod] = useState('cod');
   const [showQrModal, setShowQrModal] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
-  const [useWallet, setUseWallet] = useState(false);
 
   const subtotal = useMemo(() => {
     return cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
@@ -46,12 +45,8 @@ export default function CartPage() {
 
   const deliveryFee = 0; 
   const platformFee = subtotal > 0 ? 5 : 0;
-  
-  const walletBalance = profile?.walletBalance || 0;
   const billTotal = subtotal + deliveryFee + platformFee;
-  const walletDeduction = useWallet ? Math.min(walletBalance, billTotal) : 0;
-  
-  const total = billTotal - walletDeduction;
+  const total = billTotal;
 
   const upiUrl = useMemo(() => {
     const amount = total.toFixed(2);
@@ -76,7 +71,9 @@ export default function CartPage() {
   if (!isHydrated) return null;
 
   const constructWhatsAppMessage = (orderData: any) => {
-    const itemsList = orderData.items.map((item: any) => `✅ ${item.quantity}x ${item.name} - ₹${(item.price * 80 * item.quantity).toFixed(0)}`).join('\n');
+    const itemsList = orderData.items.map((item: any) => 
+      `✅ ${item.quantity}x ${item.name} - ₹${(item.price * 80 * item.quantity).toFixed(0)}`
+    ).join('\n');
     
     return `*🍱 NEW ORDER RECEIVED!*\n\n` +
       `*Order ID:* #${orderData.order_id}\n` +
@@ -98,8 +95,10 @@ export default function CartPage() {
         return;
     }
 
+    if (cart.length === 0) return;
+
     const orderId = `ORD${Date.now()}`.toUpperCase();
-    const state = (total === 0 || confirmedPayment || paymentMethod === 'cod') ? 'COMPLETED' : 'PENDING';
+    const state = (confirmedPayment || paymentMethod === 'cod') ? 'COMPLETED' : 'PENDING';
 
     const orderData = {
       order_id: orderId,
@@ -114,30 +113,19 @@ export default function CartPage() {
       userId: user.uid,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      paymentMethod: total === 0 ? 'Karbi Coins' : (paymentMethod === 'cod' ? 'Cash on Delivery' : 'PhonePe UPI'),
+      paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : 'PhonePe UPI',
       estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
 
-    // Save data to Firestore (non-blocking)
-    const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
-    setDoc(globalOrderRef, orderData).catch(() => {});
-
-    const userOrderRef = doc(firestore, "users", user.uid, "orders", orderId);
-    setDoc(userOrderRef, orderData).catch(() => {});
-
-    if (walletDeduction > 0) {
-      updateDoc(doc(firestore, "users", user.uid), {
-        walletBalance: increment(-walletDeduction)
-      }).catch(() => {});
-    }
+    // Save to Firestore (non-blocking for speed)
+    setDoc(doc(firestore, "phonepe_orders", orderId), orderData);
+    setDoc(doc(firestore, "users", user.uid, "orders", orderId), orderData);
 
     const message = constructWhatsAppMessage(orderData);
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${MERCHANT_WHATSAPP}&text=${encodeURIComponent(message)}`;
     
-    toast({ title: "Redirecting to WhatsApp..." });
+    // Clear cart and redirect immediately
     clearCart();
-    
-    // Immediate redirection using location.href for robust cross-browser handling
     window.location.href = whatsappUrl;
   };
 
@@ -148,7 +136,7 @@ export default function CartPage() {
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <ShoppingBag className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-black italic tracking-tighter">Confirm Your <span className="text-primary not-italic">Order</span></h1>
+            <h1 className="text-4xl font-black italic tracking-tighter">Review & <span className="text-primary not-italic">Order</span></h1>
           </div>
 
           {cart.length === 0 ? (
@@ -186,17 +174,6 @@ export default function CartPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                <div className="bg-card p-8 rounded-[2.5rem] shadow-sm border border-border/50 space-y-4">
-                  <h3 className="font-black text-xl flex items-center gap-3 italic">
-                    <MapPin className="w-6 h-6 text-primary" />
-                    Delivery Address
-                  </h3>
-                  <div className="p-5 bg-muted/20 rounded-2xl border border-dashed border-border/50">
-                    <p className="text-sm font-bold text-foreground">Diphu Market area</p>
-                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Karbi Anglong, Assam</p>
                   </div>
                 </div>
 
@@ -244,15 +221,15 @@ export default function CartPage() {
 
                   <Button 
                     className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary flex items-center justify-center gap-3"
-                    onClick={() => (total > 0 && paymentMethod === 'upi') ? setShowQrModal(true) : processOrder(false)}
+                    onClick={() => (paymentMethod === 'upi') ? setShowQrModal(true) : processOrder(false)}
                   >
                     <MessageSquare className="w-6 h-6" />
-                    Confirm Order
+                    Confirm & Send WhatsApp
                   </Button>
                   
                   <div className="flex items-center gap-2 justify-center opacity-40">
                     <CheckCircle className="w-4 h-4" />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Safe & Secure Checkout</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest">Instant Redirection</span>
                   </div>
                 </div>
               </div>
@@ -279,7 +256,6 @@ export default function CartPage() {
 
               <div className="relative w-80 h-80 bg-white p-6 rounded-[2.5rem] shadow-2xl border-4 border-primary/10">
                 <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-4" unoptimized />
-                <div className="absolute inset-0 bg-primary/5 rounded-[2.5rem] pointer-events-none" />
               </div>
 
               <div className="text-center space-y-1">
@@ -288,7 +264,7 @@ export default function CartPage() {
               </div>
 
               <Button className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl bg-primary hover:bg-primary/90" onClick={() => processOrder(true)}>
-                I Have Paid ₹{total.toFixed(0)}
+                I Have Paid & Send WhatsApp
               </Button>
               
               <div className="flex items-center gap-2 opacity-30">
