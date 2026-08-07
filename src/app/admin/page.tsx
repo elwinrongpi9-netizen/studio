@@ -27,7 +27,9 @@ import {
   Truck,
   Package,
   Plus,
-  Flame
+  Flame,
+  Image as ImageIcon,
+  Save
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -155,6 +157,10 @@ export default function AdminPage() {
   const [wingoPeriod, setWingoPeriod] = useState("");
   const [wingoNumber, setWingoNumber] = useState("");
 
+  const selectedRestaurant = useMemo(() => {
+    return restaurants?.find(r => r.id === selectedResId);
+  }, [restaurants, selectedResId]);
+
   if (!userLoading && (!user || user.email !== ADMIN_EMAIL)) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -188,6 +194,23 @@ export default function AdminPage() {
       setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300" });
     } catch (e) {
       toast({ title: "Failed to add", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateDishImage = async (dishId: string, newImageUrl: string) => {
+    if (!firestore || !selectedResId || !selectedRestaurant) return;
+
+    const updatedDishes = selectedRestaurant.dishes.map(d => 
+      d.id === dishId ? { ...d, image: newImageUrl } : d
+    );
+
+    try {
+      updateDoc(doc(firestore, "restaurants", selectedResId), {
+        dishes: updatedDishes
+      });
+      toast({ title: "Image Updated! 📸" });
+    } catch (e) {
+      toast({ title: "Update Failed", variant: "destructive" });
     }
   };
 
@@ -372,78 +395,125 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="menu">
-            <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
-              <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                <Plus className="w-8 h-8 text-primary" /> Menu Manager
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Restaurant</Label>
-                    <select 
-                      value={selectedResId} 
-                      onChange={(e) => setSelectedResId(e.target.value)}
-                      className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black"
-                    >
-                      <option value="">Choose Restaurant</option>
-                      {restaurants?.map(r => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
+            <div className="space-y-8">
+              <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
+                <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
+                  <Plus className="w-8 h-8 text-primary" /> Add New Item
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Restaurant</Label>
+                      <select 
+                        value={selectedResId} 
+                        onChange={(e) => setSelectedResId(e.target.value)}
+                        className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black"
+                      >
+                        <option value="">Choose Restaurant</option>
+                        {restaurants?.map(r => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Item Name</Label>
+                      <Input 
+                        placeholder="e.g. Chilli Chicken" 
+                        value={newDish.name}
+                        onChange={e => setNewDish({...newDish, name: e.target.value})}
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Price</Label>
+                      <Input 
+                        type="number" 
+                        value={newDish.price}
+                        onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})}
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Item Name</Label>
-                    <Input 
-                      placeholder="e.g. Chilli Chicken" 
-                      value={newDish.name}
-                      onChange={e => setNewDish({...newDish, name: e.target.value})}
-                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Price</Label>
-                    <Input 
-                      type="number" 
-                      value={newDish.price}
-                      onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})}
-                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
-                    />
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Category</Label>
+                      <Input 
+                        placeholder="e.g. Starters" 
+                        value={newDish.category}
+                        onChange={e => setNewDish({...newDish, category: e.target.value})}
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Image URL</Label>
+                      <Input 
+                        placeholder="https://..." 
+                        value={newDish.image}
+                        onChange={e => setNewDish({...newDish, image: e.target.value})}
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Description</Label>
+                      <Input 
+                        placeholder="Details" 
+                        value={newDish.description}
+                        onChange={e => setNewDish({...newDish, description: e.target.value})}
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Category</Label>
-                    <Input 
-                      placeholder="e.g. Starters" 
-                      value={newDish.category}
-                      onChange={e => setNewDish({...newDish, category: e.target.value})}
-                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
-                    />
+                <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90">
+                  Add Item
+                </Button>
+              </Card>
+
+              {selectedRestaurant && (
+                <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
+                  <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
+                    <ImageIcon className="w-8 h-8 text-primary" /> Manage Existing Items
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {selectedRestaurant.dishes?.map((dish) => (
+                      <div key={dish.id} className="bg-[#0a0a0a] p-6 rounded-[2rem] border border-border/50 flex flex-col gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-16 h-16 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
+                            <Image src={dish.image} alt={dish.name} fill className="object-cover" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-black text-sm uppercase italic leading-none truncate">{dish.name}</h4>
+                            <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">{dish.category}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[8px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
+                          <div className="flex gap-2">
+                            <Input 
+                              defaultValue={dish.image}
+                              onBlur={(e) => handleUpdateDishImage(dish.id, e.target.value)}
+                              className="h-10 rounded-xl bg-card border-border/50 text-[10px] font-black"
+                              placeholder="Update Image URL..."
+                            />
+                            <Button 
+                              size="sm" 
+                              className="rounded-xl h-10 w-10 flex-shrink-0"
+                              variant="secondary"
+                              onClick={(e) => {
+                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                handleUpdateDishImage(dish.id, input.value);
+                              }}
+                            >
+                              <Save className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Image URL</Label>
-                    <Input 
-                      placeholder="https://..." 
-                      value={newDish.image}
-                      onChange={e => setNewDish({...newDish, image: e.target.value})}
-                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Description</Label>
-                    <Input 
-                      placeholder="Details" 
-                      value={newDish.description}
-                      onChange={e => setNewDish({...newDish, description: e.target.value})}
-                      className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
-                    />
-                  </div>
-                </div>
-              </div>
-              <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90">
-                Update Menu
-              </Button>
-            </Card>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="wingo">
@@ -511,3 +581,4 @@ export default function AdminPage() {
     </div>
   );
 }
+
