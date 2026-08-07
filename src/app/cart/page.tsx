@@ -4,16 +4,15 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Info, MessageSquare } from "lucide-react";
+import { Trash2, ShoppingBag, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Info, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc } from "@/firebase";
-import { doc, setDoc, updateDoc, increment } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useState, useMemo, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const MERCHANT_UPI_ID = "7086505053@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
@@ -29,7 +28,6 @@ export default function CartPage() {
   const { cart, removeFromCart, clearCart, isHydrated } = useAppStore();
   const { user } = useUser();
   const firestore = useFirestore();
-  const router = useRouter();
   const { toast } = useToast();
   
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
@@ -46,13 +44,12 @@ export default function CartPage() {
   const deliveryFee = 0; 
   const platformFee = subtotal > 0 ? 5 : 0;
   const billTotal = subtotal + deliveryFee + platformFee;
-  const total = billTotal;
 
   const upiUrl = useMemo(() => {
-    const amount = total.toFixed(2);
+    const amount = billTotal.toFixed(2);
     const tr = `ORD${Date.now()}`;
     return `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent(MERCHANT_NAME)}&mc=${MERCHANT_CODE}&tr=${tr}&am=${amount}&cu=INR&mode=02`;
-  }, [total]);
+  }, [billTotal]);
 
   const qrCodeUrl = useMemo(() => {
     return `https://chart.googleapis.com/chart?chs=500x500&cht=qr&chl=${encodeURIComponent(upiUrl)}&choe=UTF-8&chld=H|2`;
@@ -117,16 +114,19 @@ export default function CartPage() {
       estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
 
-    // Save to Firestore (non-blocking for speed)
+    // Save to Firestore in background
     setDoc(doc(firestore, "phonepe_orders", orderId), orderData);
     setDoc(doc(firestore, "users", user.uid, "orders", orderId), orderData);
 
     const message = constructWhatsAppMessage(orderData);
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${MERCHANT_WHATSAPP}&text=${encodeURIComponent(message)}`;
+    // Use wa.me for more reliable external redirection
+    const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodeURIComponent(message)}`;
     
-    // Clear cart and redirect immediately
+    // Clear cart locally
     clearCart();
-    window.location.href = whatsappUrl;
+    
+    // Instant external redirection
+    window.location.assign(whatsappUrl);
   };
 
   return (
@@ -216,7 +216,7 @@ export default function CartPage() {
                   
                   <div className="flex justify-between items-center">
                     <span className="font-black text-sm uppercase tracking-widest text-muted-foreground">To Pay</span>
-                    <span className="text-4xl font-black text-primary italic tracking-tighter">₹{total.toFixed(0)}</span>
+                    <span className="text-4xl font-black text-primary italic tracking-tighter">₹{billTotal.toFixed(0)}</span>
                   </div>
 
                   <Button 
@@ -259,7 +259,7 @@ export default function CartPage() {
               </div>
 
               <div className="text-center space-y-1">
-                <p className="text-5xl font-black text-primary italic tracking-tighter">₹{total.toFixed(2)}</p>
+                <p className="text-5xl font-black text-primary italic tracking-tighter">₹{billTotal.toFixed(2)}</p>
                 <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em]">{MERCHANT_UPI_ID}</p>
               </div>
 
