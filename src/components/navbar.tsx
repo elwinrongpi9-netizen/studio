@@ -1,8 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, UtensilsCrossed, LogOut, Lock, Mail, Loader2, ShieldCheck, Wallet, Zap } from "lucide-react";
+import { ShoppingBag, UtensilsCrossed, LogOut, Lock, Mail, Loader2, ShieldCheck, Wallet, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
@@ -127,47 +126,50 @@ export function Navbar() {
   };
 
   return (
-    <nav className="w-full border-b border-border/10 bg-background/80 backdrop-blur-xl z-50 sticky top-0">
-      <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 group">
-             <div className="p-2 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
-               <UtensilsCrossed className="w-7 h-7 text-primary" />
+    <nav className="w-full border-b-2 border-primary/10 bg-background/90 backdrop-blur-2xl z-[100] sticky top-0 shadow-2xl">
+      <div className="container mx-auto px-4 h-24 flex items-center justify-between">
+        <div className="flex items-center gap-10">
+          <Link href="/" className="flex items-center gap-4 group">
+             <div className="p-3 bg-primary rounded-[1.5rem] group-hover:rotate-12 transition-all duration-500 shadow-xl shadow-primary/20">
+               <UtensilsCrossed className="w-8 h-8 text-white" />
              </div>
-             <span className="text-2xl font-black tracking-tighter italic">zomatokarbi<span className="text-primary">.com</span></span>
+             <div className="flex flex-col">
+               <span className="text-3xl font-black tracking-tighter italic uppercase leading-none">RONGPI</span>
+               <span className="text-[10px] font-black tracking-[0.5em] text-primary uppercase ml-1">CHINESE WOK</span>
+             </div>
           </Link>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-6">
+        <div className="flex items-center gap-6">
           {user && (
-            <div className="hidden sm:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-5">
                <Link href="/wallet" className="group">
-                 <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-2xl border border-primary/20 group-hover:bg-primary/20 transition-all">
-                    <Wallet className="w-4 h-4 text-primary" />
+                 <div className="flex items-center gap-3 bg-primary/5 px-6 py-3 rounded-[1.5rem] border-2 border-primary/20 group-hover:bg-primary/10 transition-all shadow-lg">
+                    <Wallet className="w-5 h-5 text-primary" />
                     <div className="flex flex-col">
-                      <span className="text-[7px] font-black uppercase text-muted-foreground leading-none tracking-widest">Main</span>
-                      <span className="text-xs font-black text-primary">₹{profile?.walletBalance || 0}</span>
+                      <span className="text-[8px] font-black uppercase text-muted-foreground leading-none tracking-widest mb-1">Main Account</span>
+                      <span className="text-sm font-black text-primary">₹{profile?.walletBalance?.toFixed(0) || 0}</span>
                     </div>
                  </div>
                </Link>
                <Link href="/wingo" className="group">
-                 <div className="flex items-center gap-2 bg-purple-500/10 px-4 py-2 rounded-2xl border border-purple-500/20 group-hover:bg-purple-500/20 transition-all">
-                    <Zap className="w-4 h-4 text-purple-500" />
+                 <div className="flex items-center gap-3 bg-purple-600/5 px-6 py-3 rounded-[1.5rem] border-2 border-purple-600/20 group-hover:bg-purple-600/10 transition-all shadow-lg">
+                    <Zap className="w-5 h-5 text-purple-600" />
                     <div className="flex flex-col">
-                      <span className="text-[7px] font-black uppercase text-muted-foreground leading-none tracking-widest">Wingo</span>
-                      <span className="text-xs font-black text-purple-500">₹{profile?.wingoBalance || 0}</span>
+                      <span className="text-[8px] font-black uppercase text-muted-foreground leading-none tracking-widest mb-1">Game Wallet</span>
+                      <span className="text-sm font-black text-purple-600">₹{profile?.wingoBalance?.toFixed(0) || 0}</span>
                     </div>
                  </div>
                </Link>
             </div>
           )}
           
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-4">
             <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative hover:text-primary hover:bg-primary/10 rounded-2xl transition-all h-12 w-12 border border-border/50">
-                <ShoppingBag className="w-5 h-5" />
+              <Button variant="ghost" size="icon" className="relative hover:text-primary hover:bg-primary/5 rounded-[1.5rem] transition-all h-14 w-14 border-2 border-border/50 group shadow-lg">
+                <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-black shadow-lg">
+                  <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-black shadow-2xl ring-4 ring-background">
                     {cartCount}
                   </span>
                 )}
@@ -175,55 +177,60 @@ export function Navbar() {
             </Link>
 
             {userLoading ? (
-              <div className="w-10 h-10 rounded-2xl bg-muted animate-pulse" />
+              <div className="w-12 h-12 rounded-[1.5rem] bg-muted animate-pulse" />
             ) : user ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 {isAdmin && (
                   <Link href="/admin">
-                    <Button variant="ghost" className="hidden md:flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest border border-primary/20 rounded-2xl h-10">
-                      <ShieldCheck className="w-3 h-3" /> Admin
+                    <Button variant="ghost" className="hidden xl:flex items-center gap-3 text-primary font-black uppercase text-[10px] tracking-[0.2em] border-2 border-primary/30 rounded-[1.2rem] h-12 px-6 hover:bg-primary/5 transition-all">
+                      <ShieldCheck className="w-4 h-4" /> Control Panel
                     </Button>
                   </Link>
                 )}
-                <div className="flex items-center gap-2">
-                  <Avatar className="w-10 h-10 border-2 border-primary/20 p-0.5 rounded-2xl">
-                    <AvatarImage src={user.photoURL || ""} className="rounded-xl" />
-                    <AvatarFallback className="bg-primary/10 text-primary font-black rounded-xl">{user.displayName?.charAt(0) || "U"}</AvatarFallback>
+                <div className="flex items-center gap-4 bg-muted/20 p-1.5 rounded-[1.8rem] border border-border/50">
+                  <Avatar className="w-11 h-11 border-2 border-primary/30 p-0.5 rounded-[1.2rem]">
+                    <AvatarImage src={user.photoURL || ""} className="rounded-[1rem]" />
+                    <AvatarFallback className="bg-primary text-white font-black rounded-[1rem] text-sm uppercase">{user.displayName?.charAt(0) || "U"}</AvatarFallback>
                   </Avatar>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:text-destructive hover:bg-destructive/10 rounded-2xl h-10 w-10">
-                    <LogOut className="w-4 h-4" />
+                  <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:text-destructive hover:bg-destructive/10 rounded-[1.2rem] h-11 w-11 transition-all">
+                    <LogOut className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
             ) : (
               <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
                 <DialogTrigger asChild>
-                  <Button className="rounded-2xl font-black uppercase tracking-widest text-[11px] px-8 h-12 bg-primary shadow-xl shadow-primary/20">Login</Button>
+                  <Button className="rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[11px] px-10 h-14 bg-primary shadow-2xl shadow-primary/30 hover:scale-[1.05] transition-all active:scale-95">Member Login</Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[400px] rounded-[3rem] p-10 bg-card border-none">
-                  <DialogHeader className="mb-8">
-                    <DialogTitle className="text-4xl font-black text-center italic tracking-tighter">Login to <span className="text-primary">KA</span></DialogTitle>
+                <DialogContent className="sm:max-w-[420px] rounded-[4rem] p-12 bg-card border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)]">
+                  <DialogHeader className="mb-10">
+                    <div className="flex justify-center mb-6">
+                      <div className="p-4 bg-primary/10 rounded-[2rem]">
+                        <Sparkles className="w-8 h-8 text-primary" />
+                      </div>
+                    </div>
+                    <DialogTitle className="text-4xl font-black text-center italic tracking-tighter uppercase leading-[0.8]">Welcome to<br/><span className="text-primary not-italic">Premium Dining</span></DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleEmailLogin} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest ml-1">Email</Label>
-                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-2xl h-14 bg-background border-none ring-1 ring-border focus:ring-primary" placeholder="your@email.com" required />
+                  <form onSubmit={handleEmailLogin} className="space-y-8">
+                    <div className="space-y-3">
+                      <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Credentials: Email</Label>
+                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6" placeholder="admin@premium.com" required />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest ml-1">Password</Label>
-                      <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-2xl h-14 bg-background border-none ring-1 ring-border focus:ring-primary" required />
+                    <div className="space-y-3">
+                      <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Credentials: Password</Label>
+                      <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6" required />
                     </div>
-                    <Button type="submit" className="w-full h-14 rounded-2xl font-black text-lg shadow-2xl bg-primary hover:bg-primary/90" disabled={isAuthLoading}>
-                      {isAuthLoading ? <Loader2 className="animate-spin" /> : "Sign In"}
+                    <Button type="submit" className="w-full h-18 rounded-[1.5rem] font-black text-xl shadow-2xl bg-primary hover:bg-primary/90 py-8 uppercase tracking-widest" disabled={isAuthLoading}>
+                      {isAuthLoading ? <Loader2 className="animate-spin" /> : "Authorize Access"}
                     </Button>
                   </form>
-                  <div className="relative my-10">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/20"></span></div>
-                    <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-card px-4 text-muted-foreground">Or</span></div>
+                  <div className="relative my-12">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t-2 border-border/20"></span></div>
+                    <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-card px-6 text-muted-foreground tracking-[0.5em]">Global ID</span></div>
                   </div>
-                  <Button variant="outline" onClick={handleGoogleLogin} className="w-full h-14 rounded-2xl border-2 font-black flex items-center justify-center gap-4 bg-background hover:bg-muted/50">
-                    <svg className="w-6 h-6" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.64 0 3.12.56 4.28 1.67l3.2-3.2C17.52 1.6 14.96 0 12 0 7.31 0 3.33 2.69 1.39 6.6l3.86 3c.94-2.82 3.56-4.96 6.75-4.96z"/><path fill="#4285F4" d="M23.49 12.27c0-.8-.07-1.57-.21-2.32H12v4.39h6.44c-.28 1.48-1.12 2.74-2.37 3.58l3.69 2.86c2.16-1.99 3.41-4.92 3.41-8.51z"/><path fill="#FBBC05" d="M5.25 14.61c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29l-3.86-3C.51 8.5 0 10.19 0 12c0 1.81.51 3.5 1.39 4.98l3.86-2.99z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.69-2.86c-1.11.75-2.52 1.19-4.26 1.19-3.19 0-5.81-2.14-6.75-4.96l-3.86 3C3.33 21.31 7.31 24 12 24z"/></svg>
-                    Google Play
+                  <Button variant="outline" onClick={handleGoogleLogin} className="w-full h-18 rounded-[1.5rem] border-2 border-border/50 font-black flex items-center justify-center gap-5 bg-background hover:bg-muted/50 py-8 transition-all group">
+                    <svg className="w-7 h-7 group-hover:scale-110 transition-transform" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.64 0 3.12.56 4.28 1.67l3.2-3.2C17.52 1.6 14.96 0 12 0 7.31 0 3.33 2.69 1.39 6.6l3.86 3c.94-2.82 3.56-4.96 6.75-4.96z"/><path fill="#4285F4" d="M23.49 12.27c0-.8-.07-1.57-.21-2.32H12v4.39h6.44c-.28 1.48-1.12 2.74-2.37 3.58l3.69 2.86c2.16-1.99 3.41-4.92 3.41-8.51z"/><path fill="#FBBC05" d="M5.25 14.61c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29l-3.86-3C.51 8.5 0 10.19 0 12c0 1.81.51 3.5 1.39 4.98l3.86-2.99z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.69-2.86c-1.11.75-2.52 1.19-4.26 1.19-3.19 0-5.81-2.14-6.75-4.96l-3.86 3C3.33 21.31 7.31 24 12 24z"/></svg>
+                    Continue with Google
                   </Button>
                 </DialogContent>
               </Dialog>
