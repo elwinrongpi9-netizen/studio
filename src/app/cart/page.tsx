@@ -4,13 +4,13 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Loader2, Info } from "lucide-react";
+import { Trash2, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Loader2, Info } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useDoc } from "@/firebase";
-import { doc, setDoc, updateDoc, increment, collection } from "firebase/firestore";
+import { doc, setDoc, updateDoc, increment } from "firebase/firestore";
 import { useState, useMemo, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function CartPage() {
-  const { cart, removeFromCart, addToCart, clearCart, isHydrated } = useAppStore();
+  const { cart, removeFromCart, clearCart, isHydrated } = useAppStore();
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function CartPage() {
     return cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
   }, [cart]);
 
-  const deliveryFee = subtotal > 0 ? 40 : 0;
+  const deliveryFee = subtotal > 0 ? 0 : 0; // Set to 0 as per free delivery hint
   const platformFee = subtotal > 0 ? 5 : 0;
   
   const walletBalance = profile?.walletBalance || 0;
@@ -77,23 +77,26 @@ export default function CartPage() {
   if (!isHydrated) return null;
 
   const sendToWhatsApp = (orderData: any) => {
-    const itemsList = orderData.items.map((item: any) => `- ${item.quantity}x ${item.name}`).join('\n');
-    const message = `*NEW ORDER RECEIVED!* 🍱\n\n` +
+    const itemsList = orderData.items.map((item: any) => `✅ ${item.quantity}x ${item.name} (₹${(item.price * 80 * item.quantity).toFixed(0)})`).join('\n');
+    
+    const message = `*🍱 NEW ORDER RECEIVED!* \n\n` +
       `*Order ID:* #${orderData.order_id}\n` +
       `*Restaurant:* ${orderData.restaurantName}\n` +
       `-------------------------\n` +
       `${itemsList}\n` +
       `-------------------------\n` +
       `*Grand Total:* ₹${orderData.amount}\n` +
-      `*Payment:* ${orderData.paymentMethod}\n` +
+      `*Payment Method:* ${orderData.paymentMethod}\n` +
       `*Status:* ${orderData.status}\n\n` +
-      `*Customer:* ${orderData.udf1}\n` +
-      `*Contact:* ${orderData.udf2}\n\n` +
-      `_Paisa verified on PhonePe Business_ ✅`;
+      `*Customer Name:* ${orderData.udf1}\n` +
+      `*Customer Email:* ${orderData.udf2}\n\n` +
+      `_Please prepare the order soon!_ 🚀`;
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
+    
+    // Using window.location.href to avoid popup blockers
+    window.location.href = whatsappUrl;
   };
 
   const processOrder = async (confirmedPayment = false) => {
@@ -109,7 +112,7 @@ export default function CartPage() {
 
     const orderData = {
       order_id: orderId,
-      restaurantName: cart[0]?.restaurantName || "Restaurant",
+      restaurantName: cart[0]?.restaurantName || "Rongpi Chinese wok",
       amount: billTotal,
       total: billTotal,
       state: state,
@@ -137,25 +140,26 @@ export default function CartPage() {
         });
       }
 
-      sendToWhatsApp(orderData);
-
+      // Success feedback
+      toast({ title: "Order Confirmed! 🎉", description: "Redirecting to WhatsApp..." });
+      
+      // Clear cart before redirect
+      clearCart();
+      
+      // Final step: WhatsApp Redirect
       setTimeout(() => {
-        setIsVerifying(false);
-        setShowQrModal(false);
-        clearCart();
-        toast({ title: "Order Success! 🎉", description: `Details sent to WhatsApp.` });
-        router.push("/orders");
-      }, 800);
+        sendToWhatsApp(orderData);
+      }, 500);
 
     } catch (error) {
       console.error("Order failed", error);
       setIsVerifying(false);
-      toast({ title: "Order Failed", variant: "destructive" });
+      toast({ title: "Order Failed", description: "Something went wrong, please try again.", variant: "destructive" });
     }
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto">
@@ -262,9 +266,10 @@ export default function CartPage() {
 
                   <Button 
                     className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary"
+                    disabled={isVerifying}
                     onClick={() => (total > 0 && paymentMethod === 'upi') ? setShowQrModal(true) : processOrder(false)}
                   >
-                    Confirm Order
+                    {isVerifying ? <Loader2 className="animate-spin" /> : "Confirm Order"}
                   </Button>
                   
                   <div className="flex items-center gap-2 justify-center opacity-40">
@@ -278,7 +283,7 @@ export default function CartPage() {
         </div>
       </main>
 
-      {/* Payment Modal */}
+      {/* PhonePe QR Modal */}
       {showQrModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-card w-full max-w-[450px] rounded-[3rem] p-10 shadow-2xl border border-border/50 relative overflow-hidden">
@@ -332,6 +337,6 @@ export default function CartPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
