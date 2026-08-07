@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Info } from "lucide-react";
+import { Trash2, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Info, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -37,7 +37,6 @@ export default function CartPage() {
 
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [showQrModal, setShowQrModal] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
   const [useWallet, setUseWallet] = useState(false);
 
@@ -76,10 +75,10 @@ export default function CartPage() {
 
   if (!isHydrated) return null;
 
-  const sendToWhatsApp = (orderData: any) => {
+  const constructWhatsAppMessage = (orderData: any) => {
     const itemsList = orderData.items.map((item: any) => `✅ ${item.quantity}x ${item.name} - ₹${(item.price * 80 * item.quantity).toFixed(0)}`).join('\n');
     
-    const message = `*🍱 NEW ORDER RECEIVED!*\n\n` +
+    return `*🍱 NEW ORDER RECEIVED!*\n\n` +
       `*Order ID:* #${orderData.order_id}\n` +
       `*Restaurant:* ${orderData.restaurantName}\n` +
       `-------------------------\n` +
@@ -91,21 +90,13 @@ export default function CartPage() {
       `*Customer:* ${orderData.udf1}\n` +
       `*Email:* ${orderData.udf2}\n\n` +
       `_Please prepare the order soon!_ 🚀`;
-
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${MERCHANT_WHATSAPP}&text=${encodedMessage}`;
-    
-    // Using window.location.assign for direct navigation
-    window.location.assign(whatsappUrl);
   };
 
-  const processOrder = async (confirmedPayment = false) => {
+  const processOrder = (confirmedPayment = false) => {
     if (!user || !firestore) {
         toast({ title: "Please Login", description: "You need to be signed in to order.", variant: "destructive" });
         return;
     }
-
-    setIsVerifying(true);
 
     const orderId = `ORD${Date.now()}`.toUpperCase();
     const state = (total === 0 || confirmedPayment || paymentMethod === 'cod') ? 'COMPLETED' : 'PENDING';
@@ -127,29 +118,27 @@ export default function CartPage() {
       estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
 
-    try {
-      // Save data to Firestore (non-blocking per guidelines)
-      const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
-      setDoc(globalOrderRef, orderData);
+    // Save data to Firestore (non-blocking)
+    const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
+    setDoc(globalOrderRef, orderData).catch(() => {});
 
-      const userOrderRef = doc(firestore, "users", user.uid, "orders", orderId);
-      setDoc(userOrderRef, orderData);
+    const userOrderRef = doc(firestore, "users", user.uid, "orders", orderId);
+    setDoc(userOrderRef, orderData).catch(() => {});
 
-      if (walletDeduction > 0) {
-        updateDoc(doc(firestore, "users", user.uid), {
-          walletBalance: increment(-walletDeduction)
-        });
-      }
-
-      toast({ title: "Order Confirmed! 🎉" });
-      
-      clearCart();
-      sendToWhatsApp(orderData);
-      // isVerifying remains true to keep the UI stable while redirecting
-    } catch (error) {
-      setIsVerifying(false);
-      toast({ title: "Order Failed", description: "Please try again.", variant: "destructive" });
+    if (walletDeduction > 0) {
+      updateDoc(doc(firestore, "users", user.uid), {
+        walletBalance: increment(-walletDeduction)
+      }).catch(() => {});
     }
+
+    const message = constructWhatsAppMessage(orderData);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${MERCHANT_WHATSAPP}&text=${encodeURIComponent(message)}`;
+    
+    toast({ title: "Redirecting to WhatsApp..." });
+    clearCart();
+    
+    // Immediate redirection using location.href for robust cross-browser handling
+    window.location.href = whatsappUrl;
   };
 
   return (
@@ -254,10 +243,10 @@ export default function CartPage() {
                   </div>
 
                   <Button 
-                    className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary"
-                    disabled={isVerifying}
+                    className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary flex items-center justify-center gap-3"
                     onClick={() => (total > 0 && paymentMethod === 'upi') ? setShowQrModal(true) : processOrder(false)}
                   >
+                    <MessageSquare className="w-6 h-6" />
                     Confirm Order
                   </Button>
                   
