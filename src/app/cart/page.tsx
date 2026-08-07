@@ -114,19 +114,15 @@ export default function CartPage() {
       estimatedDelivery: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     };
 
-    // Save to Firestore in background
     setDoc(doc(firestore, "phonepe_orders", orderId), orderData);
     setDoc(doc(firestore, "users", user.uid, "orders", orderId), orderData);
 
     const message = constructWhatsAppMessage(orderData);
-    // Directly using the user's specified number
     const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodeURIComponent(message)}`;
     
-    // Clear cart locally
     clearCart();
     
-    // Direct redirection
-    window.location.href = whatsappUrl;
+    window.open(whatsappUrl, '_blank');
   };
 
   return (

@@ -196,7 +196,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 mb-16">
             <div className="flex items-center gap-3">
                <UtensilsCrossed className="w-10 h-10 text-primary" />
-               <span className="text-4xl font-black tracking-tighter italic">zomatokarbi.com</span>
+               <span className="text-2xl font-black tracking-tighter italic">zomatokarbi.com</span>
             </div>
             <div className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Diphu • Karbi Anglong • Assam</div>
           </div>
