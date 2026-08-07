@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
   ShieldCheck, 
-  Loader2, 
   Zap, 
   Banknote, 
   Copy, 
@@ -103,7 +102,7 @@ export default function AdminPage() {
     }
     toast({
       title: "NEW ORDER RECEIVED! 🔔",
-      description: "A customer just placed an order. Check the logs.",
+      description: "Check the logs for details.",
     });
   };
 
@@ -113,14 +112,14 @@ export default function AdminPage() {
         audioRef.current.play().then(() => {
           audioRef.current?.pause();
           setIsAudioEnabled(true);
-          toast({ title: "Audio Notifications Active 🔊" });
+          toast({ title: "Audio Active" });
         }).catch(() => {
-          toast({ title: "Interaction required for audio", variant: "destructive" });
+          toast({ title: "Please interact with the page first", variant: "destructive" });
         });
       }
     } else {
       setIsAudioEnabled(false);
-      toast({ title: "Audio Notifications Muted 🔇" });
+      toast({ title: "Audio Muted" });
     }
   };
 
@@ -130,19 +129,16 @@ export default function AdminPage() {
       const orderId = order.order_id || order.id;
       const userId = order.userId;
 
-      // Update in global phonepe_orders
       const globalRef = doc(firestore, "phonepe_orders", orderId);
-      await updateDoc(globalRef, { status: newStatus });
+      updateDoc(globalRef, { status: newStatus });
 
-      // Update in user's specific order history
       if (userId) {
         const userOrderRef = doc(firestore, "users", userId, "orders", orderId);
-        await updateDoc(userOrderRef, { status: newStatus });
+        updateDoc(userOrderRef, { status: newStatus });
       }
 
-      toast({ title: `Status: ${newStatus}`, description: "Order updated successfully." });
+      toast({ title: `Order ${newStatus}` });
     } catch (e) {
-      console.error(e);
       toast({ title: "Update Failed", variant: "destructive" });
     }
   };
@@ -158,7 +154,6 @@ export default function AdminPage() {
 
   const [wingoPeriod, setWingoPeriod] = useState("");
   const [wingoNumber, setWingoNumber] = useState("");
-  const [isWingoLoading, setIsWingoLoading] = useState(false);
 
   if (!userLoading && (!user || user.email !== ADMIN_EMAIL)) {
     return (
@@ -175,7 +170,7 @@ export default function AdminPage() {
 
   const handleAddDish = async () => {
     if (!firestore || !selectedResId || !newDish.name) {
-      toast({ title: "Select restaurant & name", variant: "destructive" });
+      toast({ title: "Details missing", variant: "destructive" });
       return;
     }
 
@@ -186,13 +181,13 @@ export default function AdminPage() {
     const updatedDishes = [...(res.dishes || []), dishToAdd];
 
     try {
-      await updateDoc(doc(firestore, "restaurants", selectedResId), {
+      updateDoc(doc(firestore, "restaurants", selectedResId), {
         dishes: updatedDishes
       });
-      toast({ title: "Item Added Successfully! 🎉" });
+      toast({ title: "Item Added! 🎉" });
       setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300" });
     } catch (e) {
-      toast({ title: "Failed to add item", variant: "destructive" });
+      toast({ title: "Failed to add", variant: "destructive" });
     }
   };
 
@@ -203,24 +198,21 @@ export default function AdminPage() {
       toast({ title: "Invalid Number", variant: "destructive" });
       return;
     }
-    setIsWingoLoading(true);
     setDoc(doc(firestore, "wingoConfig", wingoPeriod), {
       periodId: wingoPeriod,
       number: num,
       updatedAt: new Date().toISOString()
     })
     .then(() => {
-      toast({ title: "Manual Result Set!" });
+      toast({ title: "Result Fixed!" });
       setWingoPeriod("");
       setWingoNumber("");
-    })
-    .finally(() => setIsWingoLoading(false));
+    });
   };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
       <Navbar />
-      
       <audio ref={audioRef} src={RINGTONE_URL} preload="auto" />
 
       <main className="flex-1 container mx-auto px-4 py-12 max-w-7xl">
@@ -231,7 +223,7 @@ export default function AdminPage() {
               Admin Master Control
             </h1>
             <div className="flex items-center gap-3 mt-4">
-              <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">PhonePe Order Dashboard</p>
+              <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Live Order Dashboard</p>
               <div className="h-1 w-1 bg-muted-foreground rounded-full" />
               <button 
                 onClick={toggleAudio}
@@ -240,7 +232,7 @@ export default function AdminPage() {
                 }`}
               >
                 {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                {isAudioEnabled ? "Ringtone Active" : "Ringtone Off"}
+                {isAudioEnabled ? "Notifications On" : "Notifications Muted"}
               </button>
             </div>
           </div>
@@ -250,42 +242,42 @@ export default function AdminPage() {
               <BellRing className="w-10 h-10 text-primary animate-bounce" />
               <div className="flex flex-col">
                 <span className="font-black text-sm uppercase text-primary">NEW ORDER!</span>
-                <span className="text-[10px] font-bold text-white/60">Phone is Ringing...</span>
+                <span className="text-[10px] font-bold text-white/60">Ringing...</span>
               </div>
             </div>
           )}
         </div>
 
         <Tabs defaultValue="payments" className="space-y-8">
-          <TabsList className="bg-card p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto shadow-sm border border-border/50 overflow-x-auto no-scrollbar">
+          <TabsList className="bg-card p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto border border-border/50">
             <TabsTrigger value="payments" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <ShoppingBag className="w-4 h-4" /> User Orders
+              <ShoppingBag className="w-4 h-4" /> Orders
             </TabsTrigger>
             <TabsTrigger value="menu" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <Utensils className="w-4 h-4" /> Menu Manager
+              <Utensils className="w-4 h-4" /> Menu
             </TabsTrigger>
             <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <Zap className="w-4 h-4" /> Wingo Terminal
+              <Zap className="w-4 h-4" /> Wingo
             </TabsTrigger>
             <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 data-[state=active]:bg-primary">Withdrawals</TabsTrigger>
           </TabsList>
 
           <TabsContent value="payments">
-            <Card className="rounded-[2.5rem] border-border/50 shadow-2xl bg-card overflow-hidden">
+            <Card className="rounded-[2.5rem] border-border/50 bg-card overflow-hidden">
               <div className="p-8 border-b border-border/50 flex justify-between items-center">
                  <h3 className="font-black text-xl uppercase tracking-widest flex items-center gap-3">
                    <TrendingUp className="w-6 h-6 text-primary" />
-                   Recent User Transactions
+                   Recent Transactions
                  </h3>
                  <Badge variant="outline" className="rounded-full px-4 border-primary/20 text-primary font-black">
-                   {phonepeOrders?.length || 0} Orders Logged
+                   {phonepeOrders?.length || 0} Total
                  </Badge>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-muted/50 border-b border-border/50">
                     <tr>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Order ID</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">ID</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Customer</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Items</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Status</th>
@@ -295,7 +287,7 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {phonepeOrders?.map((order) => (
-                      <tr key={order.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                      <tr key={order.id} className="border-b border-border/50 hover:bg-muted/20">
                         <td className="p-6 font-mono font-bold text-xs text-primary">{order.order_id}</td>
                         <td className="p-6">
                            <div className="flex flex-col">
@@ -309,7 +301,7 @@ export default function AdminPage() {
                                <span key={idx} className="bg-muted px-2 py-1 rounded-lg text-[10px] font-black border border-border/50">
                                  {item.quantity}x {item.name}
                                </span>
-                             )) || <span className="text-muted-foreground italic text-xs">No items listed</span>}
+                             )) || <span className="text-muted-foreground italic text-xs">-</span>}
                            </div>
                         </td>
                         <td className="p-6">
@@ -318,7 +310,7 @@ export default function AdminPage() {
                             order.status === 'Cooking' ? 'bg-yellow-600' :
                             order.status === 'On the Way' ? 'bg-blue-500' :
                             order.status === 'Delivered' ? 'bg-green-600' :
-                            order.state === 'COMPLETED' ? 'bg-zinc-600' : 'bg-muted text-muted-foreground'
+                            'bg-muted text-muted-foreground'
                           }`}>
                             {order.status || order.state}
                           </Badge>
@@ -334,7 +326,7 @@ export default function AdminPage() {
                                 size="sm" 
                                 className="bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
                               >
-                                <Package className="w-3 h-3 mr-2" /> Accept Order
+                                <Package className="w-3 h-3 mr-2" /> Accept
                               </Button>
                             )}
                             {order.status === "Preparing" && (
@@ -343,7 +335,7 @@ export default function AdminPage() {
                                 size="sm" 
                                 className="bg-yellow-600 hover:bg-yellow-700 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
                               >
-                                <Flame className="w-3 h-3 mr-2" /> Start Cooking
+                                <Flame className="w-3 h-3 mr-2" /> Cook
                               </Button>
                             )}
                             {order.status === "Cooking" && (
@@ -352,7 +344,7 @@ export default function AdminPage() {
                                 size="sm" 
                                 className="bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
                               >
-                                <Truck className="w-3 h-3 mr-2" /> Send for Delivery
+                                <Truck className="w-3 h-3 mr-2" /> Deliver
                               </Button>
                             )}
                             {order.status === "On the Way" && (
@@ -361,12 +353,12 @@ export default function AdminPage() {
                                 size="sm" 
                                 className="bg-green-600 hover:bg-green-700 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
                               >
-                                <CheckCircle2 className="w-3 h-3 mr-2" /> Mark Delivered
+                                <CheckCircle2 className="w-3 h-3 mr-2" /> Complete
                               </Button>
                             )}
                             {order.status === "Delivered" && (
                               <span className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2">
-                                <CheckCircle2 className="w-3 h-3" /> Completed
+                                <CheckCircle2 className="w-3 h-3" /> Done
                               </span>
                             )}
                           </div>
@@ -380,9 +372,9 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="menu">
-            <Card className="rounded-[3rem] bg-card p-10 shadow-2xl border border-border/50">
+            <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
               <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                <Plus className="w-8 h-8 text-primary" /> Add New Item to Menu
+                <Plus className="w-8 h-8 text-primary" /> Menu Manager
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
@@ -409,7 +401,7 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Price (Coins/₹)</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Price</Label>
                     <Input 
                       type="number" 
                       value={newDish.price}
@@ -440,7 +432,7 @@ export default function AdminPage() {
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Description</Label>
                     <Input 
-                      placeholder="Ingredients or details" 
+                      placeholder="Details" 
                       value={newDish.description}
                       onChange={e => setNewDish({...newDish, description: e.target.value})}
                       className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
@@ -448,8 +440,8 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
-              <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 shadow-2xl bg-primary hover:bg-primary/90">
-                Update Master Menu
+              <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90">
+                Update Menu
               </Button>
             </Card>
           </TabsContent>
@@ -460,21 +452,21 @@ export default function AdminPage() {
                 <div className="p-4 bg-primary/10 rounded-3xl">
                   <Zap className="w-12 h-12 text-primary" />
                 </div>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase">Wingo Manual Override</h2>
+                <h2 className="text-4xl font-black italic tracking-tighter uppercase">Wingo Control</h2>
               </div>
               <div className="space-y-8">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase ml-2 tracking-widest">Period ID</Label>
                     <Input 
-                      placeholder="e.g. 202403151230" 
+                      placeholder="e.g. 20240315" 
                       value={wingoPeriod} 
                       onChange={e => setWingoPeriod(e.target.value)}
                       className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-2"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase ml-2 tracking-widest">Winning Number (0-9)</Label>
+                    <Label className="text-[10px] font-black uppercase ml-2 tracking-widest">Number (0-9)</Label>
                     <Input 
                       type="number" 
                       value={wingoNumber} 
@@ -483,8 +475,8 @@ export default function AdminPage() {
                     />
                   </div>
                 </div>
-                <Button onClick={handleSetWingoResult} className="w-full h-20 rounded-2xl font-black text-xl py-8 shadow-xl" disabled={isWingoLoading}>
-                  {isWingoLoading ? <Loader2 className="animate-spin" /> : "Fix Next Result"}
+                <Button onClick={handleSetWingoResult} className="w-full h-20 rounded-2xl font-black text-xl py-8">
+                  Set Result
                 </Button>
               </div>
             </Card>
@@ -493,7 +485,7 @@ export default function AdminPage() {
           <TabsContent value="withdrawals">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {withdrawals?.map((req) => (
-                <Card key={req.id} className="rounded-[3rem] border-border/50 bg-card p-10 shadow-lg relative overflow-hidden group">
+                <Card key={req.id} className="rounded-[3rem] border-border/50 bg-card p-10 relative overflow-hidden">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                       <div className="p-5 bg-orange-100/10 text-orange-600 rounded-3xl">

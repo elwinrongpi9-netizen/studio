@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Loader2, Info } from "lucide-react";
+import { Trash2, ShoppingBag, MapPin, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Info } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 const MERCHANT_UPI_ID = "7086505053@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
-const MERCHANT_WHATSAPP = "7086505053";
+const MERCHANT_WHATSAPP = "9170865053"; // Updated with country code
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'PhonePe Payments (UPI)', icon: <QrCode className="w-4 h-4" /> },
@@ -45,7 +45,7 @@ export default function CartPage() {
     return cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
   }, [cart]);
 
-  const deliveryFee = subtotal > 0 ? 0 : 0; // Set to 0 as per free delivery hint
+  const deliveryFee = 0; 
   const platformFee = subtotal > 0 ? 5 : 0;
   
   const walletBalance = profile?.walletBalance || 0;
@@ -95,7 +95,6 @@ export default function CartPage() {
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodedMessage}`;
     
-    // Using window.location.href to avoid popup blockers
     window.location.href = whatsappUrl;
   };
 
@@ -108,7 +107,7 @@ export default function CartPage() {
     setIsVerifying(true);
 
     const orderId = `ORD${Date.now()}`.toUpperCase();
-    const state = (total === 0 || confirmedPayment) ? 'COMPLETED' : 'PENDING';
+    const state = (total === 0 || confirmedPayment || paymentMethod === 'cod') ? 'COMPLETED' : 'PENDING';
 
     const orderData = {
       order_id: orderId,
@@ -129,32 +128,26 @@ export default function CartPage() {
 
     try {
       const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
-      await setDoc(globalOrderRef, orderData);
+      setDoc(globalOrderRef, orderData);
 
       const userOrderRef = doc(firestore, "users", user.uid, "orders", orderId);
-      await setDoc(userOrderRef, orderData);
+      setDoc(userOrderRef, orderData);
 
       if (walletDeduction > 0) {
-        await updateDoc(doc(firestore, "users", user.uid), {
+        updateDoc(doc(firestore, "users", user.uid), {
           walletBalance: increment(-walletDeduction)
         });
       }
 
-      // Success feedback
-      toast({ title: "Order Confirmed! 🎉", description: "Redirecting to WhatsApp..." });
+      toast({ title: "Order Confirmed! 🎉", description: "Opening WhatsApp..." });
       
-      // Clear cart before redirect
       clearCart();
-      
-      // Final step: WhatsApp Redirect
-      setTimeout(() => {
-        sendToWhatsApp(orderData);
-      }, 500);
+      sendToWhatsApp(orderData);
+      setIsVerifying(false);
 
     } catch (error) {
-      console.error("Order failed", error);
       setIsVerifying(false);
-      toast({ title: "Order Failed", description: "Something went wrong, please try again.", variant: "destructive" });
+      toast({ title: "Order Failed", description: "Please try again.", variant: "destructive" });
     }
   };
 
@@ -177,8 +170,6 @@ export default function CartPage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 space-y-6">
-                
-                {/* Cart Items Review */}
                 <div className="bg-card p-8 rounded-[2.5rem] shadow-sm border border-border/50">
                   <h3 className="font-black text-xl mb-6 flex items-center gap-3 italic">
                     <Info className="w-6 h-6 text-primary" />
@@ -251,9 +242,6 @@ export default function CartPage() {
                       <div className="flex justify-between text-sm font-bold"><span>Subtotal</span><span>₹{subtotal.toFixed(0)}</span></div>
                       <div className="flex justify-between text-sm font-bold text-green-500"><span>Delivery Fee</span><span>FREE</span></div>
                       <div className="flex justify-between text-sm font-bold text-muted-foreground"><span>Platform Fee</span><span>₹{platformFee}</span></div>
-                      {walletDeduction > 0 && (
-                        <div className="flex justify-between text-sm font-black text-primary"><span>Wallet Used</span><span>-₹{walletDeduction.toFixed(0)}</span></div>
-                      )}
                     </div>
                   </div>
 
@@ -269,7 +257,7 @@ export default function CartPage() {
                     disabled={isVerifying}
                     onClick={() => (total > 0 && paymentMethod === 'upi') ? setShowQrModal(true) : processOrder(false)}
                   >
-                    {isVerifying ? <Loader2 className="animate-spin" /> : "Confirm Order"}
+                    Confirm Order
                   </Button>
                   
                   <div className="flex items-center gap-2 justify-center opacity-40">
@@ -283,19 +271,14 @@ export default function CartPage() {
         </div>
       </main>
 
-      {/* PhonePe QR Modal */}
       {showQrModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-card w-full max-w-[450px] rounded-[3rem] p-10 shadow-2xl border border-border/50 relative overflow-hidden">
             {isVerifying ? (
                <div className="flex flex-col items-center justify-center py-20 gap-8">
-                  <div className="relative">
-                    <Loader2 className="w-20 h-20 text-primary animate-spin" />
-                    <ShoppingBag className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                  </div>
                   <div className="text-center space-y-2">
                     <h3 className="text-3xl font-black uppercase italic tracking-tighter">Finalizing Order</h3>
-                    <p className="text-[10px] font-black text-muted-foreground tracking-[0.3em] uppercase">Checking Payment Status</p>
+                    <p className="text-[10px] font-black text-muted-foreground tracking-[0.3em] uppercase">Please wait...</p>
                   </div>
                </div>
             ) : (
