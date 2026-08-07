@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 const MERCHANT_UPI_ID = "7086505053@ybl";
 const MERCHANT_NAME = "Rongpi Chinese wok";
 const MERCHANT_CODE = "5812"; 
-const MERCHANT_WHATSAPP = "9170865053"; // Exact number 7086505053 with country code
+const MERCHANT_WHATSAPP = "9170865053"; 
 
 const PAYMENT_METHODS = [
   { id: 'upi', name: 'PhonePe Payments (UPI)', icon: <QrCode className="w-4 h-4" /> },
@@ -77,9 +77,9 @@ export default function CartPage() {
   if (!isHydrated) return null;
 
   const sendToWhatsApp = (orderData: any) => {
-    const itemsList = orderData.items.map((item: any) => `✅ ${item.quantity}x ${item.name} (₹${(item.price * 80 * item.quantity).toFixed(0)})`).join('\n');
+    const itemsList = orderData.items.map((item: any) => `✅ ${item.quantity}x ${item.name} - ₹${(item.price * 80 * item.quantity).toFixed(0)}`).join('\n');
     
-    const message = `*🍱 NEW ORDER RECEIVED!* \n\n` +
+    const message = `*🍱 NEW ORDER RECEIVED!*\n\n` +
       `*Order ID:* #${orderData.order_id}\n` +
       `*Restaurant:* ${orderData.restaurantName}\n` +
       `-------------------------\n` +
@@ -88,14 +88,15 @@ export default function CartPage() {
       `*Grand Total:* ₹${orderData.amount}\n` +
       `*Payment Method:* ${orderData.paymentMethod}\n` +
       `*Status:* ${orderData.status}\n\n` +
-      `*Customer Name:* ${orderData.udf1}\n` +
-      `*Customer Email:* ${orderData.udf2}\n\n` +
+      `*Customer:* ${orderData.udf1}\n` +
+      `*Email:* ${orderData.udf2}\n\n` +
       `_Please prepare the order soon!_ 🚀`;
 
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodedMessage}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${MERCHANT_WHATSAPP}&text=${encodedMessage}`;
     
-    window.location.href = whatsappUrl;
+    // Using window.location.assign for direct navigation
+    window.location.assign(whatsappUrl);
   };
 
   const processOrder = async (confirmedPayment = false) => {
@@ -127,6 +128,7 @@ export default function CartPage() {
     };
 
     try {
+      // Save data to Firestore (non-blocking per guidelines)
       const globalOrderRef = doc(firestore, "phonepe_orders", orderId);
       setDoc(globalOrderRef, orderData);
 
@@ -139,12 +141,11 @@ export default function CartPage() {
         });
       }
 
-      toast({ title: "Order Confirmed! 🎉", description: "Opening WhatsApp..." });
+      toast({ title: "Order Confirmed! 🎉" });
       
       clearCart();
       sendToWhatsApp(orderData);
-      setIsVerifying(false);
-
+      // isVerifying remains true to keep the UI stable while redirecting
     } catch (error) {
       setIsVerifying(false);
       toast({ title: "Order Failed", description: "Please try again.", variant: "destructive" });
@@ -274,49 +275,38 @@ export default function CartPage() {
       {showQrModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-card w-full max-w-[450px] rounded-[3rem] p-10 shadow-2xl border border-border/50 relative overflow-hidden">
-            {isVerifying ? (
-               <div className="flex flex-col items-center justify-center py-20 gap-8">
-                  <div className="text-center space-y-2">
-                    <h3 className="text-3xl font-black uppercase italic tracking-tighter">Finalizing Order</h3>
-                    <p className="text-[10px] font-black text-muted-foreground tracking-[0.3em] uppercase">Please wait...</p>
-                  </div>
-               </div>
-            ) : (
-              <>
-                <div className="flex justify-between items-center mb-10">
-                    <h2 className="text-3xl font-black italic tracking-tighter">PhonePe <span className="text-primary not-italic">QR</span></h2>
-                    <button onClick={() => setShowQrModal(false)} className="p-2 bg-muted rounded-xl hover:bg-muted/50 transition-colors">
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                </div>
+            <div className="flex justify-between items-center mb-10">
+                <h2 className="text-3xl font-black italic tracking-tighter">PhonePe <span className="text-primary not-italic">QR</span></h2>
+                <button onClick={() => setShowQrModal(false)} className="p-2 bg-muted rounded-xl hover:bg-muted/50 transition-colors">
+                    <Trash2 className="w-5 h-5" />
+                </button>
+            </div>
 
-                <div className="flex flex-col items-center gap-8">
-                  <div className="bg-destructive/10 text-destructive px-6 py-2.5 rounded-full font-black text-[10px] animate-pulse flex items-center gap-2 border border-destructive/20 uppercase tracking-widest">
-                    <Timer className="w-4 h-4" />
-                    <span>Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
-                  </div>
+            <div className="flex flex-col items-center gap-8">
+              <div className="bg-destructive/10 text-destructive px-6 py-2.5 rounded-full font-black text-[10px] animate-pulse flex items-center gap-2 border border-destructive/20 uppercase tracking-widest">
+                <Timer className="w-4 h-4" />
+                <span>Expires in: {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}</span>
+              </div>
 
-                  <div className="relative w-80 h-80 bg-white p-6 rounded-[2.5rem] shadow-2xl border-4 border-primary/10">
-                    <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-4" unoptimized />
-                    <div className="absolute inset-0 bg-primary/5 rounded-[2.5rem] pointer-events-none" />
-                  </div>
+              <div className="relative w-80 h-80 bg-white p-6 rounded-[2.5rem] shadow-2xl border-4 border-primary/10">
+                <Image src={qrCodeUrl} alt="UPI QR" fill className="object-contain p-4" unoptimized />
+                <div className="absolute inset-0 bg-primary/5 rounded-[2.5rem] pointer-events-none" />
+              </div>
 
-                  <div className="text-center space-y-1">
-                    <p className="text-5xl font-black text-primary italic tracking-tighter">₹{total.toFixed(2)}</p>
-                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em]">{MERCHANT_UPI_ID}</p>
-                  </div>
+              <div className="text-center space-y-1">
+                <p className="text-5xl font-black text-primary italic tracking-tighter">₹{total.toFixed(2)}</p>
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em]">{MERCHANT_UPI_ID}</p>
+              </div>
 
-                  <Button className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl bg-primary hover:bg-primary/90" onClick={() => processOrder(true)}>
-                    I Have Paid ₹{total.toFixed(0)}
-                  </Button>
-                  
-                  <div className="flex items-center gap-2 opacity-30">
-                    <Sparkles className="w-3 h-3" />
-                    <p className="text-[8px] font-black uppercase tracking-[0.5em]">Powered by PhonePe Secure</p>
-                  </div>
-                </div>
-              </>
-            )}
+              <Button className="w-full py-8 rounded-2xl font-black text-xl shadow-2xl bg-primary hover:bg-primary/90" onClick={() => processOrder(true)}>
+                I Have Paid ₹{total.toFixed(0)}
+              </Button>
+              
+              <div className="flex items-center gap-2 opacity-30">
+                <Sparkles className="w-3 h-3" />
+                <p className="text-[8px] font-black uppercase tracking-[0.5em]">Powered by PhonePe Secure</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
