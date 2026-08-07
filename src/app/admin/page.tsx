@@ -65,9 +65,9 @@ export default function AdminPage() {
     return query(collection(firestore, "phonepe_orders"), orderBy("createdAt", "desc"), limit(100));
   }, [firestore]);
 
-  const { data: restaurants, loading: resLoading } = useCollection<Restaurant>(restaurantsQuery);
-  const { data: withdrawals, loading: withdrawLoading } = useCollection<WithdrawalRequest>(withdrawalsQuery);
-  const { data: phonepeOrders, loading: ordersLoading } = useCollection<any>(phonepeOrdersQuery);
+  const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
+  const { data: withdrawals } = useCollection<WithdrawalRequest>(withdrawalsQuery);
+  const { data: phonepeOrders } = useCollection<any>(phonepeOrdersQuery);
   
   useEffect(() => {
     if (!firestore || !user || user.email !== ADMIN_EMAIL) return;
@@ -160,19 +160,7 @@ export default function AdminPage() {
   const [wingoNumber, setWingoNumber] = useState("");
   const [isWingoLoading, setIsWingoLoading] = useState(false);
 
-  if (userLoading || resLoading || withdrawLoading || ordersLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest text-white">Loading Master Logs...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!userLoading && (!user || user.email !== ADMIN_EMAIL)) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
@@ -290,7 +278,7 @@ export default function AdminPage() {
                    Recent User Transactions
                  </h3>
                  <Badge variant="outline" className="rounded-full px-4 border-primary/20 text-primary font-black">
-                   {phonepeOrders.length} Orders Logged
+                   {phonepeOrders?.length || 0} Orders Logged
                  </Badge>
               </div>
               <div className="overflow-x-auto">
@@ -306,7 +294,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {phonepeOrders.map((order) => (
+                    {phonepeOrders?.map((order) => (
                       <tr key={order.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                         <td className="p-6 font-mono font-bold text-xs text-primary">{order.order_id}</td>
                         <td className="p-6">
@@ -406,7 +394,7 @@ export default function AdminPage() {
                       className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black"
                     >
                       <option value="">Choose Restaurant</option>
-                      {restaurants.map(r => (
+                      {restaurants?.map(r => (
                         <option key={r.id} value={r.id}>{r.name}</option>
                       ))}
                     </select>
@@ -504,7 +492,7 @@ export default function AdminPage() {
 
           <TabsContent value="withdrawals">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {withdrawals.map((req) => (
+              {withdrawals?.map((req) => (
                 <Card key={req.id} className="rounded-[3rem] border-border/50 bg-card p-10 shadow-lg relative overflow-hidden group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">

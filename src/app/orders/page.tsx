@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, Truck, Package, Loader2, Calendar, CreditCard, ShoppingBag, Info, Flame, Timer } from "lucide-react";
+import { Clock, CheckCircle2, Truck, Package, Calendar, CreditCard, ShoppingBag, Info, Flame, Timer } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirestore, useCollection } from "@/firebase";
@@ -47,18 +47,6 @@ export default function OrdersPage() {
     }
   };
 
-  if (userLoading || ordersLoading) {
-    return (
-      <>
-        <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="font-bold text-muted-foreground">Fetching your food journey...</p>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <Navbar />
@@ -71,17 +59,17 @@ export default function OrdersPage() {
             </div>
             {user && (
               <Badge variant="outline" className="px-4 py-1.5 rounded-full border-primary/20 bg-primary/5 text-primary font-bold">
-                {orders.length} Orders
+                {orders?.length || 0} Orders
               </Badge>
             )}
           </div>
 
-          {!user ? (
+          {!userLoading && !user ? (
             <div className="text-center py-24 bg-card rounded-[2.5rem] border shadow-sm">
               <h2 className="text-2xl font-bold mb-4">Sign in to view orders</h2>
               <p className="text-muted-foreground mb-8 max-w-xs mx-auto">Access your full order history and track deliveries in real-time.</p>
             </div>
-          ) : orders.length === 0 ? (
+          ) : orders?.length === 0 && !ordersLoading ? (
             <div className="text-center py-24 bg-card rounded-[2.5rem] border shadow-sm border-dashed">
                <div className="bg-primary/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
                 <ShoppingBag className="w-12 h-12 text-primary" />
@@ -94,7 +82,7 @@ export default function OrdersPage() {
             </div>
           ) : (
             <div className="space-y-8">
-              {orders.map((order) => (
+              {orders?.map((order) => (
                 <div key={order.id} className="bg-card rounded-[2rem] p-8 shadow-sm border hover:shadow-xl transition-all group border-primary/5">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-8 border-b border-dashed">
                     <div className="flex items-center gap-5">
@@ -144,7 +132,7 @@ export default function OrdersPage() {
                       <div className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/10">
                         <div className="flex justify-between items-center mb-1">
                            <span className="text-sm font-bold text-muted-foreground">Grand Total</span>
-                           <span className="text-2xl font-black text-primary">₹{(order.amount || order.total).toFixed(0)}</span>
+                           <span className="text-2xl font-black text-primary">₹{(order.amount || order.total || 0).toFixed(0)}</span>
                         </div>
                         <p className="text-[10px] font-bold text-muted-foreground text-right uppercase tracking-widest">Inclusive of all taxes</p>
                       </div>

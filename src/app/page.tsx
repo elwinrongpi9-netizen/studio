@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Loader2, Zap } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
@@ -36,7 +36,7 @@ export default function Home() {
 
   useEffect(() => {
     const seedData = async () => {
-      if (!firestore || loading || (restaurants && restaurants.length > 0)) return;
+      if (!firestore || (restaurants && restaurants.length > 0)) return;
       try {
         const snapshot = await getDocs(collection(firestore, "restaurants"));
         if (snapshot.empty) {
@@ -49,7 +49,7 @@ export default function Home() {
       }
     };
     seedData();
-  }, [firestore, loading, restaurants]);
+  }, [firestore, restaurants]);
 
   const allDishes = useMemo(() => {
     if (!restaurants) return [];
@@ -159,18 +159,13 @@ export default function Home() {
                 </div>
               </div>
               
-              {loading ? (
-                <div className="flex flex-col items-center py-24 gap-4">
-                  <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                  <p className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Kitchen is heating up...</p>
-                </div>
-              ) : filteredDishes.length > 0 ? (
+              {filteredDishes.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12">
                   {filteredDishes.map((dish) => (
                     <DishCard key={dish.id} dish={dish} />
                   ))}
                 </div>
-              ) : (
+              ) : !loading ? (
                 <div className="text-center py-24 bg-card rounded-[3rem] border border-dashed border-border/50">
                   <UtensilsCrossed className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
                   <p className="text-xl font-bold text-muted-foreground">No dishes found matching your criteria.</p>
@@ -178,7 +173,7 @@ export default function Home() {
                     Show full menu
                   </Button>
                 </div>
-              )}
+              ) : null}
             </div>
             
             <aside className="lg:col-span-3 space-y-10">
