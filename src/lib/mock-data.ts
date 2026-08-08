@@ -8,7 +8,7 @@ export const RESTAURANTS: Restaurant[] = [
     rating: 4.9,
     deliveryTime: '25-35 min',
     image: 'https://picsum.photos/seed/rongpi/1200/800',
-    priceRange: '$$',
+    priceRange: '₹₹',
     priceForTwo: 500,
     dishes: [
       { id: 'rp1', name: 'Elite Chilli Chicken', description: 'Our master-chef signature stir-fried chicken with premium bell peppers and toasted sesame.', price: 180, image: 'https://picsum.photos/seed/chilli/600/500', category: 'Starters' },
