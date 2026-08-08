@@ -37,13 +37,21 @@ import {
   UserCheck,
   Store,
   Sparkles,
-  X
+  X,
+  Camera,
+  RotateCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ADMIN_EMAIL = "junakipi@gmail.com";
 const RINGTONE_URL = "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"; 
@@ -89,6 +97,13 @@ function AdminDashboardContent() {
 
   const [wingoPeriod, setWingoPeriod] = useState("");
   const [wingoNumber, setWingoNumber] = useState("");
+
+  // Camera State
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraTarget, setCameraTarget] = useState<"dish" | "inspiration">("dish");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const restaurantsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -291,7 +306,57 @@ function AdminDashboardContent() {
 
   const isValidUrl = (url: string | undefined) => {
     if (!url) return false;
+    if (url.startsWith('data:image/')) return true;
     return url.startsWith('http://') || url.startsWith('https://');
+  };
+
+  // Camera Functions
+  const startCamera = async (target: "dish" | "inspiration") => {
+    setCameraTarget(target);
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" },
+        audio: false 
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Camera access error:", err);
+      toast({ title: "Camera Permission Denied", variant: "destructive" });
+      setShowCamera(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        if (cameraTarget === "dish") {
+          setNewDish({ ...newDish, image: dataUrl });
+        } else {
+          setNewInspiration({ ...newInspiration, image: dataUrl });
+        }
+        stopCamera();
+        toast({ title: "Photo Captured! 📸" });
+      }
+    }
   };
 
   if (userLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
@@ -494,7 +559,12 @@ function AdminDashboardContent() {
                           </div>
                         </div>
                         <div className="space-y-6">
-                          <Input placeholder="Image URL" value={newDish.image} onChange={e => setNewDish({...newDish, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                          <div className="flex gap-2">
+                            <Input placeholder="Image URL" value={newDish.image} onChange={e => setNewDish({...newDish, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 flex-1" />
+                            <Button variant="outline" onClick={() => startCamera("dish")} className="h-14 rounded-2xl border-primary/20 text-primary hover:bg-primary hover:text-white px-4">
+                              <Camera className="w-5 h-5" />
+                            </Button>
+                          </div>
                           <div className="relative aspect-square w-24 rounded-2xl overflow-hidden border border-border bg-muted/30">
                             {isValidUrl(newDish.image) ? (
                               <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
@@ -561,7 +631,12 @@ function AdminDashboardContent() {
                       <div className="space-y-6">
                         <div className="space-y-2">
                           <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
-                          <Input placeholder="URL for photo" value={newInspiration.image} onChange={e => setNewInspiration({...newInspiration, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                          <div className="flex gap-2">
+                            <Input placeholder="URL for photo" value={newInspiration.image} onChange={e => setNewInspiration({...newInspiration, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 flex-1" />
+                            <Button variant="outline" onClick={() => startCamera("inspiration")} className="h-14 rounded-2xl border-primary/20 text-primary hover:bg-primary hover:text-white px-4">
+                              <Camera className="w-5 h-5" />
+                            </Button>
+                          </div>
                         </div>
                         {isValidUrl(newInspiration.image) ? (
                            <div className="relative w-48 h-48 rounded-[2rem] overflow-hidden border-4 border-primary/20 shadow-2xl mt-4">
@@ -647,6 +722,40 @@ function AdminDashboardContent() {
             </>
           )}
         </Tabs>
+
+        {/* Camera Dialog */}
+        <Dialog open={showCamera} onOpenChange={(open) => !open && stopCamera()}>
+          <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-black border-none">
+            <DialogHeader className="p-6 bg-background/10 backdrop-blur-md absolute top-0 w-full z-10">
+              <DialogTitle className="text-white font-black italic uppercase tracking-tighter flex items-center justify-between">
+                <span>Capture Item Photo</span>
+                <Button variant="ghost" size="icon" onClick={stopCamera} className="text-white hover:bg-white/20 rounded-full">
+                  <X className="w-5 h-5" />
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="relative aspect-[3/4] w-full bg-black flex items-center justify-center">
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className="w-full h-full object-cover"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+              
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6">
+                <Button 
+                  onClick={capturePhoto}
+                  className="w-20 h-20 rounded-full bg-white border-4 border-primary shadow-2xl hover:scale-110 active:scale-95 transition-all p-0 flex items-center justify-center"
+                >
+                  <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-white" />
+                  </div>
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
