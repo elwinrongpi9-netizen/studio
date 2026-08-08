@@ -141,33 +141,33 @@ export default function Home() {
       <Navbar />
       <main className="flex-1 pb-20 bg-background text-foreground">
         <section className="relative pt-24 pb-32 overflow-hidden border-b border-border/10 min-h-[85vh] flex items-center">
-          {/* Light Transparent Noodles & Fried Rice Background */}
+          {/* Light Transparent Noodles & Fried Rice Background - Increased visibility */}
           <div className="absolute inset-0 z-0">
             <Image 
               src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
               alt="Authentic Chinese Noodles"
               fill
-              className="object-cover opacity-10 grayscale-[0.5]"
+              className="object-cover opacity-40 grayscale-[0.3]"
               priority
               unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-background/80 via-background/60 to-primary/5" />
+            <div className="absolute inset-0 bg-gradient-to-br from-background/70 via-background/40 to-primary/10" />
           </div>
 
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
             <div className="flex flex-col items-center text-center">
-              <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full border border-primary/20 mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+              <div className="inline-flex items-center gap-2 bg-primary/20 px-4 py-2 rounded-full border border-primary/30 mb-8 animate-in fade-in slide-in-from-top-4 duration-700 backdrop-blur-sm">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">The Art of Chinese Cuisine</span>
               </div>
               
-              <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter italic uppercase leading-[0.9]">
+              <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter italic uppercase leading-[0.9] drop-shadow-sm">
                 KARBI<br />
                 <span className="text-primary not-italic">ZOMATO</span>
               </h1>
               
-              <p className="text-muted-foreground text-xl md:text-2xl mb-12 max-w-3xl font-medium tracking-tight">
-                Experience premium authentic flavors from <span className="text-foreground font-black italic">Diphu's Original Master of the Wok</span>.
+              <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/30 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40">
+                Experience premium authentic flavors from <span className="text-primary font-black italic">Diphu's Original Master of the Wok</span>.
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-4xl glass-effect rounded-[3rem] shadow-2xl overflow-hidden ring-4 ring-primary/5 transition-all hover:ring-primary/10 group">
@@ -259,10 +259,10 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-10 mt-16 opacity-60">
-                <div className="flex items-center gap-2"><Flame className="w-4 h-4 text-orange-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Freshly Cooked</span></div>
-                <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Fast Delivery</span></div>
-                <div className="flex items-center gap-2"><Star className="w-4 h-4 text-yellow-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Top Rated</span></div>
+              <div className="flex flex-wrap justify-center gap-10 mt-16 opacity-100">
+                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20"><Flame className="w-4 h-4 text-orange-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Freshly Cooked</span></div>
+                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20"><Clock className="w-4 h-4 text-blue-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Fast Delivery</span></div>
+                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20"><Star className="w-4 h-4 text-yellow-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Top Rated</span></div>
               </div>
             </div>
           </div>
@@ -362,7 +362,7 @@ export default function Home() {
               <p className="text-muted-foreground font-medium max-w-sm italic">The pinnacle of authentic flavors in Karbi Anglong. Premium quality, every single time.</p>
             </div>
             <div className="flex flex-col md:items-end gap-2">
-              <span className="text-[11px] font-black uppercase text-foreground tracking-[0.4em]">Establishment</span>
+              <span className="text-11px font-black uppercase text-foreground tracking-[0.4em]">Establishment</span>
               <span className="text-sm font-bold text-muted-foreground">Diphu • Karbi Anglong • Assam</span>
             </div>
           </div>
