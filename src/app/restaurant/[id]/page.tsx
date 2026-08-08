@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useState, useMemo } from "react";
@@ -47,6 +46,10 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
 
   const handleAddToCart = (dish: Dish) => {
     if (!restaurant) return;
+    if (dish.inStock === false) {
+      toast({ title: "Out of Stock", variant: "destructive" });
+      return;
+    }
     addToCart({
       ...dish,
       quantity: 1,
@@ -146,7 +149,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                           {restaurant.dishes.filter(d => d.category === cat).map((dish) => (
-                            <div key={dish.id} className="bg-card rounded-[3rem] p-6 shadow-2xl border-2 border-border/50 flex flex-col sm:flex-row gap-6 group hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 relative overflow-hidden">
+                            <div key={dish.id} className={`bg-card rounded-[3rem] p-6 shadow-2xl border-2 border-border/50 flex flex-col sm:flex-row gap-6 group hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 relative overflow-hidden ${dish.inStock === false ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                               <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
                               <div className="relative w-full sm:w-40 h-40 rounded-[2rem] overflow-hidden flex-shrink-0 shadow-xl">
                                 <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -170,20 +173,37 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                     <h4 className="font-black text-2xl group-hover:text-primary transition-colors uppercase italic tracking-tighter leading-none">{dish.name}</h4>
                                     <span className="font-black text-primary text-xl italic whitespace-nowrap">Rs. {dish.price}</span>
                                   </div>
-                                  <p className="text-xs text-muted-foreground mb-6 line-clamp-2 italic font-medium opacity-60">{dish.description}</p>
+                                  <p className="text-xs text-muted-foreground mb-4 line-clamp-2 italic font-medium opacity-60">{dish.description}</p>
                                 </div>
-                                <div className="flex items-center justify-between mt-auto">
+                                <div className="flex flex-col gap-4 mt-auto">
+                                  {/* In Stock Indicator at the bottom */}
                                   <div className="flex items-center gap-2">
-                                     <Flame className="w-3.5 h-3.5 text-orange-500" />
-                                     <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">High Fire Wok</span>
+                                    {dish.inStock !== false ? (
+                                      <>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.8)]" />
+                                        <span className="text-[9px] font-black uppercase text-green-500 tracking-widest">In Stock</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                                        <span className="text-[9px] font-black uppercase text-zinc-500 tracking-widest">Out of Stock</span>
+                                      </>
+                                    )}
                                   </div>
-                                  <Button 
-                                    size="sm" 
-                                    className="rounded-[1.2rem] font-black px-8 h-12 shadow-xl hover:scale-105 active:scale-95 transition-all uppercase text-[10px] tracking-widest"
-                                    onClick={() => handleAddToCart(dish)}
-                                  >
-                                    <Plus className="w-4 h-4 mr-2" /> Select
-                                  </Button>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                       <Flame className="w-3.5 h-3.5 text-orange-500" />
+                                       <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Wok Fried</span>
+                                    </div>
+                                    <Button 
+                                      size="sm" 
+                                      disabled={dish.inStock === false}
+                                      className="rounded-[1.2rem] font-black px-8 h-12 shadow-xl hover:scale-105 active:scale-95 transition-all uppercase text-[10px] tracking-widest"
+                                      onClick={() => handleAddToCart(dish)}
+                                    >
+                                      <Plus className="w-4 h-4 mr-2" /> {dish.inStock === false ? 'Sold Out' : 'Select'}
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </div>

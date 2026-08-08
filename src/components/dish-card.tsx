@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -54,7 +53,7 @@ export function DishCard({ dish }: DishCardProps) {
     if (quantity === 0) {
       toast({
         title: "Item Reserved! 🍱",
-        description: `${dish.name} added from Rongpi Wok`,
+        description: `${dish.name} added from KARBI ZOMATO`,
       });
     }
   };
@@ -83,16 +82,6 @@ export function DishCard({ dish }: DishCardProps) {
         )}
 
         <div className="absolute top-5 left-5 flex flex-col gap-2">
-          {inStock ? (
-            <div className="bg-green-600/90 backdrop-blur-md text-white text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 border border-green-400/30">
-              <div className="w-2 h-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-              In Stock
-            </div>
-          ) : (
-             <div className="bg-zinc-800/90 backdrop-blur-md text-zinc-400 text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 border border-zinc-700/30">
-               <Ban className="w-3.5 h-3.5" /> Sold Out
-             </div>
-          )}
           <div className="bg-primary/90 backdrop-blur-md text-white text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 border border-white/10">
             <Sparkles className="w-3.5 h-3.5" /> Chef's Special
           </div>
@@ -133,9 +122,24 @@ export function DishCard({ dish }: DishCardProps) {
           </div>
         </div>
         
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-10 font-medium italic opacity-70 leading-relaxed">
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-6 font-medium italic opacity-70 leading-relaxed">
           {dish.description}
         </p>
+
+        {/* In Stock Indicator moved to the bottom */}
+        <div className="mb-6">
+          {inStock ? (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
+              <span className="text-[10px] font-black uppercase text-green-500 tracking-widest">Available Now</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-zinc-500" />
+              <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Currently Unavailable</span>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-4">
           {quantity === 0 ? (
@@ -154,7 +158,7 @@ export function DishCard({ dish }: DishCardProps) {
                 </>
               ) : (
                 <>
-                  <Ban className="w-5 h-5 mr-3" /> Currently Unavailable
+                  <Ban className="w-5 h-5 mr-3" /> Sold Out
                 </>
               )}
             </Button>
