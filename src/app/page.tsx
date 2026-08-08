@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -5,12 +6,21 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Loader2, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
-import { useCollection, useFirestore } from "@/firebase";
-import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
+import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
+import { collection, query, orderBy, setDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { RESTAURANTS as MOCK_RESTAURANTS } from "@/lib/mock-data";
 import { Restaurant, Dish } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 const INSPIRATIONS = [
   { name: "Biryani", img: "https://picsum.photos/seed/biryani/200/200" },
@@ -24,7 +34,16 @@ const INSPIRATIONS = [
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [manualAddress, setManualAddress] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
+  
   const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+
+  const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
+  const { data: profile } = useDoc<any>(userRef);
 
   const restaurantsQuery = useMemo(() => {
     if (!firestore) return null;
@@ -49,6 +68,45 @@ export default function Home() {
     };
     seedData();
   }, [firestore, restaurants]);
+
+  const handleUpdateLocation = async (address: string) => {
+    if (!user || !firestore) {
+      toast({ title: "Please login to save location" });
+      return;
+    }
+    try {
+      await updateDoc(doc(firestore, "users", user.uid), {
+        address: address
+      });
+      toast({ title: "Location Updated! 📍", description: address });
+      setIsLocationOpen(false);
+    } catch (e) {
+      toast({ variant: "destructive", title: "Failed to update location" });
+    }
+  };
+
+  const detectLocation = () => {
+    setIsLocating(true);
+    if (!navigator.geolocation) {
+      toast({ variant: "destructive", title: "Geolocation not supported by your browser" });
+      setIsLocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        // In a real app, you'd use a reverse geocoding API here.
+        // For this prototype, we'll simulate area tracking.
+        const mockAddress = `Area tracked near ${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
+        await handleUpdateLocation(mockAddress);
+        setIsLocating(false);
+      },
+      (error) => {
+        toast({ variant: "destructive", title: "Location access denied" });
+        setIsLocating(false);
+      }
+    );
+  };
 
   const allDishes = useMemo(() => {
     if (!restaurants) return [];
@@ -106,14 +164,61 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-4xl bg-card rounded-[3rem] border-2 border-border/50 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden ring-4 ring-primary/5 transition-all hover:ring-primary/10 group">
-                <div className="flex items-center px-8 py-7 md:border-r-2 border-b md:border-b-0 min-w-[280px] bg-muted/20 hover:bg-muted/40 transition-colors">
-                  <MapPin className="w-6 h-6 text-primary mr-4" />
-                  <div className="flex flex-col items-start">
-                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Location</span>
-                    <span className="text-base font-black truncate uppercase tracking-tighter">Diphu, Karbi Anglong</span>
-                  </div>
-                  <ChevronDown className="w-5 h-5 ml-auto text-muted-foreground opacity-50" />
-                </div>
+                
+                {/* Location Selector Trigger */}
+                <Dialog open={isLocationOpen} onOpenChange={setIsLocationOpen}>
+                  <DialogTrigger asChild>
+                    <div className="flex items-center px-8 py-7 md:border-r-2 border-b md:border-b-0 min-w-[280px] bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer">
+                      <MapPin className="w-6 h-6 text-primary mr-4" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Current Area</span>
+                        <span className="text-base font-black truncate uppercase tracking-tighter max-w-[150px]">
+                          {profile?.address || "Diphu, Karbi Anglong"}
+                        </span>
+                      </div>
+                      <ChevronDown className="w-5 h-5 ml-auto text-muted-foreground opacity-50" />
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="rounded-[3rem] p-10 bg-card border-none shadow-2xl sm:max-w-[450px]">
+                    <DialogHeader className="mb-8">
+                      <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter text-center">Select Delivery Area</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      <Button 
+                        onClick={detectLocation}
+                        disabled={isLocating}
+                        className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-3"
+                      >
+                        {isLocating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Navigation className="w-5 h-5" />}
+                        Detect My Location (GPS)
+                      </Button>
+                      
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50"></span></div>
+                        <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-card px-4 text-muted-foreground tracking-[0.5em]">OR MANUAL</span></div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <Input 
+                            placeholder="Enter area or building..." 
+                            value={manualAddress}
+                            onChange={(e) => setManualAddress(e.target.value)}
+                            className="h-16 rounded-2xl bg-muted/30 border-none ring-2 ring-border focus:ring-primary font-bold px-6"
+                          />
+                        </div>
+                        <Button 
+                          onClick={() => handleUpdateLocation(manualAddress)}
+                          disabled={!manualAddress}
+                          className="w-full h-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-black uppercase tracking-widest"
+                        >
+                          Apply Manually
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 <div className="flex-1 relative bg-muted/10">
                   <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <input 
@@ -246,3 +351,4 @@ export default function Home() {
     </>
   );
 }
+
