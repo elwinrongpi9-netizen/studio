@@ -34,7 +34,8 @@ import {
   Edit3,
   Loader2,
   Image as ImageIcon,
-  Upload
+  Upload,
+  CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -533,9 +534,12 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-2xl border border-white/10">
-                      <div className="space-y-1">
-                        <Label className="text-sm font-black">In Stock</Label>
-                        <p className="text-[10px] text-muted-foreground">Is this item currently available?</p>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${newDish.inStock ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
+                        <div className="space-y-1">
+                          <Label className="text-sm font-black">In Stock</Label>
+                          <p className="text-[10px] text-muted-foreground">Is this item currently available?</p>
+                        </div>
                       </div>
                       <Switch 
                         checked={newDish.inStock}
@@ -612,7 +616,12 @@ function AdminDashboardContent() {
                             </div>
                             
                             <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-white/10">
-                              <span className="text-xs font-black uppercase">In Stock</span>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${dish.inStock !== false ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-zinc-600'}`} />
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${dish.inStock !== false ? 'text-green-500' : 'text-zinc-500'}`}>
+                                  {dish.inStock !== false ? 'Live In Stock' : 'Out of Stock'}
+                                </span>
+                              </div>
                               <Switch 
                                 id={`stock-switch-${dish.id}`}
                                 defaultChecked={dish.inStock !== false}

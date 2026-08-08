@@ -2,7 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import { Plus, Minus, Settings, CheckCircle2, Sparkles, Ban } from "lucide-react";
+import { Plus, Minus, Settings, CheckCircle2, Sparkles, Ban, CheckCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dish } from "@/lib/types";
@@ -83,14 +83,19 @@ export function DishCard({ dish }: DishCardProps) {
         )}
 
         <div className="absolute top-5 left-5 flex flex-col gap-2">
-          <div className="bg-primary text-white text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 backdrop-blur-sm">
-            <Sparkles className="w-3.5 h-3.5" /> Chef's Special
-          </div>
-          {!inStock && (
-             <div className="bg-zinc-800 text-zinc-400 text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 backdrop-blur-sm">
+          {inStock ? (
+            <div className="bg-green-600/90 backdrop-blur-md text-white text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 border border-green-400/30">
+              <div className="w-2 h-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+              In Stock
+            </div>
+          ) : (
+             <div className="bg-zinc-800/90 backdrop-blur-md text-zinc-400 text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 border border-zinc-700/30">
                <Ban className="w-3.5 h-3.5" /> Sold Out
              </div>
           )}
+          <div className="bg-primary/90 backdrop-blur-md text-white text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 border border-white/10">
+            <Sparkles className="w-3.5 h-3.5" /> Chef's Special
+          </div>
         </div>
         
         <div className="absolute bottom-5 right-5 bg-black/80 backdrop-blur-xl text-white px-6 py-3 rounded-[1.5rem] text-xl font-black shadow-2xl border border-white/10 italic tracking-tighter">
