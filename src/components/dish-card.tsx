@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -75,7 +76,7 @@ export function DishCard({ dish }: DishCardProps) {
         </div>
         
         <div className="absolute bottom-5 right-5 bg-black/80 backdrop-blur-xl text-white px-6 py-3 rounded-[1.5rem] text-xl font-black shadow-2xl border border-white/10 italic tracking-tighter">
-          ₹{dish.price.toFixed(0)}
+          Rs. {dish.price.toFixed(0)}
         </div>
         
         {quantity > 0 && (
@@ -91,7 +92,7 @@ export function DishCard({ dish }: DishCardProps) {
         <div className="flex flex-col gap-2 mb-6">
           <div className="flex justify-between items-start gap-4">
             <h3 className="font-black text-3xl group-hover:text-primary transition-colors truncate tracking-tighter italic uppercase leading-none">{dish.name}</h3>
-            <span className="text-xl font-black text-primary italic whitespace-nowrap">₹{dish.price}</span>
+            <span className="text-xl font-black text-primary italic whitespace-nowrap">Rs. {dish.price}</span>
           </div>
           <div className="flex items-center gap-3">
              <span className="text-[9px] font-black uppercase text-primary tracking-[0.3em]">Signature Dish</span>

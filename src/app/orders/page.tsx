@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Navbar } from "@/components/navbar";
@@ -113,7 +114,7 @@ export default function OrdersPage() {
                         {order.items.map((item, i) => (
                           <div key={i} className="flex justify-between items-center bg-muted/20 p-3 rounded-xl border border-transparent hover:border-primary/10 transition-colors">
                             <span className="text-sm font-bold"><span className="text-primary mr-2">{item.quantity}x</span> {item.name}</span>
-                            <span className="text-xs font-black">₹{(item.price * item.quantity).toFixed(0)}</span>
+                            <span className="text-xs font-black">Rs. {(item.price * item.quantity).toFixed(0)}</span>
                           </div>
                         ))}
                       </div>
@@ -131,7 +132,7 @@ export default function OrdersPage() {
                       <div className="bg-primary/[0.03] p-6 rounded-2xl border border-primary/10">
                         <div className="flex justify-between items-center mb-1">
                            <span className="text-sm font-bold text-muted-foreground">Grand Total</span>
-                           <span className="text-2xl font-black text-primary">₹{(order.amount || order.total || 0).toFixed(0)}</span>
+                           <span className="text-2xl font-black text-primary">Rs. {(order.amount || order.total || 0).toFixed(0)}</span>
                         </div>
                         <p className="text-[10px] font-bold text-muted-foreground text-right uppercase tracking-widest">Inclusive of all taxes</p>
                       </div>

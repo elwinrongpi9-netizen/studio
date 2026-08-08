@@ -1,3 +1,4 @@
+
 "use client";
 
 import { use, useState, useMemo } from "react";
@@ -160,14 +161,14 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                 )}
 
                                 <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                                  ₹{dish.price.toFixed(0)}
+                                  Rs. {dish.price.toFixed(0)}
                                 </div>
                               </div>
                               <div className="flex-1 flex flex-col justify-between py-2 relative z-10">
                                 <div>
                                   <div className="flex justify-between items-start gap-2 mb-2">
                                     <h4 className="font-black text-2xl group-hover:text-primary transition-colors uppercase italic tracking-tighter leading-none">{dish.name}</h4>
-                                    <span className="font-black text-primary text-xl italic whitespace-nowrap">₹{dish.price}</span>
+                                    <span className="font-black text-primary text-xl italic whitespace-nowrap">Rs. {dish.price}</span>
                                   </div>
                                   <p className="text-xs text-muted-foreground mb-6 line-clamp-2 italic font-medium opacity-60">{dish.description}</p>
                                 </div>
@@ -205,7 +206,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
               <div className="relative">
                 <ShoppingCart className="w-7 h-7 group-hover:rotate-12 transition-transform" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-white text-primary text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-black shadow-2xl">
+                  <span className="absolute -top-2 -right-2 bg-white text-primary text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-black shadow-2xl ring-4 ring-background">
                     {cartCount}
                   </span>
                 )}

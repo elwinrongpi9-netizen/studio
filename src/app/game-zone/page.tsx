@@ -123,7 +123,7 @@ export default function GameZonePage() {
         }, { merge: true });
         toast({ 
           title: "Coins Earned!", 
-          description: `₹${earnedCoins} added to your wallet.` 
+          description: `Rs. ${earnedCoins} added to your wallet.` 
         });
       } catch (e) {
         console.error("Wallet save failed", e);
@@ -172,7 +172,7 @@ export default function GameZonePage() {
             <Wallet className="w-5 h-5 text-primary" />
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase text-muted-foreground leading-none tracking-widest">Real Balance</span>
-              <span className="font-black text-lg text-primary">₹{profile?.walletBalance || 0}</span>
+              <span className="font-black text-lg text-primary">Rs. {profile?.walletBalance || 0}</span>
             </div>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function GameZonePage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/90 to-accent/90 p-8 text-white text-center">
               <div className="bg-white p-6 rounded-[2rem] shadow-2xl mb-8 animate-bounce"><Gamepad2 className="w-16 h-16 text-primary" /></div>
               <h1 className="text-5xl font-black mb-4 tracking-tighter italic uppercase">Momo Catch</h1>
-              <p className="text-white/90 font-bold mb-10">Earn real Karbi Coins!<br/><span className="text-yellow-300 font-black">1 Coin = ₹1 Balance</span></p>
+              <p className="text-white/90 font-bold mb-10">Earn real Karbi Coins!<br/><span className="text-yellow-300 font-black">1 Coin = Rs. 1 Balance</span></p>
               <Button onClick={startGame} className="bg-white text-primary rounded-3xl px-16 py-8 text-2xl font-black scale-110">PLAY NOW</Button>
             </div>
           )}
@@ -220,9 +220,9 @@ export default function GameZonePage() {
               <h2 className="text-5xl font-black mb-2 italic uppercase">Victory!</h2>
               <div className="bg-white p-6 rounded-[2.5rem] w-full max-w-[300px] mb-6 shadow-2xl text-primary mt-4">
                 <div className="flex justify-between items-center mb-2"><span className="font-black text-xs uppercase opacity-60">Game Score</span><span className="text-4xl font-black">{score}</span></div>
-                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Earned</span><span className="text-xl font-black text-green-600">₹{earnedCoins}</span></div>
+                <div className="flex justify-between items-center mb-4"><span className="font-black text-xs uppercase opacity-60">Earned</span><span className="text-xl font-black text-green-600">Rs. {earnedCoins}</span></div>
                 <Button onClick={() => setShowQrModal(true)} className="w-full h-14 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-black flex items-center justify-center gap-2">
-                  <QrCode className="w-5 h-5" /> Pay ₹100 Recharge
+                  <QrCode className="w-5 h-5" /> Pay Rs. 100 Recharge
                 </Button>
               </div>
               <Button onClick={startGame} className="bg-white/20 hover:bg-white/30 rounded-3xl w-full py-6 text-xl font-black">PLAY AGAIN</Button>
@@ -255,7 +255,7 @@ export default function GameZonePage() {
               <Image src={qrCodeUrl} alt="UPI Business QR" fill className="object-contain p-2" unoptimized />
             </div>
             <div className="text-center">
-              <p className="text-4xl font-black text-primary">₹100.00</p>
+              <p className="text-4xl font-black text-primary">Rs. 100.00</p>
               <p className="text-[10px] font-black text-muted-foreground uppercase mt-1 tracking-widest">{MERCHANT_UPI_ID}</p>
             </div>
             <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl" onClick={() => { setShowQrModal(false); setGameState("success"); }}>Verify Payment</Button>

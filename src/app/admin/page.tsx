@@ -387,7 +387,7 @@ function AdminDashboardContent() {
                           </Badge>
                         </td>
                         <td className="p-6">
-                          <span className="font-black text-primary text-xl tracking-tighter italic">₹{order.amount}</span>
+                          <span className="font-black text-primary text-xl tracking-tighter italic">Rs. {order.amount}</span>
                         </td>
                         <td className="p-6">
                           <div className="flex flex-col gap-2">
@@ -522,7 +522,7 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price (₹)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price (Rs.)</Label>
                       <Input 
                         type="number" 
                         value={newDish.price}
@@ -613,7 +613,7 @@ function AdminDashboardContent() {
                                  />
                                </div>
                                <div className="space-y-1">
-                                 <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Price (₹)</Label>
+                                 <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Price (Rs.)</Label>
                                  <Input 
                                    defaultValue={dish.price}
                                    id={`price-input-${dish.id}`}
@@ -740,7 +740,7 @@ function AdminDashboardContent() {
                         <Banknote className="w-8 h-8" />
                       </div>
                       <div className="space-y-1">
-                        <h3 className="font-black text-4xl tracking-tighter italic">₹{req.amount}</h3>
+                        <h3 className="font-black text-4xl tracking-tighter italic">Rs. {req.amount}</h3>
                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{req.userEmail}</p>
                         <div className="bg-[#0a0a0a] px-3 py-1.5 rounded-xl flex items-center gap-3 border border-border/50 cursor-pointer mt-2" onClick={() => { navigator.clipboard.writeText(req.upiId); toast({title:"UPI Copied!"}); }}>
                           <span className="font-mono font-bold text-[10px] text-white/60">{req.upiId}</span>

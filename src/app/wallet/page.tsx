@@ -167,7 +167,7 @@ export default function WalletPage() {
             <div className="relative z-10">
               <p className="font-black uppercase text-[10px] tracking-widest opacity-60">Main Balance</p>
               <div className="flex items-end justify-between mt-4">
-                <h2 className="text-6xl font-black tracking-tighter">₹{profile?.walletBalance?.toFixed(0) || 0}</h2>
+                <h2 className="text-6xl font-black tracking-tighter">Rs. {profile?.walletBalance?.toFixed(0) || 0}</h2>
                 <Button onClick={handleMaxMain} variant="outline" className="bg-white/10 border-white/20 text-white font-black text-[10px] rounded-xl px-4">MAX</Button>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function WalletPage() {
             <div className="relative z-10">
               <p className="font-black uppercase text-[10px] tracking-widest opacity-60">Wingo Wallet</p>
               <div className="flex items-end justify-between mt-4">
-                <h2 className="text-6xl font-black tracking-tighter">₹{profile?.wingoBalance?.toFixed(0) || 0}</h2>
+                <h2 className="text-6xl font-black tracking-tighter">Rs. {profile?.wingoBalance?.toFixed(0) || 0}</h2>
                 <Link href="/wingo"><Button variant="outline" className="bg-white/10 border-white/20 text-white font-black text-[10px] rounded-xl px-4">PLAY NOW</Button></Link>
               </div>
             </div>
@@ -223,7 +223,7 @@ export default function WalletPage() {
                       <div className="flex items-center gap-4">
                         <div className="p-4 rounded-2xl bg-white shadow-sm text-primary"><CheckCircle2 className="w-6 h-6" /></div>
                         <div>
-                          <p className="font-black text-2xl tracking-tighter italic">₹{req.amount}</p>
+                          <p className="font-black text-2xl tracking-tighter italic">Rs. {req.amount}</p>
                           <p className="text-[9px] font-black uppercase text-muted-foreground font-mono">{req.order_id}</p>
                         </div>
                       </div>
@@ -262,7 +262,7 @@ export default function WalletPage() {
                   <Image src={qrCodeUrl} alt="Merchant QR" fill className="object-contain p-2" unoptimized />
                 </div>
                 <div className="text-center">
-                   <p className="text-4xl font-black text-primary">₹{parseFloat(amount || "0").toFixed(2)}</p>
+                   <p className="text-4xl font-black text-primary">Rs. {parseFloat(amount || "0").toFixed(2)}</p>
                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em] mt-2">Mode 02 • MC 5812</p>
                 </div>
                 <Button className="w-full py-7 rounded-2xl font-black text-lg bg-primary shadow-xl" onClick={confirmTransfer} disabled={isSubmitting}>Confirm & Transfer</Button>

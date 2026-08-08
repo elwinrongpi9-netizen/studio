@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Navbar } from "@/components/navbar";
@@ -68,7 +69,7 @@ export default function CartPage() {
 
   const constructWhatsAppMessage = (orderData: any) => {
     const itemsList = orderData.items.map((item: any) => 
-      `✅ ${item.quantity}x ${item.name} - ₹${(item.price * item.quantity).toFixed(0)}`
+      `✅ ${item.quantity}x ${item.name} - Rs. ${(item.price * item.quantity).toFixed(0)}`
     ).join('\n');
     
     return `*🍱 NEW ORDER RECEIVED!*\n\n` +
@@ -77,7 +78,7 @@ export default function CartPage() {
       `-------------------------\n` +
       `${itemsList}\n` +
       `-------------------------\n` +
-      `*Grand Total:* ₹${orderData.amount}\n` +
+      `*Grand Total:* Rs. ${orderData.amount}\n` +
       `*Payment Method:* ${orderData.paymentMethod}\n` +
       `*Status:* ${orderData.status}\n\n` +
       `*Customer:* ${orderData.udf1}\n` +
@@ -163,7 +164,7 @@ export default function CartPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-black text-2xl tracking-tighter text-primary italic">₹{(item.price * item.quantity).toFixed(0)}</p>
+                          <p className="font-black text-2xl tracking-tighter text-primary italic">Rs. {(item.price * item.quantity).toFixed(0)}</p>
                           <button onClick={() => removeFromCart(item.id)} className="text-[10px] font-black text-destructive uppercase tracking-widest mt-1 hover:underline">Remove</button>
                         </div>
                       </div>
@@ -200,9 +201,9 @@ export default function CartPage() {
                   <div>
                     <h3 className="font-black text-xl italic mb-6 uppercase tracking-tighter">Order Summary</h3>
                     <div className="space-y-3">
-                      <div className="flex justify-between text-sm font-bold"><span>Subtotal</span><span>₹{subtotal.toFixed(0)}</span></div>
+                      <div className="flex justify-between text-sm font-bold"><span>Subtotal</span><span>Rs. {subtotal.toFixed(0)}</span></div>
                       <div className="flex justify-between text-sm font-bold text-green-500"><span>Delivery Fee</span><span>FREE</span></div>
-                      <div className="flex justify-between text-sm font-bold text-muted-foreground"><span>Platform Fee</span><span>₹{platformFee}</span></div>
+                      <div className="flex justify-between text-sm font-bold text-muted-foreground"><span>Platform Fee</span><span>Rs. {platformFee}</span></div>
                     </div>
                   </div>
 
@@ -210,7 +211,7 @@ export default function CartPage() {
                   
                   <div className="flex justify-between items-center">
                     <span className="font-black text-sm uppercase tracking-widest text-muted-foreground">To Pay</span>
-                    <span className="text-4xl font-black text-primary italic tracking-tighter">₹{billTotal.toFixed(0)}</span>
+                    <span className="text-4xl font-black text-primary italic tracking-tighter">Rs. {billTotal.toFixed(0)}</span>
                   </div>
 
                   <Button 
@@ -253,7 +254,7 @@ export default function CartPage() {
               </div>
 
               <div className="text-center space-y-1">
-                <p className="text-5xl font-black text-primary italic tracking-tighter">₹{billTotal.toFixed(2)}</p>
+                <p className="text-5xl font-black text-primary italic tracking-tighter">Rs. {billTotal.toFixed(2)}</p>
                 <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.4em]">{MERCHANT_UPI_ID}</p>
               </div>
 
