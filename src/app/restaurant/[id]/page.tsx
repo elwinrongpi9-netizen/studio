@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useState, useMemo } from "react";
@@ -161,7 +160,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                 )}
 
                                 <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                                  ₹{(dish.price * 80).toFixed(0)}
+                                  ₹{dish.price.toFixed(0)}
                                 </div>
                               </div>
                               <div className="flex-1 flex flex-col justify-between py-2 relative z-10">

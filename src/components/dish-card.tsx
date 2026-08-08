@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -76,7 +75,7 @@ export function DishCard({ dish }: DishCardProps) {
         </div>
         
         <div className="absolute bottom-5 right-5 bg-black/80 backdrop-blur-xl text-white px-6 py-3 rounded-[1.5rem] text-xl font-black shadow-2xl border border-white/10 italic tracking-tighter">
-          ₹{(dish.price * 80).toFixed(0)}
+          ₹{dish.price.toFixed(0)}
         </div>
         
         {quantity > 0 && (

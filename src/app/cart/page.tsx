@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Navbar } from "@/components/navbar";
@@ -38,7 +37,7 @@ export default function CartPage() {
   const [timeLeft, setTimeLeft] = useState(300);
 
   const subtotal = useMemo(() => {
-    return cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0);
+    return cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }, [cart]);
 
   const deliveryFee = 0; 
@@ -69,7 +68,7 @@ export default function CartPage() {
 
   const constructWhatsAppMessage = (orderData: any) => {
     const itemsList = orderData.items.map((item: any) => 
-      `✅ ${item.quantity}x ${item.name} - ₹${(item.price * 80 * item.quantity).toFixed(0)}`
+      `✅ ${item.quantity}x ${item.name} - ₹${(item.price * item.quantity).toFixed(0)}`
     ).join('\n');
     
     return `*🍱 NEW ORDER RECEIVED!*\n\n` +
@@ -153,7 +152,7 @@ export default function CartPage() {
                       <div key={item.id} className="flex items-center justify-between p-4 bg-muted/10 rounded-2xl border border-border/20 group hover:border-primary/20 transition-all">
                         <div className="flex items-center gap-5">
                           <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-md flex-shrink-0">
-                            <Image src={item.image} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform" />
+                            <Image src={item.image} alt={item.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform" />
                           </div>
                           <div>
                             <h4 className="font-black text-lg group-hover:text-primary transition-colors">{item.name}</h4>
@@ -164,7 +163,7 @@ export default function CartPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-black text-2xl tracking-tighter text-primary italic">₹{(item.price * 80 * item.quantity).toFixed(0)}</p>
+                          <p className="font-black text-2xl tracking-tighter text-primary italic">₹{(item.price * item.quantity).toFixed(0)}</p>
                           <button onClick={() => removeFromCart(item.id)} className="text-[10px] font-black text-destructive uppercase tracking-widest mt-1 hover:underline">Remove</button>
                         </div>
                       </div>

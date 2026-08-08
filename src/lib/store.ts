@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -65,8 +64,8 @@ export function useAppStore() {
     const newOrder: Order = {
       id: Math.random().toString(36).substr(2, 9),
       items: [...cart],
-      total: cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0),
-      amount: cart.reduce((acc, item) => acc + (item.price * 80) * item.quantity, 0),
+      total: cart.reduce((acc, item) => acc + item.price * item.quantity, 0),
+      amount: cart.reduce((acc, item) => acc + item.price * item.quantity, 0),
       status: 'Received',
       createdAt: new Date().toISOString(),
       restaurantName,
