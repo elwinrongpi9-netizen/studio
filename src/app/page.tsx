@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -36,7 +35,6 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [manualAddress, setManualAddress] = useState("");
-  const [isLocating, setIsLocating] = useState(false);
   
   const firestore = useFirestore();
   const { user } = useUser();
@@ -86,24 +84,18 @@ export default function Home() {
   };
 
   const detectLocation = () => {
-    setIsLocating(true);
     if (!navigator.geolocation) {
       toast({ variant: "destructive", title: "Geolocation not supported by your browser" });
-      setIsLocating(false);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        // In a real app, you'd use a reverse geocoding API here.
-        // For this prototype, we'll simulate area tracking.
         const mockAddress = `Area tracked near ${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
         await handleUpdateLocation(mockAddress);
-        setIsLocating(false);
       },
       (error) => {
         toast({ variant: "destructive", title: "Location access denied" });
-        setIsLocating(false);
       }
     );
   };
@@ -186,10 +178,9 @@ export default function Home() {
                     <div className="space-y-6">
                       <Button 
                         onClick={detectLocation}
-                        disabled={isLocating}
                         className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-3"
                       >
-                        {isLocating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Navigation className="w-5 h-5" />}
+                        <Navigation className="w-5 h-5" />
                         Detect My Location (GPS)
                       </Button>
                       
@@ -351,4 +342,3 @@ export default function Home() {
     </>
   );
 }
-
