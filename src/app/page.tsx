@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -11,6 +12,7 @@ import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { RESTAURANTS as MOCK_RESTAURANTS } from "@/lib/mock-data";
 import { Restaurant, Dish } from "@/lib/types";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Dialog,
   DialogContent,
@@ -22,12 +24,12 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
 const INSPIRATIONS = [
-  { name: "Biryani", img: "https://picsum.photos/seed/biryani/200/200" },
-  { name: "Chilli", img: "https://picsum.photos/seed/chilli/200/200" },
-  { name: "Noodles", img: "https://picsum.photos/seed/noodles/200/200" },
-  { name: "Lollipop", img: "https://picsum.photos/seed/lolly/200/200" },
-  { name: "Rice", img: "https://picsum.photos/seed/rice/200/200" },
-  { name: "Soup", img: "https://picsum.photos/seed/soup/200/200" },
+  { name: "Biryani", img: PlaceHolderImages.find(img => img.id === "inspiration-biryani")?.imageUrl || "https://picsum.photos/seed/biryani/200/200", hint: "biryani rice" },
+  { name: "Chilli", img: PlaceHolderImages.find(img => img.id === "inspiration-chilli")?.imageUrl || "https://picsum.photos/seed/chilli/200/200", hint: "chilli chicken" },
+  { name: "Noodles", img: PlaceHolderImages.find(img => img.id === "inspiration-noodles")?.imageUrl || "https://picsum.photos/seed/noodles/200/200", hint: "chinese noodles" },
+  { name: "Lollipop", img: PlaceHolderImages.find(img => img.id === "inspiration-lollipop")?.imageUrl || "https://picsum.photos/seed/lolly/200/200", hint: "chicken lollipop" },
+  { name: "Rice", img: PlaceHolderImages.find(img => img.id === "inspiration-rice")?.imageUrl || "https://picsum.photos/seed/rice/200/200", hint: "fried rice" },
+  { name: "Soup", img: PlaceHolderImages.find(img => img.id === "inspiration-soup")?.imageUrl || "https://picsum.photos/seed/soup/200/200", hint: "chinese soup" },
 ];
 
 export default function Home() {
@@ -141,7 +143,6 @@ export default function Home() {
       <Navbar />
       <main className="flex-1 pb-20 bg-background text-foreground">
         <section className="relative pt-24 pb-32 overflow-hidden border-b border-border/10 min-h-[85vh] flex items-center">
-          {/* Light Transparent Noodles & Fried Rice Background - Opacity increased to 60% */}
           <div className="absolute inset-0 z-0">
             <Image 
               src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
@@ -150,6 +151,7 @@ export default function Home() {
               className="object-cover opacity-60 grayscale-[0.2]"
               priority
               unoptimized
+              data-ai-hint="chinese noodles"
             />
             <div className="absolute inset-0 bg-gradient-to-br from-background/70 via-background/30 to-primary/5" />
           </div>
@@ -282,7 +284,14 @@ export default function Home() {
                   onClick={() => setSearchQuery(item.name)}
                 >
                   <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary group-hover:-translate-y-2 transition-all duration-500">
-                    <Image src={item.img} alt={item.name} fill className="object-cover scale-105 group-hover:scale-110 transition-transform duration-700" />
+                    <Image 
+                      src={item.img} 
+                      alt={item.name} 
+                      fill 
+                      unoptimized
+                      data-ai-hint={item.hint}
+                      className="object-cover scale-105 group-hover:scale-110 transition-transform duration-700" 
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
                       <span className="text-white font-black uppercase text-[10px] tracking-widest">Explore</span>
                     </div>

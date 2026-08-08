@@ -30,6 +30,42 @@
       "description": "Chicken Fried Rice",
       "imageUrl": "https://picsum.photos/seed/cfr/400/300",
       "imageHint": "fried rice"
+    },
+    {
+      "id": "inspiration-biryani",
+      "description": "Authentic Biryani Inspiration",
+      "imageUrl": "https://picsum.photos/seed/biry1/200/200",
+      "imageHint": "biryani rice"
+    },
+    {
+      "id": "inspiration-chilli",
+      "description": "Spicy Chilli Inspiration",
+      "imageUrl": "https://picsum.photos/seed/chilli1/200/200",
+      "imageHint": "chilli chicken"
+    },
+    {
+      "id": "inspiration-noodles",
+      "description": "Wok Noodles Inspiration",
+      "imageUrl": "https://picsum.photos/seed/noodle1/200/200",
+      "imageHint": "chinese noodles"
+    },
+    {
+      "id": "inspiration-lollipop",
+      "description": "Chicken Lollipop Inspiration",
+      "imageUrl": "https://picsum.photos/seed/lolly1/200/200",
+      "imageHint": "chicken lollipop"
+    },
+    {
+      "id": "inspiration-rice",
+      "description": "Fried Rice Inspiration",
+      "imageUrl": "https://picsum.photos/seed/rice1/200/200",
+      "imageHint": "fried rice"
+    },
+    {
+      "id": "inspiration-soup",
+      "description": "Hot Soup Inspiration",
+      "imageUrl": "https://picsum.photos/seed/soup1/200/200",
+      "imageHint": "chinese soup"
     }
   ]
 }
