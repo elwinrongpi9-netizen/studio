@@ -2,70 +2,34 @@
 {
   "placeholderImages": [
     {
-      "id": "chilli-chicken",
-      "description": "Spicy Chilli Chicken",
-      "imageUrl": "https://picsum.photos/seed/chilli/400/300",
-      "imageHint": "chilli chicken"
-    },
-    {
-      "id": "chicken-65",
-      "description": "Chicken 65 Appetizer",
-      "imageUrl": "https://picsum.photos/seed/c65/400/300",
-      "imageHint": "fried chicken"
-    },
-    {
       "id": "biryani",
-      "description": "Chicken Dum Biryani",
-      "imageUrl": "https://picsum.photos/seed/biry/400/300",
+      "description": "Authentic Chicken Biryani",
+      "imageUrl": "https://picsum.photos/seed/biryani123/600/400",
       "imageHint": "chicken biryani"
     },
     {
-      "id": "noodles",
-      "description": "Chicken Stir-fry Noodles",
-      "imageUrl": "https://picsum.photos/seed/cn/400/300",
-      "imageHint": "chicken noodles"
-    },
-    {
-      "id": "fried-rice",
-      "description": "Chicken Fried Rice",
-      "imageUrl": "https://picsum.photos/seed/cfr/400/300",
-      "imageHint": "fried rice"
-    },
-    {
-      "id": "inspiration-biryani",
-      "description": "Authentic Biryani Inspiration",
-      "imageUrl": "https://picsum.photos/seed/biry1/200/200",
-      "imageHint": "biryani rice"
-    },
-    {
-      "id": "inspiration-chilli",
-      "description": "Spicy Chilli Inspiration",
-      "imageUrl": "https://picsum.photos/seed/chilli1/200/200",
+      "id": "chilli-chicken",
+      "description": "Spicy Chilli Chicken",
+      "imageUrl": "https://picsum.photos/seed/chilli456/600/400",
       "imageHint": "chilli chicken"
     },
     {
-      "id": "inspiration-noodles",
-      "description": "Wok Noodles Inspiration",
-      "imageUrl": "https://picsum.photos/seed/noodle1/200/200",
+      "id": "noodles",
+      "description": "Wok-fried Chinese Noodles",
+      "imageUrl": "https://picsum.photos/seed/noodle789/600/400",
       "imageHint": "chinese noodles"
     },
     {
-      "id": "inspiration-lollipop",
-      "description": "Chicken Lollipop Inspiration",
-      "imageUrl": "https://picsum.photos/seed/lolly1/200/200",
-      "imageHint": "chicken lollipop"
+      "id": "chicken-65",
+      "description": "Deep Fried Chicken 65",
+      "imageUrl": "https://picsum.photos/seed/c65item/600/400",
+      "imageHint": "fried chicken"
     },
     {
-      "id": "inspiration-rice",
-      "description": "Fried Rice Inspiration",
-      "imageUrl": "https://picsum.photos/seed/rice1/200/200",
+      "id": "fried-rice",
+      "description": "Signature Fried Rice",
+      "imageUrl": "https://picsum.photos/seed/riceitem/600/400",
       "imageHint": "fried rice"
-    },
-    {
-      "id": "inspiration-soup",
-      "description": "Hot Soup Inspiration",
-      "imageUrl": "https://picsum.photos/seed/soup1/200/200",
-      "imageHint": "chinese soup"
     }
   ]
 }

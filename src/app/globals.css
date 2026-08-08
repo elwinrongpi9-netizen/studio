@@ -1,10 +1,11 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Premium Light & Transparent Theme */
+    /* Premium Lite & Transparent Theme */
     --background: 0 0% 98%;
     --foreground: 0 0% 10%;
     
@@ -14,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
     
-    /* Primary: Vibrant Red */
+    /* Vibrant Primary */
     --primary: 0 85% 55%;
     --primary-foreground: 0 0% 100%;
     
@@ -26,9 +27,6 @@
     
     --accent: 0 85% 60%;
     --accent-foreground: 0 0% 100%;
-    
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
     
     --border: 0 0% 90%;
     --input: 0 0% 90%;
@@ -50,7 +48,18 @@
   }
 }
 
-/* Luxury Custom Scrollbar */
+.glass-effect {
+  @apply bg-white/70 backdrop-blur-2xl border border-white/30 shadow-2xl;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -64,26 +73,4 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary));
-}
-
-/* Premium Animations */
-@keyframes premium-fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-premium {
-  animation: premium-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.glass-effect {
-  @apply bg-white/70 backdrop-blur-xl border border-white/20;
 }

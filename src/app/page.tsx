@@ -6,12 +6,12 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Loader2, CheckCircle2, Hash, Plus } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Plus } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
-import { collection, query, orderBy, setDoc, doc, getDocs, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
 import { RESTAURANTS as MOCK_RESTAURANTS } from "@/lib/mock-data";
-import { Restaurant, Dish } from "@/lib/types";
+import { Restaurant } from "@/lib/types";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Dialog,
@@ -88,7 +88,7 @@ export default function Home() {
           });
         }
       } catch (error) {
-        console.warn("Seeding skipped: Client might be offline.", error);
+        console.warn("Seeding skipped", error);
       }
     };
     seedData();
@@ -103,31 +103,10 @@ export default function Home() {
       await setDoc(doc(firestore, "users", user.uid), {
         address: address
       }, { merge: true });
-      
-      toast({ title: "Location Updated! 📍", description: address });
       setIsLocationOpen(false);
-      setManualAddress("");
-      setPincode("");
     } catch (e) {
       toast({ variant: "destructive", title: "Failed to update location" });
     }
-  };
-
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      toast({ variant: "destructive", title: "Geolocation not supported by your browser" });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const mockAddress = `Area near ${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
-        await handleUpdateLocation(mockAddress);
-      },
-      (error) => {
-        toast({ variant: "destructive", title: "Location access denied" });
-      }
-    );
   };
 
   const allDishes = useMemo(() => {
@@ -142,19 +121,13 @@ export default function Home() {
   }, [restaurants]);
 
   const filteredDishes = useMemo(() => {
-    return allDishes
-      .filter((dish) => {
-        const matchesSearch = 
-          dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          dish.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          dish.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          dish.restaurantName.toLowerCase().includes(searchQuery.toLowerCase());
-          
-        const matchesCategory = activeCategory === "All" || dish.category === activeCategory;
-        
-        return matchesSearch && matchesCategory;
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
+    return allDishes.filter((dish) => {
+      const matchesSearch = 
+        dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        dish.restaurantName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = activeCategory === "All" || dish.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
   }, [allDishes, searchQuery, activeCategory]);
 
   const categories = useMemo(() => {
@@ -165,26 +138,26 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 pb-20 bg-background text-foreground">
+      <main className="flex-1 pb-20 bg-background">
         <section className="relative pt-24 pb-32 overflow-hidden border-b border-border/10 min-h-[85vh] flex items-center">
           <div className="absolute inset-0 z-0">
             <Image 
               src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
-              alt="Authentic Chinese Noodles"
+              alt="Background"
               fill
               className="object-cover opacity-60"
               priority
               unoptimized
-              data-ai-hint="chinese noodles"
+              data-ai-hint="noodles chinese"
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-background/70 via-background/30 to-primary/5" />
+            <div className="absolute inset-0 bg-gradient-to-br from-background/90 via-background/60 to-primary/5" />
           </div>
 
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
             <div className="flex flex-col items-center text-center">
               <div className="inline-flex items-center gap-2 bg-primary/20 px-4 py-2 rounded-full border border-primary/30 mb-8 animate-in fade-in slide-in-from-top-4 duration-700 backdrop-blur-sm">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">The Art of Chinese Cuisine</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Original Karbi Flavors</span>
               </div>
               
               <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter italic uppercase leading-[0.9] drop-shadow-sm">
@@ -192,12 +165,11 @@ export default function Home() {
                 <span className="text-primary not-italic">ZOMATO</span>
               </h1>
               
-              <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/30 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40">
-                Experience premium authentic flavors from <span className="text-primary font-black italic">Diphu's Original Master of the Wok</span>.
+              <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/40 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40">
+                Experience premium authentic flavors from <span className="text-primary font-black italic">Karbi Anglong's Master of the Wok</span>.
               </p>
 
-              <div className="flex flex-col md:flex-row w-full max-w-4xl glass-effect rounded-[3rem] shadow-2xl overflow-hidden ring-4 ring-primary/5 transition-all hover:ring-primary/10 group">
-                
+              <div className="flex flex-col md:flex-row w-full max-w-4xl glass-effect rounded-[3rem] shadow-2xl overflow-hidden ring-4 ring-primary/5 transition-all group">
                 <Dialog open={isLocationOpen} onOpenChange={setIsLocationOpen}>
                   <DialogTrigger asChild>
                     <div className="flex items-center px-8 py-7 md:border-r border-b md:border-b-0 min-w-[280px] hover:bg-white/50 transition-colors cursor-pointer">
@@ -211,84 +183,31 @@ export default function Home() {
                       <ChevronDown className="w-5 h-5 ml-auto text-muted-foreground opacity-50" />
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="rounded-[3rem] p-10 bg-white border-none shadow-2xl sm:max-w-[480px]">
+                  <DialogContent className="rounded-[3rem] p-10 bg-white shadow-2xl">
                     <DialogHeader className="mb-6">
-                      <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter text-center">Select Delivery Area</DialogTitle>
+                      <DialogTitle className="text-3xl font-black italic uppercase text-center">Select Delivery Area</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6">
-                      <Button 
-                        onClick={detectLocation}
-                        className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-3"
-                      >
-                        <Navigation className="w-5 h-5" />
-                        Detect My Location (GPS)
+                      <Button onClick={() => handleUpdateLocation("Detected Location (GPS)")} className="w-full h-14 rounded-2xl bg-primary font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3">
+                        <Navigation className="w-5 h-5" /> Detect My Location
                       </Button>
-                      
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50"></span></div>
-                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-white px-4 text-muted-foreground tracking-[0.5em]">OR SEARCH BY PIN</span></div>
-                      </div>
-
                       <div className="flex gap-3">
-                        <div className="relative flex-1">
-                          <Input 
-                            placeholder="6-Digit PIN Code" 
-                            type="number"
-                            value={pincode}
-                            onChange={(e) => setPincode(e.target.value)}
-                            className="h-14 rounded-2xl bg-muted/30 border-none ring-2 ring-border focus:ring-primary font-black px-6"
-                          />
-                        </div>
-                        <Button 
-                          onClick={() => handleUpdateLocation(`PIN: ${pincode}`)}
-                          disabled={pincode.length < 6}
-                          className="h-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-black uppercase tracking-widest px-8"
-                        >
-                          Apply
-                        </Button>
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50"></span></div>
-                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-white px-4 text-muted-foreground tracking-[0.5em]">OR MANUAL ADDRESS</span></div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <Input 
-                            placeholder="Enter area or building..." 
-                            value={manualAddress}
-                            onChange={(e) => setManualAddress(e.target.value)}
-                            className="h-14 rounded-2xl bg-muted/30 border-none ring-2 ring-border focus:ring-primary font-bold px-6"
-                          />
-                        </div>
-                        <Button 
-                          onClick={() => handleUpdateLocation(manualAddress)}
-                          disabled={!manualAddress}
-                          className="w-full h-12 rounded-2xl bg-muted hover:bg-muted/80 text-foreground font-black uppercase tracking-widest text-xs"
-                        >
-                          Save Address
-                        </Button>
+                        <Input placeholder="Enter Pincode" type="number" value={pincode} onChange={(e) => setPincode(e.target.value)} className="h-14 rounded-2xl bg-muted/30 border-none font-black px-6" />
+                        <Button onClick={() => handleUpdateLocation(`PIN: ${pincode}`)} className="h-14 rounded-2xl bg-foreground text-background font-black uppercase tracking-widest px-8">Apply</Button>
                       </div>
                     </div>
                   </DialogContent>
                 </Dialog>
 
                 <div className="flex-1 relative bg-white/30">
-                  <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                  <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground transition-colors" />
                   <input 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search premium starters, main course or biryani..." 
-                    className="w-full pl-20 pr-8 py-7 bg-transparent focus:outline-none text-xl font-bold placeholder:italic placeholder:font-medium"
+                    placeholder="Search signature dishes, appetizers..." 
+                    className="w-full pl-20 pr-8 py-7 bg-transparent focus:outline-none text-xl font-bold placeholder:italic"
                   />
                 </div>
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-10 mt-16 opacity-100">
-                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20"><Flame className="w-4 h-4 text-orange-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Freshly Cooked</span></div>
-                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20"><Clock className="w-4 h-4 text-blue-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Fast Delivery</span></div>
-                <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20"><Star className="w-4 h-4 text-yellow-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Top Rated</span></div>
               </div>
             </div>
           </div>
@@ -300,25 +219,11 @@ export default function Home() {
               <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase">Signature Inspirations</h2>
               <div className="h-0.5 flex-1 mx-10 bg-gradient-to-r from-border/20 via-primary/20 to-border/20 rounded-full" />
             </div>
-            <div className="flex gap-10 md:gap-14 overflow-x-auto no-scrollbar pb-8 px-2">
+            <div className="flex gap-10 md:gap-14 overflow-x-auto no-scrollbar pb-8">
               {INSPIRATIONS.map((item) => (
-                <div 
-                  key={item.name} 
-                  className="flex flex-col items-center gap-6 cursor-pointer group flex-shrink-0"
-                  onClick={() => setSearchQuery(item.name)}
-                >
-                  <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary group-hover:-translate-y-2 transition-all duration-500">
-                    <Image 
-                      src={item.img} 
-                      alt={item.name} 
-                      fill 
-                      unoptimized
-                      data-ai-hint={item.hint}
-                      className="object-cover scale-105 group-hover:scale-110 transition-transform duration-700" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
-                      <span className="text-white font-black uppercase text-[10px] tracking-widest">Explore</span>
-                    </div>
+                <div key={item.name} className="flex flex-col items-center gap-6 cursor-pointer group flex-shrink-0" onClick={() => setSearchQuery(item.name)}>
+                  <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary transition-all duration-500">
+                    <Image src={item.img} alt={item.name} fill unoptimized data-ai-hint={item.hint} className="object-cover group-hover:scale-110 transition-transform duration-700" />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground group-hover:text-primary transition-colors">{item.name}</span>
                 </div>
@@ -330,10 +235,8 @@ export default function Home() {
             <div className="lg:col-span-9">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
                 <div>
-                  <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4">
-                    {searchQuery ? `Searching "${searchQuery}"` : "The Signature Menu"}
-                  </h2>
-                  <p className="text-muted-foreground font-medium italic">Handpicked premium dishes for the finest taste.</p>
+                  <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4">The Master Menu</h2>
+                  <p className="text-muted-foreground font-medium italic">Handpicked premium dishes for the finest taste in Diphu.</p>
                 </div>
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                   {categories.map(cat => (
@@ -341,7 +244,7 @@ export default function Home() {
                       key={cat}
                       variant={activeCategory === cat ? "default" : "outline"}
                       onClick={() => setActiveCategory(cat)}
-                      className={`rounded-[1.2rem] font-black uppercase text-[10px] px-8 h-12 tracking-widest transition-all ${activeCategory === cat ? 'bg-primary shadow-2xl shadow-primary/30' : 'opacity-60 hover:opacity-100'}`}
+                      className={`rounded-[1.2rem] font-black uppercase text-[10px] px-8 h-12 tracking-widest ${activeCategory === cat ? 'bg-primary shadow-xl' : 'opacity-60'}`}
                     >
                       {cat}
                     </Button>
@@ -352,39 +255,28 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-16">
                 {(isSuperAdmin || isRestaurantAdmin) && !searchQuery && (
                   <Link href={isSuperAdmin ? "/admin" : `/admin?resId=${profile?.managedRestaurantId}`} className="group h-full">
-                    <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[400px] shadow-sm">
-                      <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform group-hover:rotate-90">
+                    <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+                      <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-90 transition-all">
                         <Plus className="w-12 h-12 text-primary" />
                       </div>
                       <h3 className="font-black text-3xl italic uppercase tracking-tighter text-primary">Add Item</h3>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-4 opacity-60">Expand Main Menu</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-4">Expand the Gallery</p>
                     </Card>
                   </Link>
                 )}
                 
-                {filteredDishes.length > 0 ? (
-                  filteredDishes.map((dish) => (
-                    <DishCard key={dish.id} dish={dish} />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-32 bg-muted/5 rounded-[4rem] border-2 border-dashed border-border/50">
-                    <UtensilsCrossed className="w-20 h-20 text-muted-foreground mx-auto mb-8 opacity-20" />
-                    <p className="text-2xl font-black italic text-muted-foreground uppercase tracking-tighter">Seeking excellence...</p>
-                    <Button variant="link" onClick={() => {setSearchQuery(""); setActiveCategory("All");}} className="mt-6 text-primary font-black uppercase tracking-widest text-[11px]">
-                      View Full Menu
-                    </Button>
-                  </div>
-                )}
+                {filteredDishes.map((dish) => (
+                  <DishCard key={dish.id} dish={dish} />
+                ))}
               </div>
             </div>
             
             <aside className="lg:col-span-3 space-y-12">
               <AIRecommendations />
               <div className="bg-gradient-to-br from-white to-background rounded-[3.5rem] p-10 border-2 border-primary/10 shadow-xl relative overflow-hidden group">
-                 <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-primary/10 rounded-full blur-[60px] group-hover:scale-150 transition-transform duration-700" />
                  <Zap className="w-12 h-12 text-primary mb-6" />
                  <h3 className="font-black text-2xl italic mb-4 uppercase tracking-tighter">Elite Delivery</h3>
-                 <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive Diphu market priority. Your meal arrives in peak condition within 25 minutes.</p>
+                 <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive Diphu market priority. Your meal arrives in peak condition.</p>
                  <div className="flex items-center gap-3 bg-green-500/10 w-fit px-4 py-2 rounded-full border border-green-500/20">
                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                    <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Now Delivering</span>
@@ -394,34 +286,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-      
-      <footer className="bg-white border-t border-border/10 py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-30" />
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-16 mb-20">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                 <UtensilsCrossed className="w-12 h-12 text-primary" />
-                 <span className="text-4xl font-black tracking-tighter italic uppercase">KARBI ZOMATO</span>
-              </div>
-              <p className="text-muted-foreground font-medium max-w-sm italic">The pinnacle of authentic flavors in Karbi Anglong. Premium quality, every single time.</p>
-            </div>
-            <div className="flex flex-col md:items-end gap-2">
-              <span className="text-11px font-black uppercase text-foreground tracking-[0.4em]">Establishment</span>
-              <span className="text-sm font-bold text-muted-foreground">Diphu • Karbi Anglong • Assam</span>
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8 border-t border-border/10 pt-16">
-            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.5em]">
-              © {new Date().getFullYear()} KARBI ZOMATO. All Rights Reserved.
-            </p>
-            <div className="flex gap-10 opacity-60">
-              <span className="text-[10px] font-black uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">Instagram</span>
-              <span className="text-[10px] font-black uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">Facebook</span>
-            </div>
-          </div>
-        </div>
-      </footer>
     </>
   );
 }
