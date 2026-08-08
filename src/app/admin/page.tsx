@@ -2,10 +2,10 @@
 "use client";
 
 import { Navbar } from "@/components/navbar";
-import { useUser, useFirestore, useCollection } from "@/firebase";
+import { useUser, useFirestore, useCollection, useDoc } from "@/firebase";
 import { collection, doc, updateDoc, query, orderBy, setDoc, limit, onSnapshot } from "firebase/firestore";
 import { useMemo, useState, useEffect, useRef, Suspense } from "react";
-import { Restaurant, WithdrawalRequest, Dish } from "@/lib/types";
+import { Restaurant, WithdrawalRequest, Dish, UserProfile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,9 +33,8 @@ import {
   Trash2,
   Edit3,
   Loader2,
-  Image as ImageIcon,
   Upload,
-  CheckCircle
+  UserCheck
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -53,6 +52,13 @@ function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
+  const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
+  const { data: profile } = useDoc<UserProfile>(userRef as any);
+
+  const isSuperAdmin = user?.email === ADMIN_EMAIL;
+  const isRestaurantAdmin = !!profile?.managedRestaurantId;
+  const managedResId = profile?.managedRestaurantId;
+
   const paramResId = searchParams.get("resId");
 
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
@@ -70,7 +76,6 @@ function AdminDashboardContent() {
     inStock: true
   });
 
-  // Track image data locally to avoid overwriting with placeholder text
   const dishImageRefs = useRef<Record<string, string>>({});
 
   const [wingoPeriod, setWingoPeriod] = useState("");
@@ -91,28 +96,40 @@ function AdminDashboardContent() {
     return query(collection(firestore, "phonepe_orders"), orderBy("createdAt", "desc"), limit(100));
   }, [firestore]);
 
-  const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
+  const { data: allRestaurants } = useCollection<Restaurant>(restaurantsQuery);
   const { data: withdrawals } = useCollection<WithdrawalRequest>(withdrawalsQuery);
   const { data: phonepeOrders } = useCollection<any>(phonepeOrdersQuery);
   
+  const visibleRestaurants = useMemo(() => {
+    if (isSuperAdmin) return allRestaurants;
+    if (isRestaurantAdmin) return allRestaurants?.filter(r => r.id === managedResId);
+    return [];
+  }, [allRestaurants, isSuperAdmin, isRestaurantAdmin, managedResId]);
+
   const selectedRestaurant = useMemo(() => {
-    return restaurants?.find(r => r.id === selectedResId);
-  }, [restaurants, selectedResId]);
+    return visibleRestaurants?.find(r => r.id === selectedResId);
+  }, [visibleRestaurants, selectedResId]);
 
   useEffect(() => {
-    if (paramResId) {
+    if (isRestaurantAdmin && managedResId) {
+      setSelectedResId(managedResId);
+    } else if (paramResId) {
       setSelectedResId(paramResId);
     }
-  }, [paramResId, restaurants]);
+  }, [paramResId, managedResId, isRestaurantAdmin]);
 
   useEffect(() => {
-    if (!firestore || !user || user.email !== ADMIN_EMAIL) return;
+    if (!firestore || !user || (!isSuperAdmin && !isRestaurantAdmin)) return;
 
     const q = query(collection(firestore, "phonepe_orders"), orderBy("createdAt", "desc"), limit(1));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
         const latestOrder = snapshot.docs[0];
+        const orderData = latestOrder.data();
         const orderId = latestOrder.id;
+
+        // If restaurant admin, only ring for their restaurant's orders
+        if (isRestaurantAdmin && orderData.restaurantId !== managedResId) return;
 
         if (lastOrderIdRef.current === null) {
           lastOrderIdRef.current = orderId;
@@ -129,7 +146,7 @@ function AdminDashboardContent() {
     });
 
     return () => unsubscribe();
-  }, [firestore, user, isAudioEnabled]);
+  }, [firestore, user, isAudioEnabled, isSuperAdmin, isRestaurantAdmin, managedResId]);
 
   const triggerRingtone = () => {
     if (audioRef.current) {
@@ -189,11 +206,7 @@ function AdminDashboardContent() {
         dishImageRefs.current[dishId] = base64String;
         const previewImg = document.getElementById(`preview-${dishId}`) as HTMLImageElement;
         if (previewImg) previewImg.src = base64String;
-
-        const imgInput = document.getElementById(`img-input-${dishId}`) as HTMLInputElement;
-        if (imgInput) imgInput.value = "Local Photo Ready";
-
-        toast({ title: "Local Photo Ready! 📸", description: "Click Update Selection to save to all users." });
+        toast({ title: "Local Photo Ready! 📸", description: "Click Update to save." });
       }
     };
     reader.readAsDataURL(file);
@@ -205,7 +218,7 @@ function AdminDashboardContent() {
       return;
     }
 
-    const res = restaurants?.find(r => r.id === selectedResId);
+    const res = visibleRestaurants?.find(r => r.id === selectedResId);
     if (!res) return;
 
     const dishToAdd = { 
@@ -222,20 +235,16 @@ function AdminDashboardContent() {
       dishes: updatedDishes
     });
     
-    toast({ title: "Item Added for All Users! 🎉" });
+    toast({ title: "Item Added! 🎉" });
     setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300", inStock: true });
   };
 
   const handleUpdateDishFull = async (dishId: string, updatedData: Partial<Dish>) => {
     if (!firestore || !selectedResId || !selectedRestaurant) return;
 
-    // Correctly determine which image to use:
-    // 1. If we have a newly uploaded base64 in the ref, use it.
-    // 2. Otherwise, if the updatedData.image is a valid string and not our placeholder text, use it.
-    // 3. Otherwise, use the original dish image.
     const originalDish = selectedRestaurant.dishes?.find(d => d.id === dishId);
     const finalImage = dishImageRefs.current[dishId] || 
-                       (updatedData.image && updatedData.image !== "Local Photo Ready" && updatedData.image !== "Local Photo Saved" ? updatedData.image : originalDish?.image);
+                       (updatedData.image && updatedData.image.startsWith('data:') ? updatedData.image : originalDish?.image);
 
     const updatedDishes = (selectedRestaurant.dishes || []).map(d => 
       d.id === dishId ? { ...d, ...updatedData, image: finalImage } : d
@@ -245,10 +254,8 @@ function AdminDashboardContent() {
       dishes: updatedDishes
     });
     
-    // Clear the ref after saving
     delete dishImageRefs.current[dishId];
-    
-    toast({ title: "Item Updated for All Users! ✨" });
+    toast({ title: "Item Updated! ✨" });
   };
 
   const handleDeleteDish = async (dishId: string) => {
@@ -259,41 +266,25 @@ function AdminDashboardContent() {
     updateDoc(doc(firestore, "restaurants", selectedResId), {
       dishes: updatedDishes
     });
-    toast({ title: "Item Removed for All Users" });
+    toast({ title: "Item Removed" });
   };
 
   const handleUpdateRestaurant = async (data: Partial<Restaurant>) => {
     if (!firestore || !selectedResId) return;
     updateDoc(doc(firestore, "restaurants", selectedResId), data);
-    toast({ title: "Restaurant Updated Globally! ✨" });
+    toast({ title: "Restaurant Details Updated! ✨" });
   };
 
-  const handleSetWingoResult = async () => {
-    if (!firestore || !wingoPeriod || wingoNumber === "") return;
-    const num = parseInt(wingoNumber);
-    if (isNaN(num) || num < 0 || num > 9) {
-      toast({ title: "Invalid Number", variant: "destructive" });
-      return;
-    }
-    setDoc(doc(firestore, "wingoConfig", wingoPeriod), {
-      periodId: wingoPeriod,
-      number: num,
-      updatedAt: new Date().toISOString()
-    })
-    .then(() => {
-      toast({ title: "Result Fixed!" });
-      setWingoPeriod("");
-      setWingoNumber("");
-    });
-  };
+  if (userLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
 
-  if (!userLoading && (!user || user.email !== ADMIN_EMAIL)) {
+  if (!user || (!isSuperAdmin && !isRestaurantAdmin)) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
         <div className="flex-1 container mx-auto px-4 py-20 text-center">
           <ShieldAlert className="w-20 h-20 text-destructive mx-auto mb-6" />
           <h1 className="text-4xl font-black mb-4 uppercase italic tracking-tighter text-white">Access Denied</h1>
+          <p className="text-muted-foreground mb-8">This area is reserved for Super Admins and Restaurant Partners.</p>
           <Button onClick={() => router.push("/")} className="rounded-2xl px-12 h-14 font-black">Return Home</Button>
         </div>
       </div>
@@ -310,10 +301,12 @@ function AdminDashboardContent() {
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4 text-white">
               <ShieldCheck className="w-12 h-12 text-primary" />
-              Admin Master Control
+              {isSuperAdmin ? "Master Control" : "Partner Dashboard"}
             </h1>
             <div className="flex items-center gap-3 mt-4">
-              <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">Live Order Dashboard</p>
+              <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">
+                {isSuperAdmin ? "Super Admin Access" : `Managing: ${selectedRestaurant?.name || 'Assigned Restaurant'}`}
+              </p>
               <div className="h-1 w-1 bg-muted-foreground rounded-full" />
               <button 
                 onClick={toggleAudio}
@@ -322,7 +315,7 @@ function AdminDashboardContent() {
                 }`}
               >
                 {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                {isAudioEnabled ? "Notifications On" : "Notifications Muted"}
+                {isAudioEnabled ? "Audio On" : "Audio Off"}
               </button>
             </div>
           </div>
@@ -332,24 +325,28 @@ function AdminDashboardContent() {
               <BellRing className="w-10 h-10 text-primary animate-bounce" />
               <div className="flex flex-col">
                 <span className="font-black text-sm uppercase text-primary">NEW ORDER!</span>
-                <span className="text-[10px] font-bold text-white/60">Ringing...</span>
+                <span className="text-[10px] font-bold text-white/60">Notification active...</span>
               </div>
             </div>
           )}
         </div>
 
-        <Tabs defaultValue={paramResId ? "menu" : "payments"} className="space-y-8">
-          <TabsList className="bg-card p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto border border-border/50">
-            <TabsTrigger value="payments" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
+        <Tabs defaultValue="payments" className="space-y-8">
+          <TabsList className="bg-card p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto border border-border/50 overflow-x-auto no-scrollbar">
+            <TabsTrigger value="payments" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
               <ShoppingBag className="w-4 h-4" /> Orders
             </TabsTrigger>
-            <TabsTrigger value="menu" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <Utensils className="w-4 h-4" /> Menu Manager
+            <TabsTrigger value="menu" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
+              <Utensils className="w-4 h-4" /> Menu
             </TabsTrigger>
-            <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <Zap className="w-4 h-4" /> Wingo
-            </TabsTrigger>
-            <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 data-[state=active]:bg-primary">Withdrawals</TabsTrigger>
+            {isSuperAdmin && (
+              <>
+                <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
+                  <Zap className="w-4 h-4" /> Wingo
+                </TabsTrigger>
+                <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 data-[state=active]:bg-primary shrink-0">Withdrawals</TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="payments">
@@ -357,17 +354,14 @@ function AdminDashboardContent() {
               <div className="p-8 border-b border-border/50 flex justify-between items-center">
                  <h3 className="font-black text-xl uppercase tracking-widest flex items-center gap-3">
                    <TrendingUp className="w-6 h-6 text-primary" />
-                   Recent Transactions
+                   Recent Orders
                  </h3>
-                 <Badge variant="outline" className="rounded-full px-4 border-primary/20 text-primary font-black">
-                   {phonepeOrders?.length || 0} Total
-                 </Badge>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="bg-muted/50 border-b border-border/50">
                     <tr>
-                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">ID</th>
+                      <th className="p-6 text-[10px] font-black uppercase tracking-widest">Order ID</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Customer</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Items</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Status</th>
@@ -376,7 +370,7 @@ function AdminDashboardContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {phonepeOrders?.map((order) => (
+                    {phonepeOrders?.filter(o => isSuperAdmin || o.restaurantId === managedResId).map((order) => (
                       <tr key={order.id} className="border-b border-border/50 hover:bg-muted/20">
                         <td className="p-6 font-mono font-bold text-xs text-primary">{order.order_id}</td>
                         <td className="p-6">
@@ -391,18 +385,18 @@ function AdminDashboardContent() {
                                <span key={idx} className="bg-muted px-2 py-1 rounded-lg text-[10px] font-black border border-border/50">
                                  {item.quantity}x {item.name}
                                </span>
-                             )) || <span className="text-muted-foreground italic text-xs">-</span>}
+                             ))}
                            </div>
                         </td>
                         <td className="p-6">
-                          <Badge className={`rounded-full px-4 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm ${
+                          <Badge className={`rounded-full px-4 py-1 text-[9px] font-black uppercase tracking-widest ${
                             order.status === 'Preparing' ? 'bg-orange-500' : 
                             order.status === 'Cooking' ? 'bg-yellow-600' :
                             order.status === 'On the Way' ? 'bg-blue-500' :
                             order.status === 'Delivered' ? 'bg-green-600' :
                             'bg-muted text-muted-foreground'
                           }`}>
-                            {order.status || order.state}
+                            {order.status || 'Received'}
                           </Badge>
                         </td>
                         <td className="p-6">
@@ -446,11 +440,6 @@ function AdminDashboardContent() {
                                 <CheckCircle2 className="w-3 h-3 mr-2" /> Complete
                               </Button>
                             )}
-                            {order.status === "Delivered" && (
-                              <span className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-2">
-                                <CheckCircle2 className="w-3 h-3" /> Done
-                              </span>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -470,22 +459,28 @@ function AdminDashboardContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Select Restaurant</Label>
-                      <select 
-                        value={selectedResId} 
-                        onChange={(e) => setSelectedResId(e.target.value)}
-                        className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black text-white"
-                      >
-                        <option value="">Choose Restaurant</option>
-                        {restaurants?.map(r => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Managed Restaurant</Label>
+                      {isSuperAdmin ? (
+                        <select 
+                          value={selectedResId} 
+                          onChange={(e) => setSelectedResId(e.target.value)}
+                          className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black text-white"
+                        >
+                          <option value="">Choose Restaurant</option>
+                          {visibleRestaurants?.map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="h-14 rounded-2xl bg-muted/20 border-2 border-border/50 px-4 flex items-center font-black text-primary">
+                          {selectedRestaurant?.name || "Accessing..."}
+                        </div>
+                      )}
                     </div>
                     {selectedRestaurant && (
                       <>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Restaurant Name</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Display Name</Label>
                           <Input 
                             defaultValue={selectedRestaurant.name}
                             onBlur={(e) => handleUpdateRestaurant({ name: e.target.value })}
@@ -493,7 +488,7 @@ function AdminDashboardContent() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Cuisine Style</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Cuisine Description</Label>
                           <Input 
                             defaultValue={selectedRestaurant.cuisine}
                             onBlur={(e) => handleUpdateRestaurant({ cuisine: e.target.value })}
@@ -507,7 +502,7 @@ function AdminDashboardContent() {
                     {selectedRestaurant && (
                       <>
                         <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Main Image URL</Label>
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Cover Image URL</Label>
                           <Input 
                             defaultValue={selectedRestaurant.image}
                             onBlur={(e) => handleUpdateRestaurant({ image: e.target.value })}
@@ -523,278 +518,183 @@ function AdminDashboardContent() {
                 </div>
               </Card>
 
-              <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
-                <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                  <Plus className="w-8 h-8 text-primary" /> Add New Manual Item
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Item Name</Label>
-                      <Input 
-                        placeholder="e.g. Chilli Chicken" 
-                        value={newDish.name}
-                        onChange={e => setNewDish({...newDish, name: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price (Rs.)</Label>
-                      <Input 
-                        type="number" 
-                        value={newDish.price}
-                        onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-2xl border border-white/10">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${newDish.inStock ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
-                        <div className="space-y-1">
-                          <Label className="text-sm font-black">In Stock</Label>
-                          <p className="text-[10px] text-muted-foreground">Is this item currently available?</p>
-                        </div>
-                      </div>
-                      <Switch 
-                        checked={newDish.inStock}
-                        onCheckedChange={checked => setNewDish({...newDish, inStock: checked})}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image Source</Label>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Input 
-                          placeholder="Paste image link here..." 
-                          value={newDish.image?.startsWith('data:') ? 'Local Image Attached' : newDish.image}
-                          onChange={e => setNewDish({...newDish, image: e.target.value})}
-                          className="h-12 rounded-xl font-black bg-[#0a0a0a] border-white/10"
-                        />
-                        <div className="relative">
-                           <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={(e) => handleImageUpload(e, true)}
-                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                           />
-                           <Button variant="outline" className="w-full h-12 rounded-xl border-dashed border-primary/40 font-black text-[10px] flex gap-2">
-                             <Upload className="w-3 h-3" /> Upload Local
-                           </Button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Description</Label>
-                      <Input 
-                        placeholder="Dish details..." 
-                        value={newDish.description}
-                        onChange={e => setNewDish({...newDish, description: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
-                      />
-                    </div>
-                    <div className="relative aspect-square w-full max-w-[150px] rounded-3xl overflow-hidden border-2 border-border/50 mx-auto bg-muted">
-                       <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
-                    </div>
-                  </div>
-                </div>
-                <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90 shadow-2xl">
-                  Save Item to Menu
-                </Button>
-              </Card>
-
               {selectedRestaurant && (
-                <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
-                  <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                    <Edit3 className="w-8 h-8 text-primary" /> Item Editor Master
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {selectedRestaurant.dishes?.map((dish) => (
-                      <div key={dish.id} className="bg-[#0a0a0a] p-8 rounded-[3rem] border border-border/50 flex flex-col gap-6 group hover:border-primary/30 transition-all">
-                        <div className="flex items-start gap-6">
-                          <div className="relative w-28 h-28 rounded-3xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
-                            <Image id={`preview-${dish.id}`} src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
-                            {dish.inStock === false && (
-                              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-white rotate-12 border-2 border-white px-2">Out</span>
-                              </div>
-                            )}
+                <>
+                  <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
+                    <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
+                      <Plus className="w-8 h-8 text-primary" /> Add New Item
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Item Name</Label>
+                          <Input 
+                            placeholder="e.g. Chilli Paneer" 
+                            value={newDish.name}
+                            onChange={e => setNewDish({...newDish, name: e.target.value})}
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price (Rs.)</Label>
+                          <Input 
+                            type="number" 
+                            value={newDish.price}
+                            onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})}
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-2xl border border-white/10">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${newDish.inStock ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
+                            <Label className="text-sm font-black">Mark as Available</Label>
                           </div>
-                          <div className="flex-1 space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h4 className="font-black text-lg uppercase italic text-primary">{dish.name}</h4>
-                                <button onClick={() => handleDeleteDish(dish.id)} className="text-destructive hover:scale-110 transition-transform p-2 bg-destructive/10 rounded-xl">
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-                            </div>
-                            
-                            <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-white/10">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${dish.inStock !== false ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-zinc-600'}`} />
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${dish.inStock !== false ? 'text-green-500' : 'text-zinc-500'}`}>
-                                  {dish.inStock !== false ? 'Live In Stock' : 'Out of Stock'}
-                                </span>
-                              </div>
-                              <Switch 
-                                id={`stock-switch-${dish.id}`}
-                                defaultChecked={dish.inStock !== false}
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                               <div className="space-y-1">
-                                 <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Name</Label>
-                                 <Input 
-                                   defaultValue={dish.name}
-                                   id={`name-input-${dish.id}`}
-                                   className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
-                                 />
-                               </div>
-                               <div className="space-y-1">
-                                 <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Price (Rs.)</Label>
-                                 <Input 
-                                   defaultValue={dish.price}
-                                   id={`price-input-${dish.id}`}
-                                   type="number"
-                                   className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
-                                 />
-                               </div>
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Category</Label>
-                              <Input 
-                                defaultValue={dish.category}
-                                id={`cat-input-${dish.id}`}
-                                className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Image Control</Label>
-                              <div className="grid grid-cols-2 gap-2">
-                                <Input 
-                                  defaultValue={dish.image?.startsWith('data:') ? 'Local Photo Saved' : dish.image}
-                                  id={`img-input-${dish.id}`}
-                                  className="h-10 rounded-xl bg-card border-white/10 text-[9px] font-black"
-                                />
-                                <div className="relative">
-                                  <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    onChange={(e) => handleImageUpload(e, false, dish.id)}
-                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                  />
-                                  <Button variant="outline" size="sm" className="w-full h-10 rounded-xl border-dashed border-primary/20 text-[8px] font-black flex gap-1">
-                                    <Upload className="w-3 h-3" /> Local
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Description</Label>
-                              <Input 
-                                defaultValue={dish.description}
-                                id={`desc-input-${dish.id}`}
-                                className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
-                              />
-                            </div>
-
-                            <Button 
-                              size="sm" 
-                              className="w-full rounded-2xl h-12 font-black uppercase text-[10px] tracking-widest mt-2"
-                              onClick={() => {
-                                const nameInput = document.getElementById(`name-input-${dish.id}`) as HTMLInputElement;
-                                const priceInput = document.getElementById(`price-input-${dish.id}`) as HTMLInputElement;
-                                const imgInput = document.getElementById(`img-input-${dish.id}`) as HTMLInputElement;
-                                const descInput = document.getElementById(`desc-input-${dish.id}`) as HTMLInputElement;
-                                const catInput = document.getElementById(`cat-input-${dish.id}`) as HTMLInputElement;
-                                const stockSwitch = document.getElementById(`stock-switch-${dish.id}`) as HTMLButtonElement;
-                                const inStock = stockSwitch.getAttribute('data-state') === 'checked';
-
-                                handleUpdateDishFull(dish.id, {
-                                  name: nameInput.value,
-                                  price: parseFloat(priceInput.value),
-                                  image: imgInput.value,
-                                  description: descInput.value,
-                                  category: catInput.value,
-                                  inStock: inStock
-                                });
-                              }}
-                            >
-                              <Save className="w-4 h-4 mr-2" /> Update Selection for All Users
-                            </Button>
-                          </div>
+                          <Switch 
+                            checked={newDish.inStock}
+                            onCheckedChange={checked => setNewDish({...newDish, inStock: checked})}
+                          />
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </Card>
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Upload Image</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                             <div className="relative">
+                               <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => handleImageUpload(e, true)}
+                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                               />
+                               <Button variant="outline" className="w-full h-12 rounded-xl border-dashed border-primary/40 font-black text-[10px] flex gap-2">
+                                 <Upload className="w-3 h-3" /> Select Local
+                               </Button>
+                             </div>
+                             <Input 
+                              placeholder="Or paste link..." 
+                              value={newDish.image?.startsWith('data:') ? 'Local Image Attached' : newDish.image}
+                              onChange={e => setNewDish({...newDish, image: e.target.value})}
+                              className="h-12 rounded-xl font-black bg-[#0a0a0a] border-white/10"
+                            />
+                          </div>
+                        </div>
+                        <div className="relative aspect-square w-full max-w-[120px] rounded-3xl overflow-hidden border-2 border-border/50 mx-auto bg-muted">
+                           <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
+                        </div>
+                      </div>
+                    </div>
+                    <Button onClick={handleAddDish} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90 shadow-2xl">
+                      Save Item to Menu
+                    </Button>
+                  </Card>
+
+                  <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
+                    <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
+                      <Edit3 className="w-8 h-8 text-primary" /> Live Menu Editor
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {selectedRestaurant.dishes?.map((dish) => (
+                        <div key={dish.id} className="bg-[#0a0a0a] p-8 rounded-[3rem] border border-border/50 flex flex-col gap-6 group hover:border-primary/30 transition-all">
+                          <div className="flex items-start gap-6">
+                            <div className="relative w-24 h-24 rounded-3xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
+                              <Image id={`preview-${dish.id}`} src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
+                            </div>
+                            <div className="flex-1 space-y-4">
+                              <div className="flex justify-between items-center">
+                                  <h4 className="font-black text-lg uppercase italic text-primary">{dish.name}</h4>
+                                  <button onClick={() => handleDeleteDish(dish.id)} className="text-destructive hover:scale-110 transition-transform p-2">
+                                      <Trash2 className="w-5 h-5" />
+                                  </button>
+                              </div>
+                              
+                              <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-white/10">
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${dish.inStock !== false ? 'text-green-500' : 'text-zinc-500'}`}>
+                                  {dish.inStock !== false ? '🟢 In Stock' : '⚪ Out of Stock'}
+                                </span>
+                                <Switch 
+                                  id={`stock-switch-${dish.id}`}
+                                  defaultChecked={dish.inStock !== false}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                 <Input defaultValue={dish.name} id={`name-input-${dish.id}`} className="h-10 rounded-xl bg-card border-white/10 text-xs font-black" />
+                                 <Input defaultValue={dish.price} id={`price-input-${dish.id}`} type="number" className="h-10 rounded-xl bg-card border-white/10 text-xs font-black" />
+                              </div>
+
+                              <Button 
+                                size="sm" 
+                                className="w-full rounded-2xl h-12 font-black uppercase text-[10px] tracking-widest mt-2"
+                                onClick={() => {
+                                  const nameInput = document.getElementById(`name-input-${dish.id}`) as HTMLInputElement;
+                                  const priceInput = document.getElementById(`price-input-${dish.id}`) as HTMLInputElement;
+                                  const stockSwitch = document.getElementById(`stock-switch-${dish.id}`) as HTMLButtonElement;
+                                  const inStock = stockSwitch.getAttribute('data-state') === 'checked';
+
+                                  handleUpdateDishFull(dish.id, {
+                                    name: nameInput.value,
+                                    price: parseFloat(priceInput.value),
+                                    inStock: inStock
+                                  });
+                                }}
+                              >
+                                <Save className="w-4 h-4 mr-2" /> Update Item
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </>
               )}
             </div>
           </TabsContent>
 
-          <TabsContent value="wingo">
-            <Card className="border-border/50 bg-card rounded-[4rem] p-12 shadow-2xl max-w-2xl mx-auto">
-              <div className="flex flex-col items-center text-center space-y-4 mb-10">
-                <div className="p-4 bg-primary/10 rounded-3xl">
-                  <Zap className="w-12 h-12 text-primary" />
-                </div>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase">Wingo Control</h2>
-              </div>
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase ml-2 tracking-widest">Period ID</Label>
-                    <Input 
-                      placeholder="e.g. 20240315" 
-                      value={wingoPeriod} 
-                      onChange={e => setWingoPeriod(e.target.value)}
-                      className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-2"
-                    />
+          {isSuperAdmin && (
+            <>
+              <TabsContent value="wingo">
+                <Card className="border-border/50 bg-card rounded-[4rem] p-12 shadow-2xl max-w-2xl mx-auto">
+                  <div className="flex flex-col items-center text-center space-y-4 mb-10">
+                    <Zap className="w-12 h-12 text-primary" />
+                    <h2 className="text-4xl font-black italic tracking-tighter uppercase">Wingo Master</h2>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase ml-2 tracking-widest">Number (0-9)</Label>
-                    <Input 
-                      type="number" 
-                      value={wingoNumber} 
-                      onChange={e => setWingoNumber(e.target.value)}
-                      className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-2"
-                    />
-                  </div>
-                </div>
-                <Button onClick={handleSetWingoResult} className="w-full h-20 rounded-2xl font-black text-xl py-8">
-                  Set Result
-                </Button>
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="withdrawals">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {withdrawals?.map((req) => (
-                <Card key={req.id} className="rounded-[3rem] border-border/50 bg-card p-10 relative overflow-hidden">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                      <div className="p-5 bg-orange-100/10 text-orange-600 rounded-3xl">
-                        <Banknote className="w-8 h-8" />
-                      </div>
-                      <div className="space-y-1">
-                        <h3 className="font-black text-4xl tracking-tighter italic">Rs. {req.amount}</h3>
-                        <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{req.userEmail}</p>
-                        <div className="bg-[#0a0a0a] px-3 py-1.5 rounded-xl flex items-center gap-3 border border-border/50 cursor-pointer mt-2" onClick={() => { navigator.clipboard.writeText(req.upiId); toast({title:"UPI Copied!"}); }}>
-                          <span className="font-mono font-bold text-[10px] text-white/60">{req.upiId}</span>
-                          <Copy className="w-3 h-3 text-muted-foreground" />
-                        </div>
-                      </div>
-                    </div>
-                    <Badge className="bg-orange-600 rounded-full px-4 py-1.5 uppercase font-black text-[9px] tracking-widest">{req.status}</Badge>
+                  <div className="space-y-8">
+                    <Input placeholder="Period ID" value={wingoPeriod} onChange={e => setWingoPeriod(e.target.value)} className="h-14 rounded-2xl font-black bg-[#0a0a0a]" />
+                    <Input type="number" placeholder="Winning Number (0-9)" value={wingoNumber} onChange={e => setWingoNumber(e.target.value)} className="h-14 rounded-2xl font-black bg-[#0a0a0a]" />
+                    <Button onClick={() => {
+                      if (!firestore || !wingoPeriod) return;
+                      setDoc(doc(firestore, "wingoConfig", wingoPeriod), { periodId: wingoPeriod, number: parseInt(wingoNumber) })
+                      .then(() => toast({ title: "Result Set!" }));
+                    }} className="w-full h-16 rounded-2xl font-black text-xl">Set Result</Button>
                   </div>
                 </Card>
-              ))}
-            </div>
-          </TabsContent>
+              </TabsContent>
+
+              <TabsContent value="withdrawals">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {withdrawals?.map((req) => (
+                    <Card key={req.id} className="rounded-[3rem] border-border/50 bg-card p-10 relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                          <Banknote className="w-8 h-8 text-orange-600" />
+                          <div className="space-y-1">
+                            <h3 className="font-black text-4xl tracking-tighter italic">Rs. {req.amount}</h3>
+                            <p className="text-[9px] font-black text-muted-foreground uppercase">{req.userEmail}</p>
+                            <div className="bg-[#0a0a0a] px-3 py-1.5 rounded-xl flex items-center gap-3 border border-border/50 cursor-pointer" onClick={() => { navigator.clipboard.writeText(req.upiId); toast({title:"UPI Copied!"}); }}>
+                              <span className="font-mono font-bold text-[10px] text-white/60">{req.upiId}</span>
+                              <Copy className="w-3 h-3" />
+                            </div>
+                          </div>
+                        </div>
+                        <Badge className="bg-orange-600 rounded-full px-4 py-1.5 uppercase font-black text-[9px] tracking-widest">{req.status}</Badge>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </main>
     </div>

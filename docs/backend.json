@@ -41,9 +41,10 @@
         "phoneNumber": { "type": "string" },
         "photoURL": { "type": "string" },
         "address": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "admin"] },
-        "walletBalance": { "type": "number", "description": "The current balance for food and withdrawals." },
-        "wingoBalance": { "type": "number", "description": "The current balance for Wingo games." },
+        "role": { "type": "string", "enum": ["user", "admin", "restaurant_admin"] },
+        "managedRestaurantId": { "type": "string", "description": "The ID of the restaurant this user is allowed to manage." },
+        "walletBalance": { "type": "number" },
+        "wingoBalance": { "type": "number" },
         "lastLogin": { "type": "object" }
       }
     },

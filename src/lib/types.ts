@@ -51,7 +51,8 @@ export interface UserProfile {
   phoneNumber?: string;
   photoURL?: string;
   address?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'restaurant_admin';
+  managedRestaurantId?: string;
   walletBalance?: number;
   wingoBalance?: number;
 }
