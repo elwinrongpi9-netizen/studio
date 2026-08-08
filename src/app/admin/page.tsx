@@ -30,7 +30,8 @@ import {
   Save,
   Settings2,
   Trash2,
-  Edit3
+  Edit3,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -55,7 +56,7 @@ function AdminDashboardContent() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastOrderIdRef = useRef<string | null>(null);
 
-  const [selectedResId, setSelectedResId] = useState(paramResId || "");
+  const [selectedResId, setSelectedResId] = useState("");
   const [newDish, setNewDish] = useState<Partial<Dish>>({
     name: "",
     description: "",
@@ -94,7 +95,7 @@ function AdminDashboardContent() {
     if (paramResId) {
       setSelectedResId(paramResId);
     }
-  }, [paramResId]);
+  }, [paramResId, restaurants]);
 
   useEffect(() => {
     if (!firestore || !user || user.email !== ADMIN_EMAIL) return;
