@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Gamepad2, Zap } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: 'zomatokarbi.com | Fresh Food Delivered',
+  title: 'KARBI ZOMATO | Fresh Food Delivered',
   description: 'Your favorite local food discovery and delivery app in Karbi Anglong.',
 };
 

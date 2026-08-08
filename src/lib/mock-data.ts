@@ -4,7 +4,7 @@ import { Restaurant } from './types';
 export const RESTAURANTS: Restaurant[] = [
   {
     id: 'rongpi-wok',
-    name: 'Rongpi Chinese Wok',
+    name: 'KARBI ZOMATO',
     cuisine: 'Authentic Chinese • North Indian • Signature Biryani',
     rating: 4.9,
     deliveryTime: '25-35 min',

@@ -24,7 +24,7 @@ import {
 
 // SYNCED WITH PHP LOGIC MERCHANT UPI
 const MERCHANT_UPI_ID = "Q297152786@ybl";
-const MERCHANT_NAME = "Rongpi Chinese wok";
+const MERCHANT_NAME = "KARBI ZOMATO";
 
 export default function WalletPage() {
   const { user, loading: userLoading } = useUser();

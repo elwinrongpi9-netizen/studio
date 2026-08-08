@@ -43,6 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const ADMIN_EMAIL = "junakipi@gmail.com";
+const MERCHANT_NAME = "KARBI ZOMATO";
 
 export function Navbar() {
   const { cart } = useAppStore();
@@ -164,8 +165,8 @@ export function Navbar() {
                <UtensilsCrossed className="w-8 h-8 text-white" />
              </div>
              <div className="flex flex-col">
-               <span className="text-3xl font-black tracking-tighter italic uppercase leading-none">RONGPI</span>
-               <span className="text-[10px] font-black tracking-[0.5em] text-primary uppercase ml-1">CHINESE WOK</span>
+               <span className="text-3xl font-black tracking-tighter italic uppercase leading-none">KARBI</span>
+               <span className="text-[10px] font-black tracking-[0.5em] text-primary uppercase ml-1">ZOMATO</span>
              </div>
           </Link>
         </div>

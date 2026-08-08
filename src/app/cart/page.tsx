@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 const MERCHANT_UPI_ID = "7086505053@ybl";
-const MERCHANT_NAME = "Rongpi Chinese wok";
+const MERCHANT_NAME = "KARBI ZOMATO";
 const MERCHANT_CODE = "5812"; 
 const MERCHANT_WHATSAPP = "7086505053"; 
 
@@ -72,7 +72,7 @@ export default function CartPage() {
       `✅ ${item.quantity}x ${item.name} - Rs. ${(item.price * item.quantity).toFixed(0)}`
     ).join('\n');
     
-    return `*🍱 NEW ORDER RECEIVED!*\n\n` +
+    return `*🍱 NEW ORDER RECEIVED!*` +
       `*Order ID:* #${orderData.order_id}\n` +
       `*Restaurant:* ${orderData.restaurantName}\n` +
       `-------------------------\n` +
@@ -99,7 +99,7 @@ export default function CartPage() {
 
     const orderData = {
       order_id: orderId,
-      restaurantName: cart[0]?.restaurantName || "Rongpi Chinese wok",
+      restaurantName: cart[0]?.restaurantName || "KARBI ZOMATO",
       amount: billTotal,
       total: billTotal,
       state: state,

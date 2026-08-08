@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 const MERCHANT_UPI_ID = "Q297152786@ybl";
-const MERCHANT_NAME = "Rongpi Chinese wok";
+const MERCHANT_NAME = "KARBI ZOMATO";
 const MERCHANT_CODE = "5812"; 
 
 export default function GameZonePage() {

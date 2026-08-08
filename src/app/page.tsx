@@ -163,8 +163,8 @@ export default function Home() {
               </div>
               
               <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter italic uppercase leading-[0.9]">
-                RONGPI<br />
-                <span className="text-primary not-italic">CHINESE WOK</span>
+                KARBI<br />
+                <span className="text-primary not-italic">ZOMATO</span>
               </h1>
               
               <p className="text-muted-foreground text-xl md:text-2xl mb-12 max-w-3xl font-medium tracking-tight">
@@ -358,7 +358,7 @@ export default function Home() {
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-4">
                  <UtensilsCrossed className="w-12 h-12 text-primary" />
-                 <span className="text-4xl font-black tracking-tighter italic uppercase">Rongpi Chinese Wok</span>
+                 <span className="text-4xl font-black tracking-tighter italic uppercase">KARBI ZOMATO</span>
               </div>
               <p className="text-muted-foreground font-medium max-w-sm italic">The pinnacle of authentic flavors in Karbi Anglong. Premium quality, every single time.</p>
             </div>
@@ -369,7 +369,7 @@ export default function Home() {
           </div>
           <div className="flex flex-col md:flex-row justify-between items-center gap-8 border-t-2 border-border/10 pt-16">
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.5em]">
-              © {new Date().getFullYear()} Rongpi Chinese Wok. All Rights Reserved.
+              © {new Date().getFullYear()} KARBI ZOMATO. All Rights Reserved.
             </p>
             <div className="flex gap-10 opacity-40">
               <span className="text-[10px] font-black uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">Instagram</span>
