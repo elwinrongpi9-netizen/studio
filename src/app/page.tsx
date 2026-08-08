@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -142,17 +141,17 @@ export default function Home() {
       <Navbar />
       <main className="flex-1 pb-20 bg-background text-foreground">
         <section className="relative pt-24 pb-32 overflow-hidden border-b border-border/10 min-h-[85vh] flex items-center">
-          {/* Transparent Noodles & Fried Rice Background */}
+          {/* Light Transparent Noodles & Fried Rice Background */}
           <div className="absolute inset-0 z-0">
             <Image 
               src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
               alt="Authentic Chinese Noodles"
               fill
-              className="object-cover opacity-10 grayscale-[0.8] brightness-50"
+              className="object-cover opacity-10 grayscale-[0.5]"
               priority
               unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5" />
+            <div className="absolute inset-0 bg-gradient-to-br from-background/80 via-background/60 to-primary/5" />
           </div>
 
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
@@ -171,11 +170,11 @@ export default function Home() {
                 Experience premium authentic flavors from <span className="text-foreground font-black italic">Diphu's Original Master of the Wok</span>.
               </p>
 
-              <div className="flex flex-col md:flex-row w-full max-w-4xl bg-card rounded-[3rem] border-2 border-border/50 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden ring-4 ring-primary/5 transition-all hover:ring-primary/10 group">
+              <div className="flex flex-col md:flex-row w-full max-w-4xl glass-effect rounded-[3rem] shadow-2xl overflow-hidden ring-4 ring-primary/5 transition-all hover:ring-primary/10 group">
                 
                 <Dialog open={isLocationOpen} onOpenChange={setIsLocationOpen}>
                   <DialogTrigger asChild>
-                    <div className="flex items-center px-8 py-7 md:border-r-2 border-b md:border-b-0 min-w-[280px] bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer">
+                    <div className="flex items-center px-8 py-7 md:border-r border-b md:border-b-0 min-w-[280px] hover:bg-white/50 transition-colors cursor-pointer">
                       <MapPin className="w-6 h-6 text-primary mr-4" />
                       <div className="flex flex-col items-start">
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Current Area</span>
@@ -186,7 +185,7 @@ export default function Home() {
                       <ChevronDown className="w-5 h-5 ml-auto text-muted-foreground opacity-50" />
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="rounded-[3rem] p-10 bg-card border-none shadow-2xl sm:max-w-[480px]">
+                  <DialogContent className="rounded-[3rem] p-10 bg-white border-none shadow-2xl sm:max-w-[480px]">
                     <DialogHeader className="mb-6">
                       <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter text-center">Select Delivery Area</DialogTitle>
                     </DialogHeader>
@@ -201,7 +200,7 @@ export default function Home() {
                       
                       <div className="relative">
                         <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50"></span></div>
-                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-card px-4 text-muted-foreground tracking-[0.5em]">OR SEARCH BY PIN</span></div>
+                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-white px-4 text-muted-foreground tracking-[0.5em]">OR SEARCH BY PIN</span></div>
                       </div>
 
                       <div className="flex gap-3">
@@ -225,7 +224,7 @@ export default function Home() {
 
                       <div className="relative">
                         <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50"></span></div>
-                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-card px-4 text-muted-foreground tracking-[0.5em]">OR MANUAL ADDRESS</span></div>
+                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-white px-4 text-muted-foreground tracking-[0.5em]">OR MANUAL ADDRESS</span></div>
                       </div>
 
                       <div className="space-y-4">
@@ -249,7 +248,7 @@ export default function Home() {
                   </DialogContent>
                 </Dialog>
 
-                <div className="flex-1 relative bg-muted/10">
+                <div className="flex-1 relative bg-white/30">
                   <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <input 
                     value={searchQuery}
@@ -260,10 +259,10 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-10 mt-16 opacity-40">
-                <div className="flex items-center gap-2"><Flame className="w-4 h-4" /> <span className="text-[9px] font-black uppercase tracking-widest">Freshly Cooked</span></div>
-                <div className="flex items-center gap-2"><Clock className="w-4 h-4" /> <span className="text-[9px] font-black uppercase tracking-widest">Fast Delivery</span></div>
-                <div className="flex items-center gap-2"><Star className="w-4 h-4" /> <span className="text-[9px] font-black uppercase tracking-widest">Top Rated</span></div>
+              <div className="flex flex-wrap justify-center gap-10 mt-16 opacity-60">
+                <div className="flex items-center gap-2"><Flame className="w-4 h-4 text-orange-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Freshly Cooked</span></div>
+                <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Fast Delivery</span></div>
+                <div className="flex items-center gap-2"><Star className="w-4 h-4 text-yellow-500" /> <span className="text-[9px] font-black uppercase tracking-widest">Top Rated</span></div>
               </div>
             </div>
           </div>
@@ -282,9 +281,9 @@ export default function Home() {
                   className="flex flex-col items-center gap-6 cursor-pointer group flex-shrink-0"
                   onClick={() => setSearchQuery(item.name)}
                 >
-                  <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-2xl ring-4 ring-transparent group-hover:ring-primary group-hover:-translate-y-2 transition-all duration-500">
+                  <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary group-hover:-translate-y-2 transition-all duration-500">
                     <Image src={item.img} alt={item.name} fill className="object-cover scale-105 group-hover:scale-110 transition-transform duration-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
                       <span className="text-white font-black uppercase text-[10px] tracking-widest">Explore</span>
                     </div>
                   </div>
@@ -336,7 +335,7 @@ export default function Home() {
             
             <aside className="lg:col-span-3 space-y-12">
               <AIRecommendations />
-              <div className="bg-gradient-to-br from-card to-background rounded-[3.5rem] p-10 border-2 border-primary/10 shadow-2xl relative overflow-hidden group">
+              <div className="bg-gradient-to-br from-white to-background rounded-[3.5rem] p-10 border-2 border-primary/10 shadow-xl relative overflow-hidden group">
                  <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-primary/10 rounded-full blur-[60px] group-hover:scale-150 transition-transform duration-700" />
                  <Zap className="w-12 h-12 text-primary mb-6" />
                  <h3 className="font-black text-2xl italic mb-4 uppercase tracking-tighter">Elite Delivery</h3>
@@ -351,7 +350,7 @@ export default function Home() {
         </div>
       </main>
       
-      <footer className="bg-card border-t-4 border-primary/20 py-24 relative overflow-hidden">
+      <footer className="bg-white border-t border-border/10 py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-30" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-16 mb-20">
@@ -363,15 +362,15 @@ export default function Home() {
               <p className="text-muted-foreground font-medium max-w-sm italic">The pinnacle of authentic flavors in Karbi Anglong. Premium quality, every single time.</p>
             </div>
             <div className="flex flex-col md:items-end gap-2">
-              <span className="text-11px font-black uppercase text-foreground tracking-[0.4em]">Establishment</span>
+              <span className="text-[11px] font-black uppercase text-foreground tracking-[0.4em]">Establishment</span>
               <span className="text-sm font-bold text-muted-foreground">Diphu • Karbi Anglong • Assam</span>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8 border-t-2 border-border/10 pt-16">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8 border-t border-border/10 pt-16">
             <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.5em]">
               © {new Date().getFullYear()} KARBI ZOMATO. All Rights Reserved.
             </p>
-            <div className="flex gap-10 opacity-40">
+            <div className="flex gap-10 opacity-60">
               <span className="text-[10px] font-black uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">Instagram</span>
               <span className="text-[10px] font-black uppercase tracking-widest cursor-pointer hover:text-primary transition-colors">Facebook</span>
             </div>
