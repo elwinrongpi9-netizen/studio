@@ -310,23 +310,43 @@ function AdminDashboardContent() {
     return url.startsWith('http://') || url.startsWith('https://');
   };
 
-  // Camera Functions
+  // Camera Functions Optimized for Mobile
   const startCamera = async (target: "dish" | "inspiration") => {
     setCameraTarget(target);
     setShowCamera(true);
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast({ title: "Camera Not Supported", description: "Browser does not support camera access.", variant: "destructive" });
+      setShowCamera(false);
+      return;
+    }
+
     try {
+      // Prefer Rear Camera on Mobile
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" },
+        video: { facingMode: { ideal: "environment" } },
         audio: false 
       });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.warn("Video play failed", e));
       }
     } catch (err) {
-      console.error("Camera access error:", err);
-      toast({ title: "Camera Permission Denied", variant: "destructive" });
-      setShowCamera(false);
+      console.warn("Rear camera failed, trying fallback:", err);
+      try {
+        // Fallback to any camera
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => console.warn("Video play failed", e));
+        }
+      } catch (err2) {
+        console.error("Camera access error:", err2);
+        toast({ title: "Camera Permission Denied", description: "Please allow camera access in settings.", variant: "destructive" });
+        setShowCamera(false);
+      }
     }
   };
 
@@ -342,12 +362,18 @@ function AdminDashboardContent() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
+      
+      // Use high quality dimensions
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
+      
       const ctx = canvas.getContext("2d");
       if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
         if (cameraTarget === "dish") {
           setNewDish({ ...newDish, image: dataUrl });
         } else {
@@ -723,7 +749,7 @@ function AdminDashboardContent() {
           )}
         </Tabs>
 
-        {/* Camera Dialog */}
+        {/* Camera Dialog Optimized for Mobile */}
         <Dialog open={showCamera} onOpenChange={(open) => !open && stopCamera()}>
           <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-black border-none">
             <DialogHeader className="p-6 bg-background/10 backdrop-blur-md absolute top-0 w-full z-10">
@@ -739,6 +765,7 @@ function AdminDashboardContent() {
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
+                muted
                 className="w-full h-full object-cover"
               />
               <canvas ref={canvasRef} className="hidden" />
