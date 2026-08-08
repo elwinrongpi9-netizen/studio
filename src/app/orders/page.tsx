@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, Truck, Package, Calendar, CreditCard, ShoppingBag, Info, Flame, Timer } from "lucide-react";
+import { Clock, CheckCircle2, Truck, Package, Calendar, CreditCard, ShoppingBag, Info, Flame, Timer, Store } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirestore, useCollection } from "@/firebase";
@@ -55,7 +55,7 @@ export default function OrdersPage() {
           <div className="flex items-center justify-between mb-10">
             <div>
               <h1 className="text-4xl font-black mb-2">My Orders</h1>
-              <p className="text-muted-foreground font-medium">Tracking your delicious moments in Diphu</p>
+              <p className="text-muted-foreground font-medium">Tracking your delicious moments in Karbi Anglong</p>
             </div>
             {user && (
               <Badge variant="outline" className="px-4 py-1.5 rounded-full border-primary/20 bg-primary/5 text-primary font-bold">
@@ -75,7 +75,7 @@ export default function OrdersPage() {
                 <ShoppingBag className="w-12 h-12 text-primary" />
               </div>
               <h2 className="text-3xl font-black mb-3">No orders found</h2>
-              <p className="text-muted-foreground mb-10 max-w-sm mx-auto font-medium">Hungry? Explore the best restaurants in Karbi Anglong and place your first order!</p>
+              <p className="text-muted-foreground mb-10 max-w-sm mx-auto font-medium">Hungry? Explore the best restaurants and place your first order!</p>
               <Link href="/">
                 <Button className="rounded-2xl px-12 py-7 text-lg font-black shadow-xl shadow-primary/20">Explore Restaurants</Button>
               </Link>
@@ -90,7 +90,10 @@ export default function OrdersPage() {
                         {getStatusIcon(order.status || 'Received')}
                       </div>
                       <div>
-                        <h3 className="font-black text-2xl group-hover:text-primary transition-colors">{order.restaurantName}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Store className="w-4 h-4 text-primary" />
+                          <h3 className="font-black text-2xl group-hover:text-primary transition-colors italic uppercase tracking-tighter">{order.restaurantName || "Rongpi Chinese Wok"}</h3>
+                        </div>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-muted-foreground mt-1">
                           <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {new Date(order.createdAt).toLocaleDateString()}</span>
                           <span className="bg-muted px-2 py-0.5 rounded-lg">ID: #{order.id}</span>

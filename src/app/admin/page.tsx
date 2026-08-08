@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Navbar } from "@/components/navbar";
@@ -33,7 +34,8 @@ import {
   Edit3,
   Loader2,
   Upload,
-  UserCheck
+  UserCheck,
+  Store
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -362,6 +364,7 @@ function AdminDashboardContent() {
                     <tr>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Order ID</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Customer</th>
+                      {isSuperAdmin && <th className="p-6 text-[10px] font-black uppercase tracking-widest">Restaurant</th>}
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Items</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Status</th>
                       <th className="p-6 text-[10px] font-black uppercase tracking-widest">Amount</th>
@@ -378,6 +381,14 @@ function AdminDashboardContent() {
                              <span className="text-[10px] text-muted-foreground font-bold">{order.udf2}</span>
                            </div>
                         </td>
+                        {isSuperAdmin && (
+                          <td className="p-6">
+                            <div className="flex items-center gap-2">
+                              <Store className="w-4 h-4 text-primary" />
+                              <span className="font-black text-xs uppercase italic text-foreground">{order.restaurantName || "Rongpi Chinese Wok"}</span>
+                            </div>
+                          </td>
+                        )}
                         <td className="p-6">
                            <div className="flex flex-wrap gap-2 max-w-xs">
                              {order.items?.map((item: any, idx: number) => (
