@@ -15,7 +15,8 @@ import {
   Sparkles, 
   UserPlus, 
   Eye, 
-  EyeOff 
+  EyeOff,
+  Smartphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
@@ -53,6 +54,7 @@ export function Navbar() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -115,10 +117,25 @@ export function Navbar() {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Logged in successfully" });
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+        
+        // Save mobile number to Firestore profile immediately
+        await setDoc(doc(firestore, "users", newUser.uid), {
+          displayName: email.split('@')[0],
+          email: email,
+          phoneNumber: phone,
+          role: "user",
+          walletBalance: 0,
+          wingoBalance: 0,
+          createdAt: serverTimestamp(),
+          lastLogin: serverTimestamp()
+        }, { merge: true });
+        
         toast({ title: "Account Created! Welcome." });
       }
       setIsLoginOpen(false);
+      setPhone("");
     } catch (error: any) {
       let msg = error.message;
       if (error.code === 'auth/invalid-credential') msg = "Invalid email or password.";
@@ -235,6 +252,25 @@ export function Navbar() {
                       <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Email Address</Label>
                       <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6" placeholder="your@email.com" required />
                     </div>
+
+                    {authMode === 'register' && (
+                      <div className="space-y-3">
+                        <Label htmlFor="phone" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Mobile Number</Label>
+                        <div className="relative">
+                          <Input 
+                            id="phone" 
+                            type="tel" 
+                            value={phone} 
+                            onChange={(e) => setPhone(e.target.value)} 
+                            className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6 pl-14" 
+                            placeholder="7086505053" 
+                            required 
+                          />
+                          <Smartphone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-3">
                       <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Security Password</Label>
                       <div className="relative">
