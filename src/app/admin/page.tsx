@@ -289,6 +289,11 @@ function AdminDashboardContent() {
     toast({ title: "Inspiration Removed" });
   };
 
+  const isValidUrl = (url: string | undefined) => {
+    if (!url) return false;
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
+
   if (userLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
 
   if (!user || (!isSuperAdmin && !isRestaurantAdmin)) {
@@ -491,7 +496,11 @@ function AdminDashboardContent() {
                         <div className="space-y-6">
                           <Input placeholder="Image URL" value={newDish.image} onChange={e => setNewDish({...newDish, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
                           <div className="relative aspect-square w-24 rounded-2xl overflow-hidden border border-border bg-muted/30">
-                            <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
+                            {isValidUrl(newDish.image) ? (
+                              <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[8px] font-black uppercase text-muted-foreground p-2 text-center">Enter Valid URL</div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -554,14 +563,18 @@ function AdminDashboardContent() {
                           <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
                           <Input placeholder="URL for photo" value={newInspiration.image} onChange={e => setNewInspiration({...newInspiration, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
                         </div>
-                        {newInspiration.image && (
+                        {isValidUrl(newInspiration.image) ? (
                            <div className="relative w-48 h-48 rounded-[2rem] overflow-hidden border-4 border-primary/20 shadow-2xl mt-4">
-                             <Image src={newInspiration.image} alt="Preview" fill unoptimized className="object-cover" />
+                             <Image src={newInspiration.image!} alt="Preview" fill unoptimized className="object-cover" />
                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                <span className="text-[8px] font-black text-white uppercase tracking-widest">Global Live Preview</span>
                              </div>
                            </div>
-                        )}
+                        ) : newInspiration.image ? (
+                           <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-black uppercase tracking-widest text-center">
+                             Please enter a valid URL (starting with http)
+                           </div>
+                        ) : null}
                       </div>
                     </div>
                     <Button onClick={handleSaveInspiration} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary text-white shadow-xl shadow-primary/20">
