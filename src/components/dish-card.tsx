@@ -1,14 +1,16 @@
+
 "use client";
 
 import Image from "next/image";
-import { Plus, Minus, Zap, CheckCircle2, ShoppingBag, Sparkles } from "lucide-react";
+import { Plus, Minus, Settings, CheckCircle2, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dish } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { useMemo } from "react";
+import { useUser } from "@/firebase";
+import Link from "next/link";
 
 interface DishCardProps {
   dish: Dish & { restaurantId: string; restaurantName: string };
@@ -16,8 +18,11 @@ interface DishCardProps {
 
 export function DishCard({ dish }: DishCardProps) {
   const { cart, addToCart, removeFromCart } = useAppStore();
+  const { user } = useUser();
   const { toast } = useToast();
   
+  const isAdmin = user?.email === "junakipi@gmail.com";
+
   const cartItem = useMemo(() => 
     cart.find(i => i.id === dish.id && i.restaurantId === dish.restaurantId),
   [cart, dish.id, dish.restaurantId]);
@@ -55,6 +60,16 @@ export function DishCard({ dish }: DishCardProps) {
           className="object-cover scale-105 group-hover:scale-110 transition-transform duration-1000"
           data-ai-hint="premium dish"
         />
+        
+        {/* Admin Quick Edit Button */}
+        {isAdmin && (
+          <Link href={`/admin?resId=${dish.restaurantId}`} className="absolute top-4 right-4 z-40" onClick={(e) => e.stopPropagation()}>
+            <Button size="icon" variant="ghost" className="bg-black/40 backdrop-blur-xl border border-white/20 text-white rounded-full hover:bg-primary transition-all">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </Link>
+        )}
+
         <div className="absolute top-5 left-5 bg-primary text-white text-[9px] font-black px-4 py-2 rounded-full shadow-2xl uppercase tracking-[0.2em] flex items-center gap-2 backdrop-blur-sm">
           <Sparkles className="w-3.5 h-3.5" /> Chef's Special
         </div>

@@ -1,23 +1,27 @@
+
 "use client";
 
 import { use, useState, useMemo } from "react";
 import Image from "next/image";
 import { Navbar } from "@/components/navbar";
-import { Star, Clock, Info, Search, Plus, ShoppingCart, ArrowLeft, Loader2, Sparkles, Flame, ShieldCheck } from "lucide-react";
+import { Star, Clock, Info, Search, Plus, ShoppingCart, ArrowLeft, Loader2, Sparkles, Flame, ShieldCheck, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Dish, Restaurant } from "@/lib/types";
-import { useDoc, useFirestore } from "@/firebase";
+import { useDoc, useFirestore, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 
 export default function RestaurantPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const firestore = useFirestore();
-  const { addToCart } = useAppStore();
+  const { user } = useUser();
+  const { addToCart, cart } = useAppStore();
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState("All");
+
+  const isAdmin = user?.email === "junakipi@gmail.com";
 
   const restaurantRef = useMemo(() => {
     if (!firestore || !id) return null;
@@ -25,6 +29,8 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
   }, [firestore, id]);
 
   const { data: restaurant, loading } = useDoc<Restaurant>(restaurantRef);
+
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   if (!restaurant && !loading) return (
     <>
@@ -143,6 +149,16 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                               <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
                               <div className="relative w-full sm:w-40 h-40 rounded-[2rem] overflow-hidden flex-shrink-0 shadow-xl">
                                 <Image src={dish.image} alt={dish.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                                
+                                {/* Admin Edit Overlay */}
+                                {isAdmin && (
+                                  <Link href={`/admin?resId=${id}`} className="absolute top-2 right-2 z-40">
+                                    <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-md border border-white/20 text-white rounded-xl hover:bg-primary h-8 w-8">
+                                      <Settings className="w-4 h-4" />
+                                    </Button>
+                                  </Link>
+                                )}
+
                                 <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                                   ₹{dish.price * 80}
                                 </div>

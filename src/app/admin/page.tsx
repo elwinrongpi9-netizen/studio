@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useCollection } from "@/firebase";
 import { collection, doc, updateDoc, query, orderBy, setDoc, limit, onSnapshot } from "firebase/firestore";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { Restaurant, WithdrawalRequest, Dish } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,7 +27,6 @@ import {
   Package,
   Plus,
   Flame,
-  Image as ImageIcon,
   Save,
   Settings2,
   Trash2,
@@ -35,25 +34,28 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 const ADMIN_EMAIL = "junakipi@gmail.com";
 const RINGTONE_URL = "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"; 
 
-export default function AdminPage() {
+function AdminDashboardContent() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
+  const paramResId = searchParams.get("resId");
+
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastOrderIdRef = useRef<string | null>(null);
 
-  const [selectedResId, setSelectedResId] = useState("");
+  const [selectedResId, setSelectedResId] = useState(paramResId || "");
   const [newDish, setNewDish] = useState<Partial<Dish>>({
     name: "",
     description: "",
@@ -87,6 +89,12 @@ export default function AdminPage() {
   const selectedRestaurant = useMemo(() => {
     return restaurants?.find(r => r.id === selectedResId);
   }, [restaurants, selectedResId]);
+
+  useEffect(() => {
+    if (paramResId) {
+      setSelectedResId(paramResId);
+    }
+  }, [paramResId]);
 
   useEffect(() => {
     if (!firestore || !user || user.email !== ADMIN_EMAIL) return;
@@ -285,7 +293,7 @@ export default function AdminPage() {
           )}
         </div>
 
-        <Tabs defaultValue="payments" className="space-y-8">
+        <Tabs defaultValue={paramResId ? "menu" : "payments"} className="space-y-8">
           <TabsList className="bg-card p-1.5 rounded-[1.5rem] h-16 w-full md:w-auto border border-border/50">
             <TabsTrigger value="payments" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
               <ShoppingBag className="w-4 h-4" /> Orders
@@ -697,5 +705,13 @@ export default function AdminPage() {
         </Tabs>
       </main>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>}>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }
