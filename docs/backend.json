@@ -71,6 +71,17 @@
         "number": { "type": "number" }
       },
       "required": ["periodId", "number"]
+    },
+    "Inspiration": {
+      "title": "Inspiration",
+      "description": "A featured food category shown on the home page.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "image": { "type": "string" },
+        "hint": { "type": "string" }
+      },
+      "required": ["name", "image"]
     }
   },
   "auth": {
@@ -96,6 +107,10 @@
     "/wingoConfig/{configId}": {
       "schema": "#/backend/entities/WingoConfig",
       "description": "Admin controlled Wingo results."
+    },
+    "/inspirations/{inspirationId}": {
+      "schema": "#/backend/entities/Inspiration",
+      "description": "Featured categories on the home page."
     }
   }
 }

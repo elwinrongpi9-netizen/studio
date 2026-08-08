@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -10,7 +11,7 @@ import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs } from "firebase/firestore";
 import { RESTAURANTS as MOCK_RESTAURANTS } from "@/lib/mock-data";
-import { Restaurant } from "@/lib/types";
+import { Restaurant, Inspiration } from "@/lib/types";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import {
   Dialog,
@@ -24,32 +25,12 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 
-const INSPIRATIONS = [
-  { 
-    name: "Biryani", 
-    img: PlaceHolderImages.find(img => img.id === "biryani")?.imageUrl || "https://picsum.photos/seed/biry/400/300", 
-    hint: "chicken biryani" 
-  },
-  { 
-    name: "Chilli", 
-    img: PlaceHolderImages.find(img => img.id === "chilli-chicken")?.imageUrl || "https://picsum.photos/seed/chilli/400/300", 
-    hint: "chilli chicken" 
-  },
-  { 
-    name: "Noodles", 
-    img: PlaceHolderImages.find(img => img.id === "noodles")?.imageUrl || "https://picsum.photos/seed/cn/400/300", 
-    hint: "chinese noodles" 
-  },
-  { 
-    name: "Chicken 65", 
-    img: PlaceHolderImages.find(img => img.id === "chicken-65")?.imageUrl || "https://picsum.photos/seed/c65/400/300", 
-    hint: "fried chicken" 
-  },
-  { 
-    name: "Fried Rice", 
-    img: PlaceHolderImages.find(img => img.id === "fried-rice")?.imageUrl || "https://picsum.photos/seed/cfr/400/300", 
-    hint: "fried rice" 
-  },
+const FALLBACK_INSPIRATIONS = [
+  { name: "Biryani", hint: "chicken biryani" },
+  { name: "Chilli", hint: "chilli chicken" },
+  { name: "Noodles", hint: "chinese noodles" },
+  { name: "Chicken 65", hint: "fried chicken" },
+  { name: "Fried Rice", hint: "fried rice" },
 ];
 
 export default function Home() {
@@ -71,27 +52,54 @@ export default function Home() {
     return query(collection(firestore, "restaurants"), orderBy("name"));
   }, [firestore]);
 
+  const inspirationsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "inspirations"), orderBy("name"));
+  }, [firestore]);
+
   const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
+  const { data: dbInspirations } = useCollection<Inspiration>(inspirationsQuery);
 
   const isSuperAdmin = user?.email === "junakipi@gmail.com";
   const isRestaurantAdmin = !!profile?.managedRestaurantId;
 
   useEffect(() => {
     const seedData = async () => {
-      if (!firestore || (restaurants && restaurants.length > 0)) return;
-      try {
-        const snapshot = await getDocs(collection(firestore, "restaurants"));
-        if (snapshot.empty) {
-          MOCK_RESTAURANTS.forEach(res => {
-            setDoc(doc(firestore, "restaurants", res.id), res, { merge: true });
-          });
+      if (!firestore) return;
+      
+      // Seed Restaurants
+      if (restaurants && restaurants.length === 0) {
+        try {
+          const snapshot = await getDocs(collection(firestore, "restaurants"));
+          if (snapshot.empty) {
+            MOCK_RESTAURANTS.forEach(res => {
+              setDoc(doc(firestore, "restaurants", res.id), res, { merge: true });
+            });
+          }
+        } catch (error) {
+          console.warn("Seeding restaurants skipped", error);
         }
-      } catch (error) {
-        console.warn("Seeding skipped", error);
+      }
+
+      // Seed Inspirations
+      if (dbInspirations && dbInspirations.length === 0) {
+        try {
+          FALLBACK_INSPIRATIONS.forEach((item, index) => {
+            const id = `insp_${index}`;
+            const placeholder = PlaceHolderImages.find(p => p.imageHint.includes(item.name.toLowerCase())) || PlaceHolderImages[0];
+            setDoc(doc(firestore, "inspirations", id), {
+              name: item.name,
+              hint: item.hint,
+              image: placeholder.imageUrl
+            }, { merge: true });
+          });
+        } catch (error) {
+          console.warn("Seeding inspirations skipped", error);
+        }
       }
     };
     seedData();
-  }, [firestore, restaurants]);
+  }, [firestore, restaurants, dbInspirations]);
 
   const handleUpdateLocation = async (address: string) => {
     if (!user || !firestore) {
@@ -221,10 +229,10 @@ export default function Home() {
               <div className="h-0.5 flex-1 mx-10 bg-gradient-to-r from-border/20 via-primary/20 to-border/20 rounded-full" />
             </div>
             <div className="flex gap-10 md:gap-14 overflow-x-auto no-scrollbar pb-8">
-              {INSPIRATIONS.map((item) => (
-                <div key={item.name} className="flex flex-col items-center gap-6 cursor-pointer group flex-shrink-0" onClick={() => setSearchQuery(item.name)}>
+              {dbInspirations?.map((item) => (
+                <div key={item.id} className="flex flex-col items-center gap-6 cursor-pointer group flex-shrink-0" onClick={() => setSearchQuery(item.name)}>
                   <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary transition-all duration-500 bg-white/20 backdrop-blur-md border border-white/30">
-                    <Image src={item.img} alt={item.name} fill unoptimized data-ai-hint={item.hint} className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <Image src={item.image} alt={item.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform duration-700" />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground group-hover:text-primary transition-colors bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full">{item.name}</span>
                 </div>

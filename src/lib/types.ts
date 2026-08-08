@@ -73,3 +73,10 @@ export interface WingoConfig {
   periodId: string;
   number: number;
 }
+
+export interface Inspiration {
+  id: string;
+  name: string;
+  image: string;
+  hint: string;
+}

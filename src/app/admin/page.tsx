@@ -3,9 +3,9 @@
 
 import { Navbar } from "@/components/navbar";
 import { useUser, useFirestore, useCollection, useDoc } from "@/firebase";
-import { collection, doc, updateDoc, query, orderBy, setDoc, limit, onSnapshot } from "firebase/firestore";
+import { collection, doc, updateDoc, query, orderBy, setDoc, limit, onSnapshot, deleteDoc } from "firebase/firestore";
 import { useMemo, useState, useEffect, useRef, Suspense } from "react";
-import { Restaurant, WithdrawalRequest, Dish, UserProfile } from "@/lib/types";
+import { Restaurant, WithdrawalRequest, Dish, UserProfile, Inspiration } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,8 @@ import {
   Loader2,
   Upload,
   UserCheck,
-  Store
+  Store,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -77,6 +78,12 @@ function AdminDashboardContent() {
     inStock: true
   });
 
+  const [newInspiration, setNewInspiration] = useState<Partial<Inspiration>>({
+    name: "",
+    image: "",
+    hint: ""
+  });
+
   const dishImageRefs = useRef<Record<string, string>>({});
 
   const [wingoPeriod, setWingoPeriod] = useState("");
@@ -97,9 +104,15 @@ function AdminDashboardContent() {
     return query(collection(firestore, "phonepe_orders"), orderBy("createdAt", "desc"), limit(100));
   }, [firestore]);
 
+  const inspirationsQuery = useMemo(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "inspirations"), orderBy("name"));
+  }, [firestore]);
+
   const { data: allRestaurants } = useCollection<Restaurant>(restaurantsQuery);
   const { data: withdrawals } = useCollection<WithdrawalRequest>(withdrawalsQuery);
   const { data: phonepeOrders } = useCollection<any>(phonepeOrdersQuery);
+  const { data: inspirations } = useCollection<Inspiration>(inspirationsQuery);
   
   const visibleRestaurants = useMemo(() => {
     if (isSuperAdmin) return allRestaurants;
@@ -129,7 +142,6 @@ function AdminDashboardContent() {
         const orderData = latestOrder.data();
         const orderId = latestOrder.id;
 
-        // If restaurant admin, only ring for their restaurant's orders
         if (isRestaurantAdmin && orderData.restaurantId !== managedResId) return;
 
         if (lastOrderIdRef.current === null) {
@@ -194,25 +206,6 @@ function AdminDashboardContent() {
     toast({ title: `Order ${newStatus}` });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isNewItem: boolean, dishId?: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      if (isNewItem) {
-        setNewDish({ ...newDish, image: base64String });
-      } else if (dishId) {
-        dishImageRefs.current[dishId] = base64String;
-        const previewImg = document.getElementById(`preview-${dishId}`) as HTMLImageElement;
-        if (previewImg) previewImg.src = base64String;
-        toast({ title: "Local Photo Ready! 📸", description: "Click Update to save." });
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleAddDish = async () => {
     if (!firestore || !selectedResId || !newDish.name || !newDish.image) {
       toast({ title: "Details or Image missing", variant: "destructive" });
@@ -240,25 +233,6 @@ function AdminDashboardContent() {
     setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300", inStock: true });
   };
 
-  const handleUpdateDishFull = async (dishId: string, updatedData: Partial<Dish>) => {
-    if (!firestore || !selectedResId || !selectedRestaurant) return;
-
-    const originalDish = selectedRestaurant.dishes?.find(d => d.id === dishId);
-    const finalImage = dishImageRefs.current[dishId] || 
-                       (updatedData.image && updatedData.image.startsWith('data:') ? updatedData.image : originalDish?.image);
-
-    const updatedDishes = (selectedRestaurant.dishes || []).map(d => 
-      d.id === dishId ? { ...d, ...updatedData, image: finalImage } : d
-    );
-
-    updateDoc(doc(firestore, "restaurants", selectedResId), {
-      dishes: updatedDishes
-    });
-    
-    delete dishImageRefs.current[dishId];
-    toast({ title: "Item Updated! ✨" });
-  };
-
   const handleDeleteDish = async (dishId: string) => {
     if (!firestore || !selectedResId || !selectedRestaurant) return;
 
@@ -270,10 +244,24 @@ function AdminDashboardContent() {
     toast({ title: "Item Removed" });
   };
 
-  const handleUpdateRestaurant = async (data: Partial<Restaurant>) => {
-    if (!firestore || !selectedResId) return;
-    updateDoc(doc(firestore, "restaurants", selectedResId), data);
-    toast({ title: "Restaurant Details Updated! ✨" });
+  const handleAddInspiration = async () => {
+    if (!firestore || !newInspiration.name || !newInspiration.image) {
+      toast({ title: "Name or Image missing", variant: "destructive" });
+      return;
+    }
+    const id = `insp_${Date.now()}`;
+    await setDoc(doc(firestore, "inspirations", id), {
+      ...newInspiration,
+      id
+    });
+    setNewInspiration({ name: "", image: "", hint: "" });
+    toast({ title: "Inspiration Added! ✨" });
+  };
+
+  const handleDeleteInspiration = async (id: string) => {
+    if (!firestore) return;
+    await deleteDoc(doc(firestore, "inspirations", id));
+    toast({ title: "Inspiration Removed" });
   };
 
   if (userLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
@@ -342,6 +330,9 @@ function AdminDashboardContent() {
             </TabsTrigger>
             {isSuperAdmin && (
               <>
+                <TabsTrigger value="inspirations" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
+                  <Sparkles className="w-4 h-4" /> Inspirations
+                </TabsTrigger>
                 <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
                   <Zap className="w-4 h-4" /> Wingo
                 </TabsTrigger>
@@ -415,40 +406,16 @@ function AdminDashboardContent() {
                         <td className="p-6">
                           <div className="flex flex-col gap-2">
                             {(!order.status || order.status === 'Received') && (
-                              <Button 
-                                onClick={() => updateOrderStatus(order, "Preparing")} 
-                                size="sm" 
-                                className="bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
-                              >
-                                <Package className="w-3 h-3 mr-2" /> Accept
-                              </Button>
+                              <Button onClick={() => updateOrderStatus(order, "Preparing")} size="sm" className="bg-orange-500 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"><Package className="w-3 h-3 mr-2" /> Accept</Button>
                             )}
                             {order.status === "Preparing" && (
-                              <Button 
-                                onClick={() => updateOrderStatus(order, "Cooking")} 
-                                size="sm" 
-                                className="bg-yellow-600 hover:bg-yellow-700 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
-                              >
-                                <Flame className="w-3 h-3 mr-2" /> Cook
-                              </Button>
+                              <Button onClick={() => updateOrderStatus(order, "Cooking")} size="sm" className="bg-yellow-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"><Flame className="w-3 h-3 mr-2" /> Cook</Button>
                             )}
                             {order.status === "Cooking" && (
-                              <Button 
-                                onClick={() => updateOrderStatus(order, "On the Way")} 
-                                size="sm" 
-                                className="bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
-                              >
-                                <Truck className="w-3 h-3 mr-2" /> Deliver
-                              </Button>
+                              <Button onClick={() => updateOrderStatus(order, "On the Way")} size="sm" className="bg-blue-500 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"><Truck className="w-3 h-3 mr-2" /> Deliver</Button>
                             )}
                             {order.status === "On the Way" && (
-                              <Button 
-                                onClick={() => updateOrderStatus(order, "Delivered")} 
-                                size="sm" 
-                                className="bg-green-600 hover:bg-green-700 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"
-                              >
-                                <CheckCircle2 className="w-3 h-3 mr-2" /> Complete
-                              </Button>
+                              <Button onClick={() => updateOrderStatus(order, "Delivered")} size="sm" className="bg-green-600 text-white font-black rounded-xl text-[9px] h-8 px-4 uppercase tracking-widest"><CheckCircle2 className="w-3 h-3 mr-2" /> Complete</Button>
                             )}
                           </div>
                         </td>
@@ -461,208 +428,119 @@ function AdminDashboardContent() {
           </TabsContent>
 
           <TabsContent value="menu">
-            <div className="space-y-8">
-              <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
-                <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
-                  <Settings2 className="w-8 h-8 text-primary" /> Restaurant Details
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             <div className="space-y-8">
+                <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
+                  <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
+                    <Settings2 className="w-8 h-8 text-primary" /> Restaurant Selection
+                  </h2>
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Managed Restaurant</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Managing Restaurant</Label>
                       {isSuperAdmin ? (
-                        <select 
-                          value={selectedResId} 
-                          onChange={(e) => setSelectedResId(e.target.value)}
-                          className="w-full h-14 rounded-2xl bg-muted/20 border-2 border-border px-4 font-black text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
+                        <select value={selectedResId} onChange={(e) => setSelectedResId(e.target.value)} className="w-full h-14 rounded-2xl bg-muted/20 border-2 border-border px-4 font-black text-foreground">
                           <option value="">Choose Restaurant</option>
-                          {visibleRestaurants?.map(r => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
+                          {visibleRestaurants?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                         </select>
                       ) : (
-                        <div className="h-14 rounded-2xl bg-muted/20 border-2 border-border px-4 flex items-center font-black text-primary">
-                          {selectedRestaurant?.name || "Accessing..."}
-                        </div>
+                        <div className="h-14 rounded-2xl bg-muted/20 border-2 border-border px-4 flex items-center font-black text-primary">{selectedRestaurant?.name || "Loading..."}</div>
                       )}
                     </div>
-                    {selectedRestaurant && (
-                      <>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Display Name</Label>
-                          <Input 
-                            defaultValue={selectedRestaurant.name}
-                            onBlur={(e) => handleUpdateRestaurant({ name: e.target.value })}
-                            className="h-14 rounded-2xl font-black bg-muted/10 border-border"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Cuisine Description</Label>
-                          <Input 
-                            defaultValue={selectedRestaurant.cuisine}
-                            onBlur={(e) => handleUpdateRestaurant({ cuisine: e.target.value })}
-                            className="h-14 rounded-2xl font-black bg-muted/10 border-border"
-                          />
-                        </div>
-                      </>
-                    )}
                   </div>
-                  <div className="space-y-6">
-                    {selectedRestaurant && (
-                      <>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Cover Image URL</Label>
-                          <Input 
-                            defaultValue={selectedRestaurant.image}
-                            onBlur={(e) => handleUpdateRestaurant({ image: e.target.value })}
-                            className="h-14 rounded-2xl font-black bg-muted/10 border-border"
-                          />
-                        </div>
-                        <div className="relative aspect-video rounded-3xl overflow-hidden shadow-xl border-4 border-primary/10">
-                           <Image src={selectedRestaurant.image} alt="Restaurant" fill unoptimized className="object-cover" />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </Card>
+                </Card>
 
-              {selectedRestaurant && (
-                <>
-                  <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
-                    <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
-                      <Plus className="w-8 h-8 text-primary" /> Add New Item
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Item Name</Label>
-                          <Input 
-                            placeholder="e.g. Chilli Paneer" 
-                            value={newDish.name}
-                            onChange={e => setNewDish({...newDish, name: e.target.value})}
-                            className="h-14 rounded-2xl font-black bg-muted/10 border-border"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price (Rs.)</Label>
-                          <Input 
-                            type="number" 
-                            value={newDish.price}
-                            onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})}
-                            className="h-14 rounded-2xl font-black bg-muted/10 border-border"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full ${newDish.inStock ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-zinc-400'}`} />
-                            <Label className="text-sm font-black text-foreground">Mark as Available</Label>
+                {selectedRestaurant && (
+                  <>
+                    <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
+                      <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
+                        <Plus className="w-8 h-8 text-primary" /> Add New Item
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                          <Input placeholder="Item Name" value={newDish.name} onChange={e => setNewDish({...newDish, name: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                          <Input type="number" placeholder="Price" value={newDish.price} onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                          <div className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border">
+                            <Label className="text-sm font-black">In Stock</Label>
+                            <Switch checked={newDish.inStock} onCheckedChange={checked => setNewDish({...newDish, inStock: checked})} />
                           </div>
-                          <Switch 
-                            checked={newDish.inStock}
-                            onCheckedChange={checked => setNewDish({...newDish, inStock: checked})}
-                          />
+                        </div>
+                        <div className="space-y-6">
+                          <Input placeholder="Image URL" value={newDish.image} onChange={e => setNewDish({...newDish, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                          <div className="relative aspect-square w-24 rounded-2xl overflow-hidden border border-border bg-muted/30">
+                            <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
+                          </div>
                         </div>
                       </div>
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Upload Image</Label>
-                          <div className="grid grid-cols-2 gap-4">
-                             <div className="relative">
-                               <input 
-                                type="file" 
-                                accept="image/*" 
-                                onChange={(e) => handleImageUpload(e, true)}
-                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                               />
-                               <Button variant="outline" className="w-full h-12 rounded-xl border-dashed border-primary/40 font-black text-[10px] flex gap-2">
-                                 <Upload className="w-3 h-3" /> Select Local
-                               </Button>
-                             </div>
-                             <Input 
-                              placeholder="Or paste link..." 
-                              value={newDish.image?.startsWith('data:') ? 'Local Image Attached' : newDish.image}
-                              onChange={e => setNewDish({...newDish, image: e.target.value})}
-                              className="h-12 rounded-xl font-black bg-muted/10 border-border"
-                            />
+                      <Button onClick={handleAddDish} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary text-white">Save Item</Button>
+                    </Card>
+
+                    <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
+                      <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
+                        <Edit3 className="w-8 h-8 text-primary" /> Menu Management
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {selectedRestaurant.dishes?.map((dish) => (
+                          <div key={dish.id} className="bg-muted/10 p-6 rounded-[2rem] border border-border flex gap-6 items-center">
+                            <div className="relative w-20 h-20 rounded-xl overflow-hidden shadow-lg border border-border">
+                              <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-black text-lg uppercase italic text-primary">{dish.name}</h4>
+                              <p className="text-xs font-black text-muted-foreground">Rs. {dish.price}</p>
+                            </div>
+                            <Button onClick={() => handleDeleteDish(dish.id)} variant="ghost" className="text-destructive"><Trash2 className="w-5 h-5" /></Button>
                           </div>
-                        </div>
-                        <div className="relative aspect-square w-full max-w-[120px] rounded-3xl overflow-hidden border-2 border-border mx-auto bg-muted/30">
-                           <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
-                        </div>
+                        ))}
                       </div>
-                    </div>
-                    <Button onClick={handleAddDish} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90 shadow-2xl text-white">
-                      Save Item to Menu
-                    </Button>
-                  </Card>
-
-                  <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
-                    <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
-                      <Edit3 className="w-8 h-8 text-primary" /> Live Menu Editor
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {selectedRestaurant.dishes?.map((dish) => (
-                        <div key={dish.id} className="bg-muted/10 p-8 rounded-[3rem] border border-border flex flex-col gap-6 group hover:border-primary/30 transition-all shadow-sm">
-                          <div className="flex items-start gap-6">
-                            <div className="relative w-24 h-24 rounded-3xl overflow-hidden shadow-lg flex-shrink-0 border border-border bg-white">
-                              <Image id={`preview-${dish.id}`} src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
-                            </div>
-                            <div className="flex-1 space-y-4">
-                              <div className="flex justify-between items-center">
-                                  <h4 className="font-black text-lg uppercase italic text-primary">{dish.name}</h4>
-                                  <button onClick={() => handleDeleteDish(dish.id)} className="text-destructive hover:scale-110 transition-transform p-2">
-                                      <Trash2 className="w-5 h-5" />
-                                  </button>
-                              </div>
-                              
-                              <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-border shadow-sm">
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${dish.inStock !== false ? 'text-green-600' : 'text-zinc-500'}`}>
-                                  {dish.inStock !== false ? '🟢 In Stock' : '⚪ Out of Stock'}
-                                </span>
-                                <Switch 
-                                  id={`stock-switch-${dish.id}`}
-                                  defaultChecked={dish.inStock !== false}
-                                />
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4">
-                                 <Input defaultValue={dish.name} id={`name-input-${dish.id}`} className="h-10 rounded-xl bg-white border-border text-xs font-black" />
-                                 <Input defaultValue={dish.price} id={`price-input-${dish.id}`} type="number" className="h-10 rounded-xl bg-white border-border text-xs font-black" />
-                              </div>
-
-                              <Button 
-                                size="sm" 
-                                className="w-full rounded-2xl h-12 font-black uppercase text-[10px] tracking-widest mt-2 text-white"
-                                onClick={() => {
-                                  const nameInput = document.getElementById(`name-input-${dish.id}`) as HTMLInputElement;
-                                  const priceInput = document.getElementById(`price-input-${dish.id}`) as HTMLInputElement;
-                                  const stockSwitch = document.getElementById(`stock-switch-${dish.id}`) as HTMLButtonElement;
-                                  const inStock = stockSwitch.getAttribute('data-state') === 'checked';
-
-                                  handleUpdateDishFull(dish.id, {
-                                    name: nameInput.value,
-                                    price: parseFloat(priceInput.value),
-                                    inStock: inStock
-                                  });
-                                }}
-                              >
-                                <Save className="w-4 h-4 mr-2" /> Update Item
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                </>
-              )}
-            </div>
+                    </Card>
+                  </>
+                )}
+             </div>
           </TabsContent>
 
           {isSuperAdmin && (
             <>
+              <TabsContent value="inspirations">
+                <div className="space-y-8">
+                  <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
+                    <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
+                      <Plus className="w-8 h-8 text-primary" /> Add New Inspiration
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-6">
+                        <Input placeholder="Category Name (e.g. Biryani)" value={newInspiration.name} onChange={e => setNewInspiration({...newInspiration, name: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                        <Input placeholder="AI Hint (e.g. chicken biryani)" value={newInspiration.hint} onChange={e => setNewInspiration({...newInspiration, hint: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                      </div>
+                      <div className="space-y-6">
+                        <Input placeholder="Image URL" value={newInspiration.image} onChange={e => setNewInspiration({...newInspiration, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                        {newInspiration.image && (
+                           <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border">
+                             <Image src={newInspiration.image} alt="Preview" fill unoptimized className="object-cover" />
+                           </div>
+                        )}
+                      </div>
+                    </div>
+                    <Button onClick={handleAddInspiration} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary text-white">Save Inspiration</Button>
+                  </Card>
+
+                  <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
+                    <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
+                      <Edit3 className="w-8 h-8 text-primary" /> Manage Home Page Featured
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {inspirations?.map((item) => (
+                        <div key={item.id} className="bg-muted/10 p-6 rounded-[2rem] border border-border flex flex-col items-center gap-4 text-center">
+                          <div className="relative w-32 h-32 rounded-[2rem] overflow-hidden shadow-xl border border-border">
+                            <Image src={item.image} alt={item.name} fill unoptimized className="object-cover" />
+                          </div>
+                          <h4 className="font-black text-xl uppercase italic text-primary">{item.name}</h4>
+                          <Button onClick={() => handleDeleteInspiration(item.id)} variant="destructive" size="sm" className="rounded-xl px-6 uppercase text-[10px] font-black">Remove</Button>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+              </TabsContent>
+
               <TabsContent value="wingo">
                 <Card className="border border-border bg-card rounded-[4rem] p-12 shadow-2xl max-w-2xl mx-auto">
                   <div className="flex flex-col items-center text-center space-y-4 mb-10">
