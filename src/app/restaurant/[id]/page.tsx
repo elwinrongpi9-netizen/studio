@@ -70,6 +70,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                 src={restaurant.image} 
                 alt={restaurant.name} 
                 fill 
+                unoptimized
                 className="object-cover" 
                 priority
               />
@@ -91,7 +92,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                         <h1 className="text-5xl md:text-8xl font-black tracking-tighter italic uppercase leading-[0.8] drop-shadow-2xl">{restaurant.name}</h1>
                         <p className="text-white/70 text-2xl font-medium tracking-tight italic max-w-2xl">{restaurant.cuisine}</p>
                         
-                        <div className="flex flex-wrap items-center gap-8 pt-4">
+                        <div className="flex wrap items-center gap-8 pt-4">
                           <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/20">
                             <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                             <span className="text-xl font-black">{restaurant.rating}</span>
@@ -148,7 +149,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                             <div key={dish.id} className="bg-card rounded-[3rem] p-6 shadow-2xl border-2 border-border/50 flex flex-col sm:flex-row gap-6 group hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 relative overflow-hidden">
                               <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
                               <div className="relative w-full sm:w-40 h-40 rounded-[2rem] overflow-hidden flex-shrink-0 shadow-xl">
-                                <Image src={dish.image} alt={dish.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform duration-700" />
                                 
                                 {/* Admin Edit Overlay */}
                                 {isAdmin && (
@@ -160,7 +161,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                 )}
 
                                 <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                                  ₹{dish.price * 80}
+                                  ₹{(dish.price * 80).toFixed(0)}
                                 </div>
                               </div>
                               <div className="flex-1 flex flex-col justify-between py-2 relative z-10">

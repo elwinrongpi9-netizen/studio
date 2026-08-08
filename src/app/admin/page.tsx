@@ -182,6 +182,11 @@ function AdminDashboardContent() {
       } else if (dishId) {
         const imgInput = document.getElementById(`img-input-${dishId}`) as HTMLInputElement;
         if (imgInput) imgInput.value = base64String;
+        
+        // Update live preview in editor cards
+        const previewImg = document.getElementById(`preview-${dishId}`) as HTMLImageElement;
+        if (previewImg) previewImg.src = base64String;
+
         toast({ title: "Local Photo Prepared! 📸", description: "Click Update Selection to save." });
       }
     };
@@ -492,7 +497,7 @@ function AdminDashboardContent() {
                           />
                         </div>
                         <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-4 border-primary/20">
-                           <Image src={selectedRestaurant.image} alt="Restaurant" fill className="object-cover" unoptimized />
+                           <Image src={selectedRestaurant.image} alt="Restaurant" fill unoptimized className="object-cover" />
                         </div>
                       </>
                     )}
@@ -568,7 +573,7 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div className="relative aspect-square w-full max-w-[150px] rounded-3xl overflow-hidden border-2 border-border/50 mx-auto bg-muted">
-                       <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill className="object-cover" unoptimized />
+                       <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill unoptimized className="object-cover" />
                     </div>
                   </div>
                 </div>
@@ -588,7 +593,7 @@ function AdminDashboardContent() {
                       <div key={dish.id} className="bg-[#0a0a0a] p-8 rounded-[3rem] border border-border/50 flex flex-col gap-6 group hover:border-primary/30 transition-all">
                         <div className="flex items-start gap-6">
                           <div className="relative w-28 h-28 rounded-3xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
-                            <Image src={dish.image} alt={dish.name} fill className="object-cover" unoptimized />
+                            <Image id={`preview-${dish.id}`} src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
                           </div>
                           <div className="flex-1 space-y-4">
                             <div className="flex justify-between items-center">

@@ -57,6 +57,7 @@ export function DishCard({ dish }: DishCardProps) {
           src={dish.image}
           alt={dish.name}
           fill
+          unoptimized
           className="object-cover scale-105 group-hover:scale-110 transition-transform duration-1000"
           data-ai-hint="premium dish"
         />
@@ -75,7 +76,7 @@ export function DishCard({ dish }: DishCardProps) {
         </div>
         
         <div className="absolute bottom-5 right-5 bg-black/80 backdrop-blur-xl text-white px-6 py-3 rounded-[1.5rem] text-xl font-black shadow-2xl border border-white/10 italic tracking-tighter">
-          ₹{dish.price * 80}
+          ₹{(dish.price * 80).toFixed(0)}
         </div>
         
         {quantity > 0 && (
