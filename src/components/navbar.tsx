@@ -124,7 +124,7 @@ export function Navbar() {
           displayName: email.split('@')[0],
           email: email,
           phoneNumber: phone,
-          role: "user",
+          role: email === ADMIN_EMAIL ? "admin" : "user",
           walletBalance: 0,
           wingoBalance: 0,
           createdAt: serverTimestamp(),
