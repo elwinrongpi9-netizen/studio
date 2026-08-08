@@ -72,9 +72,22 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
   return (
     <>
       <Navbar />
-      <main className="flex-1 pb-32">
+      <main className="flex-1 pb-32 relative min-h-screen">
+        {/* Full Page Fixed Background */}
+        <div className="fixed inset-0 z-0">
+          <Image 
+            src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
+            alt="Menu Background"
+            fill
+            className="object-cover opacity-60"
+            priority
+            unoptimized
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-background/95 via-background/80 to-primary/5" />
+        </div>
+
         {restaurant && (
-          <>
+          <div className="relative z-10">
             <div className="relative h-[50vh] min-h-[500px] w-full border-b-8 border-primary/20">
               <Image 
                 src={restaurant.image} 
@@ -128,7 +141,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
             <div className="container mx-auto px-4 py-20 max-w-7xl">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
                 <aside className="lg:col-span-3">
-                  <div className="sticky top-32 space-y-8 bg-card rounded-[3rem] p-8 shadow-2xl border border-border/50">
+                  <div className="sticky top-32 space-y-8 bg-white/60 backdrop-blur-xl rounded-[3rem] p-8 shadow-2xl border border-white/30">
                     <div className="space-y-3">
                       <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-primary px-4 mb-6 leading-none">Categories</h3>
                       {categories.map((cat) => (
@@ -136,7 +149,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                           key={cat}
                           onClick={() => setActiveCategory(cat)}
                           className={`w-full text-left px-6 py-4 rounded-[1.2rem] text-sm font-black uppercase tracking-widest transition-all duration-300 ${
-                            activeCategory === cat ? "bg-primary text-white shadow-xl shadow-primary/20 scale-105" : "hover:bg-primary/5 hover:text-primary opacity-60 hover:opacity-100"
+                            activeCategory === cat ? "bg-primary text-white shadow-xl shadow-primary/20 scale-105" : "hover:bg-primary/5 hover:text-primary opacity-60 hover:opacity-100 bg-white/30"
                           }`}
                         >
                           {cat}
@@ -151,13 +164,13 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                     {restaurant.dishes && categories.filter(c => c !== "All" && (activeCategory === "All" || activeCategory === c)).map((cat) => (
                       <div key={cat} className="animate-in fade-in slide-in-from-bottom-8 duration-700">
                         <div className="flex items-center gap-6 mb-12">
-                          <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none whitespace-nowrap">{cat}</h2>
+                          <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none whitespace-nowrap text-foreground bg-white/40 backdrop-blur-md px-8 py-3 rounded-full border border-white/20">{cat}</h2>
                           <div className="h-0.5 w-full bg-gradient-to-r from-primary/30 to-transparent" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                           {canManage && (activeCategory === "All" || activeCategory === cat) && (
                             <Link href={`/admin?resId=${id}`} className="group h-full">
-                              <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[300px] shadow-sm">
+                              <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[300px] shadow-sm backdrop-blur-sm">
                                 <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform group-hover:rotate-90">
                                   <Plus className="w-10 h-10 text-primary" />
                                 </div>
@@ -168,9 +181,9 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                           )}
                           
                           {restaurant.dishes.filter(d => d.category === cat).map((dish) => (
-                            <div key={dish.id} className={`bg-card rounded-[3rem] p-6 shadow-2xl border-2 border-border/50 flex flex-col sm:flex-row gap-6 group hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 relative overflow-hidden ${dish.inStock === false ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+                            <div key={dish.id} className={`bg-white/60 backdrop-blur-xl rounded-[3rem] p-6 shadow-2xl border border-white/30 flex flex-col sm:flex-row gap-6 group hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 relative overflow-hidden ${dish.inStock === false ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                               <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
-                              <div className="relative w-full sm:w-40 h-40 rounded-[2rem] overflow-hidden flex-shrink-0 shadow-xl">
+                              <div className="relative w-full sm:w-40 h-40 rounded-[2rem] overflow-hidden flex-shrink-0 shadow-xl border border-white/20">
                                 <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform duration-700" />
                                 
                                 {/* Admin Edit Overlay */}
@@ -186,7 +199,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                   Rs. {dish.price.toFixed(0)}
                                 </div>
                               </div>
-                              <div className="flex-1 flex flex-col justify-between py-2 relative z-10">
+                              <div className="flex-1 flex flex-col justify-between py-2 relative z-10 text-foreground">
                                 <div>
                                   <div className="flex justify-between items-start gap-2 mb-2">
                                     <h4 className="font-black text-2xl group-hover:text-primary transition-colors uppercase italic tracking-tighter leading-none">{dish.name}</h4>
@@ -216,7 +229,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                     <Button 
                                       size="sm" 
                                       disabled={dish.inStock === false}
-                                      className="rounded-[1.2rem] font-black px-8 h-12 shadow-xl hover:scale-105 active:scale-95 transition-all uppercase text-[10px] tracking-widest"
+                                      className="rounded-[1.2rem] font-black px-8 h-12 shadow-xl hover:scale-105 active:scale-95 transition-all uppercase text-[10px] tracking-widest text-white"
                                       onClick={() => handleAddToCart(dish)}
                                     >
                                       <Plus className="w-4 h-4 mr-2" /> {dish.inStock === false ? 'Sold Out' : 'Select'}
@@ -233,7 +246,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </main>
 

@@ -138,21 +138,23 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="flex-1 pb-20 bg-background">
-        <section className="relative pt-24 pb-32 overflow-hidden border-b border-border/10 min-h-[85vh] flex items-center">
-          <div className="absolute inset-0 z-0">
-            <Image 
-              src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
-              alt="Background"
-              fill
-              className="object-cover opacity-60"
-              priority
-              unoptimized
-              data-ai-hint="noodles chinese"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-background/90 via-background/60 to-primary/5" />
-          </div>
+      <main className="flex-1 pb-20 relative min-h-screen">
+        {/* Full Page Background Image */}
+        <div className="fixed inset-0 z-0">
+          <Image 
+            src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
+            alt="Full Background"
+            fill
+            className="object-cover opacity-60"
+            priority
+            unoptimized
+            data-ai-hint="noodles chinese"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-background/95 via-background/80 to-primary/5" />
+        </div>
 
+        {/* Hero Section */}
+        <section className="relative pt-24 pb-32 overflow-hidden min-h-[85vh] flex items-center z-10">
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
             <div className="flex flex-col items-center text-center">
               <div className="inline-flex items-center gap-2 bg-primary/20 px-4 py-2 rounded-full border border-primary/30 mb-8 animate-in fade-in slide-in-from-top-4 duration-700 backdrop-blur-sm">
@@ -160,12 +162,12 @@ export default function Home() {
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Original Karbi Flavors</span>
               </div>
               
-              <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter italic uppercase leading-[0.9] drop-shadow-sm">
+              <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter italic uppercase leading-[0.9] drop-shadow-sm text-foreground">
                 KARBI<br />
                 <span className="text-primary not-italic">ZOMATO</span>
               </h1>
               
-              <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/40 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40">
+              <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/40 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40 shadow-sm">
                 Experience premium authentic flavors from <span className="text-primary font-black italic">Karbi Anglong's Master of the Wok</span>.
               </p>
 
@@ -183,12 +185,12 @@ export default function Home() {
                       <ChevronDown className="w-5 h-5 ml-auto text-muted-foreground opacity-50" />
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="rounded-[3rem] p-10 bg-white shadow-2xl">
+                  <DialogContent className="rounded-[3rem] p-10 bg-white shadow-2xl border-none">
                     <DialogHeader className="mb-6">
                       <DialogTitle className="text-3xl font-black italic uppercase text-center">Select Delivery Area</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6">
-                      <Button onClick={() => handleUpdateLocation("Detected Location (GPS)")} className="w-full h-14 rounded-2xl bg-primary font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3">
+                      <Button onClick={() => handleUpdateLocation("Detected Location (GPS)")} className="w-full h-14 rounded-2xl bg-primary font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 text-white">
                         <Navigation className="w-5 h-5" /> Detect My Location
                       </Button>
                       <div className="flex gap-3">
@@ -205,7 +207,7 @@ export default function Home() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search signature dishes, appetizers..." 
-                    className="w-full pl-20 pr-8 py-7 bg-transparent focus:outline-none text-xl font-bold placeholder:italic"
+                    className="w-full pl-20 pr-8 py-7 bg-transparent focus:outline-none text-xl font-bold placeholder:italic text-foreground"
                   />
                 </div>
               </div>
@@ -213,19 +215,19 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="container mx-auto px-4 py-20 max-w-7xl">
+        <div className="container mx-auto px-4 py-20 max-w-7xl relative z-10">
           <section className="mb-24">
             <div className="flex items-center justify-between mb-12">
-              <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase">Signature Inspirations</h2>
+              <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-foreground bg-white/40 backdrop-blur-md px-8 py-4 rounded-full border border-white/20">Signature Inspirations</h2>
               <div className="h-0.5 flex-1 mx-10 bg-gradient-to-r from-border/20 via-primary/20 to-border/20 rounded-full" />
             </div>
             <div className="flex gap-10 md:gap-14 overflow-x-auto no-scrollbar pb-8">
               {INSPIRATIONS.map((item) => (
                 <div key={item.name} className="flex flex-col items-center gap-6 cursor-pointer group flex-shrink-0" onClick={() => setSearchQuery(item.name)}>
-                  <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary transition-all duration-500">
+                  <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary transition-all duration-500 bg-white/20 backdrop-blur-md border border-white/30">
                     <Image src={item.img} alt={item.name} fill unoptimized data-ai-hint={item.hint} className="object-cover group-hover:scale-110 transition-transform duration-700" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground group-hover:text-primary transition-colors">{item.name}</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground group-hover:text-primary transition-colors bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full">{item.name}</span>
                 </div>
               ))}
             </div>
@@ -234,8 +236,8 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-9">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
-                <div>
-                  <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4">The Master Menu</h2>
+                <div className="bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 flex-1">
+                  <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4 text-foreground">The Master Menu</h2>
                   <p className="text-muted-foreground font-medium italic">Handpicked premium dishes for the finest taste in Diphu.</p>
                 </div>
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
@@ -244,7 +246,7 @@ export default function Home() {
                       key={cat}
                       variant={activeCategory === cat ? "default" : "outline"}
                       onClick={() => setActiveCategory(cat)}
-                      className={`rounded-[1.2rem] font-black uppercase text-[10px] px-8 h-12 tracking-widest ${activeCategory === cat ? 'bg-primary shadow-xl' : 'opacity-60'}`}
+                      className={`rounded-[1.2rem] font-black uppercase text-[10px] px-8 h-12 tracking-widest shadow-sm ${activeCategory === cat ? 'bg-primary text-white shadow-xl' : 'bg-white/60 backdrop-blur-md border-white/40 opacity-80'}`}
                     >
                       {cat}
                     </Button>
@@ -255,7 +257,7 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-16">
                 {(isSuperAdmin || isRestaurantAdmin) && !searchQuery && (
                   <Link href={isSuperAdmin ? "/admin" : `/admin?resId=${profile?.managedRestaurantId}`} className="group h-full">
-                    <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+                    <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[400px] backdrop-blur-sm">
                       <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-90 transition-all">
                         <Plus className="w-12 h-12 text-primary" />
                       </div>
@@ -273,7 +275,7 @@ export default function Home() {
             
             <aside className="lg:col-span-3 space-y-12">
               <AIRecommendations />
-              <div className="bg-gradient-to-br from-white to-background rounded-[3.5rem] p-10 border-2 border-primary/10 shadow-xl relative overflow-hidden group">
+              <div className="bg-white/60 backdrop-blur-2xl rounded-[3.5rem] p-10 border border-white/30 shadow-2xl relative overflow-hidden group">
                  <Zap className="w-12 h-12 text-primary mb-6" />
                  <h3 className="font-black text-2xl italic mb-4 uppercase tracking-tighter">Elite Delivery</h3>
                  <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive Diphu market priority. Your meal arrives in peak condition.</p>
