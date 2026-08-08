@@ -6,6 +6,7 @@ export interface Dish {
   price: number;
   image: string;
   category: string;
+  inStock?: boolean;
 }
 
 export interface Restaurant {

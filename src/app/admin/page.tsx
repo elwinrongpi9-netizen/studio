@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { 
   ShieldCheck, 
   Zap, 
@@ -64,7 +65,8 @@ function AdminDashboardContent() {
     description: "",
     price: 0,
     category: "Starters",
-    image: "https://picsum.photos/seed/newdish/400/300"
+    image: "https://picsum.photos/seed/newdish/400/300",
+    inStock: true
   });
 
   const [wingoPeriod, setWingoPeriod] = useState("");
@@ -183,7 +185,6 @@ function AdminDashboardContent() {
         const imgInput = document.getElementById(`img-input-${dishId}`) as HTMLInputElement;
         if (imgInput) imgInput.value = base64String;
         
-        // Update live preview in editor cards
         const previewImg = document.getElementById(`preview-${dishId}`) as HTMLImageElement;
         if (previewImg) previewImg.src = base64String;
 
@@ -206,7 +207,8 @@ function AdminDashboardContent() {
       ...newDish, 
       id: `dish_${Date.now()}`,
       description: newDish.description || "",
-      price: newDish.price || 0
+      price: newDish.price || 0,
+      inStock: newDish.inStock ?? true
     } as Dish;
     
     const updatedDishes = [...(res.dishes || []), dishToAdd];
@@ -216,7 +218,7 @@ function AdminDashboardContent() {
     });
     
     toast({ title: "Item Added! 🎉" });
-    setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300" });
+    setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300", inStock: true });
   };
 
   const handleUpdateDishFull = async (dishId: string, updatedData: Partial<Dish>) => {
@@ -530,13 +532,14 @@ function AdminDashboardContent() {
                         className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Category</Label>
-                      <Input 
-                        placeholder="e.g. Starters" 
-                        value={newDish.category}
-                        onChange={e => setNewDish({...newDish, category: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
+                    <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-2xl border border-white/10">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-black">In Stock</Label>
+                        <p className="text-[10px] text-muted-foreground">Is this item currently available?</p>
+                      </div>
+                      <Switch 
+                        checked={newDish.inStock}
+                        onCheckedChange={checked => setNewDish({...newDish, inStock: checked})}
                       />
                     </div>
                   </div>
@@ -594,6 +597,11 @@ function AdminDashboardContent() {
                         <div className="flex items-start gap-6">
                           <div className="relative w-28 h-28 rounded-3xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
                             <Image id={`preview-${dish.id}`} src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
+                            {!dish.inStock && (
+                              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white rotate-12 border-2 border-white px-2">Out</span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 space-y-4">
                             <div className="flex justify-between items-center">
@@ -603,6 +611,14 @@ function AdminDashboardContent() {
                                 </button>
                             </div>
                             
+                            <div className="flex items-center justify-between p-3 bg-card rounded-xl border border-white/10">
+                              <span className="text-xs font-black uppercase">In Stock</span>
+                              <Switch 
+                                id={`stock-switch-${dish.id}`}
+                                defaultChecked={dish.inStock !== false}
+                              />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                <div className="space-y-1">
                                  <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Name</Label>
@@ -628,15 +644,6 @@ function AdminDashboardContent() {
                               <Input 
                                 defaultValue={dish.category}
                                 id={`cat-input-${dish.id}`}
-                                className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Description</Label>
-                              <Input 
-                                defaultValue={dish.description}
-                                id={`desc-input-${dish.id}`}
                                 className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
                               />
                             </div>
@@ -672,13 +679,16 @@ function AdminDashboardContent() {
                                 const imgInput = document.getElementById(`img-input-${dish.id}`) as HTMLInputElement;
                                 const descInput = document.getElementById(`desc-input-${dish.id}`) as HTMLInputElement;
                                 const catInput = document.getElementById(`cat-input-${dish.id}`) as HTMLInputElement;
+                                const stockSwitch = document.getElementById(`stock-switch-${dish.id}`) as HTMLButtonElement;
+                                const inStock = stockSwitch.getAttribute('data-state') === 'checked';
                                 
                                 handleUpdateDishFull(dish.id, {
                                   name: nameInput.value,
                                   price: parseFloat(priceInput.value),
                                   image: imgInput.value,
                                   description: descInput.value,
-                                  category: catInput.value
+                                  category: catInput.value,
+                                  inStock: inStock
                                 });
                               }}
                             >
