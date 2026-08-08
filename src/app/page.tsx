@@ -141,17 +141,17 @@ export default function Home() {
       <Navbar />
       <main className="flex-1 pb-20 bg-background text-foreground">
         <section className="relative pt-24 pb-32 overflow-hidden border-b border-border/10 min-h-[85vh] flex items-center">
-          {/* Light Transparent Noodles & Fried Rice Background - Increased visibility */}
+          {/* Light Transparent Noodles & Fried Rice Background - Opacity increased to 60% */}
           <div className="absolute inset-0 z-0">
             <Image 
               src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
               alt="Authentic Chinese Noodles"
               fill
-              className="object-cover opacity-40 grayscale-[0.3]"
+              className="object-cover opacity-60 grayscale-[0.2]"
               priority
               unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-background/70 via-background/40 to-primary/10" />
+            <div className="absolute inset-0 bg-gradient-to-br from-background/70 via-background/30 to-primary/5" />
           </div>
 
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
