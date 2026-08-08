@@ -253,14 +253,18 @@ function AdminDashboardContent() {
 
     if (editingInspiration) {
       await updateDoc(doc(firestore, "inspirations", editingInspiration), {
-        ...newInspiration
+        name: newInspiration.name,
+        image: newInspiration.image,
+        hint: newInspiration.hint || ""
       });
       toast({ title: "Inspiration Updated! ✨" });
     } else {
       const id = `insp_${Date.now()}`;
       await setDoc(doc(firestore, "inspirations", id), {
-        ...newInspiration,
-        id
+        id,
+        name: newInspiration.name,
+        image: newInspiration.image,
+        hint: newInspiration.hint || ""
       });
       toast({ title: "Inspiration Added! ✨" });
     }
@@ -551,14 +555,17 @@ function AdminDashboardContent() {
                           <Input placeholder="URL for photo" value={newInspiration.image} onChange={e => setNewInspiration({...newInspiration, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
                         </div>
                         {newInspiration.image && (
-                           <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-lg">
+                           <div className="relative w-48 h-48 rounded-[2rem] overflow-hidden border-4 border-primary/20 shadow-2xl mt-4">
                              <Image src={newInspiration.image} alt="Preview" fill unoptimized className="object-cover" />
+                             <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                               <span className="text-[8px] font-black text-white uppercase tracking-widest">Global Live Preview</span>
+                             </div>
                            </div>
                         )}
                       </div>
                     </div>
                     <Button onClick={handleSaveInspiration} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary text-white shadow-xl shadow-primary/20">
-                      {editingInspiration ? "Update Inspiration" : "Save Inspiration"}
+                      {editingInspiration ? "Update Inspiration Globally" : "Save Inspiration Globally"}
                     </Button>
                   </Card>
 

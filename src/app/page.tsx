@@ -81,13 +81,14 @@ export default function Home() {
         }
       }
 
-      // Seed Inspirations
+      // Seed Inspirations if Firestore collection is empty
       if (dbInspirations && dbInspirations.length === 0) {
         try {
           FALLBACK_INSPIRATIONS.forEach((item, index) => {
             const id = `insp_${index}`;
             const placeholder = PlaceHolderImages.find(p => p.imageHint.includes(item.name.toLowerCase())) || PlaceHolderImages[0];
             setDoc(doc(firestore, "inspirations", id), {
+              id,
               name: item.name,
               hint: item.hint,
               image: placeholder.imageUrl
