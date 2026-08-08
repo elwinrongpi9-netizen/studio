@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -73,11 +74,14 @@ export default function Home() {
       return;
     }
     try {
-      await updateDoc(doc(firestore, "users", user.uid), {
+      // Use setDoc with merge to ensure doc exists
+      await setDoc(doc(firestore, "users", user.uid), {
         address: address
-      });
+      }, { merge: true });
+      
       toast({ title: "Location Updated! 📍", description: address });
       setIsLocationOpen(false);
+      setManualAddress("");
     } catch (e) {
       toast({ variant: "destructive", title: "Failed to update location" });
     }
@@ -91,7 +95,7 @@ export default function Home() {
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const mockAddress = `Area tracked near ${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
+        const mockAddress = `Area near ${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
         await handleUpdateLocation(mockAddress);
       },
       (error) => {
@@ -136,7 +140,6 @@ export default function Home() {
     <>
       <Navbar />
       <main className="flex-1 pb-20 bg-background text-foreground">
-        {/* Premium Hero Section */}
         <section className="relative pt-24 pb-32 overflow-hidden border-b border-border/10">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background opacity-50" />
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
@@ -157,7 +160,6 @@ export default function Home() {
 
               <div className="flex flex-col md:flex-row w-full max-w-4xl bg-card rounded-[3rem] border-2 border-border/50 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden ring-4 ring-primary/5 transition-all hover:ring-primary/10 group">
                 
-                {/* Location Selector Trigger */}
                 <Dialog open={isLocationOpen} onOpenChange={setIsLocationOpen}>
                   <DialogTrigger asChild>
                     <div className="flex items-center px-8 py-7 md:border-r-2 border-b md:border-b-0 min-w-[280px] bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer">
@@ -324,7 +326,7 @@ export default function Home() {
               <p className="text-muted-foreground font-medium max-w-sm italic">The pinnacle of authentic flavors in Karbi Anglong. Premium quality, every single time.</p>
             </div>
             <div className="flex flex-col md:items-end gap-2">
-              <span className="text-[11px] font-black uppercase text-foreground tracking-[0.4em]">Establishment</span>
+              <span className="text-11px font-black uppercase text-foreground tracking-[0.4em]">Establishment</span>
               <span className="text-sm font-bold text-muted-foreground">Diphu • Karbi Anglong • Assam</span>
             </div>
           </div>
