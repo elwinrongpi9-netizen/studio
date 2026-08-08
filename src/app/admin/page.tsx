@@ -36,7 +36,8 @@ import {
   Upload,
   UserCheck,
   Store,
-  Sparkles
+  Sparkles,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -78,13 +79,13 @@ function AdminDashboardContent() {
     inStock: true
   });
 
+  // Inspiration Form State
   const [newInspiration, setNewInspiration] = useState<Partial<Inspiration>>({
     name: "",
     image: "",
     hint: ""
   });
-
-  const dishImageRefs = useRef<Record<string, string>>({});
+  const [editingInspiration, setEditingInspiration] = useState<string | null>(null);
 
   const [wingoPeriod, setWingoPeriod] = useState("");
   const [wingoNumber, setWingoNumber] = useState("");
@@ -244,18 +245,38 @@ function AdminDashboardContent() {
     toast({ title: "Item Removed" });
   };
 
-  const handleAddInspiration = async () => {
+  const handleSaveInspiration = async () => {
     if (!firestore || !newInspiration.name || !newInspiration.image) {
       toast({ title: "Name or Image missing", variant: "destructive" });
       return;
     }
-    const id = `insp_${Date.now()}`;
-    await setDoc(doc(firestore, "inspirations", id), {
-      ...newInspiration,
-      id
-    });
+
+    if (editingInspiration) {
+      await updateDoc(doc(firestore, "inspirations", editingInspiration), {
+        ...newInspiration
+      });
+      toast({ title: "Inspiration Updated! ✨" });
+    } else {
+      const id = `insp_${Date.now()}`;
+      await setDoc(doc(firestore, "inspirations", id), {
+        ...newInspiration,
+        id
+      });
+      toast({ title: "Inspiration Added! ✨" });
+    }
+    
     setNewInspiration({ name: "", image: "", hint: "" });
-    toast({ title: "Inspiration Added! ✨" });
+    setEditingInspiration(null);
+  };
+
+  const handleEditInspiration = (item: Inspiration) => {
+    setNewInspiration({
+      name: item.name,
+      image: item.image,
+      hint: item.hint
+    });
+    setEditingInspiration(item.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteInspiration = async (id: string) => {
@@ -502,24 +523,43 @@ function AdminDashboardContent() {
               <TabsContent value="inspirations">
                 <div className="space-y-8">
                   <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
-                    <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
-                      <Plus className="w-8 h-8 text-primary" /> Add New Inspiration
-                    </h2>
+                    <div className="flex items-center justify-between mb-8">
+                      <h2 className="text-3xl font-black italic flex items-center gap-3 uppercase tracking-tighter text-foreground">
+                        {editingInspiration ? <Edit3 className="w-8 h-8 text-primary" /> : <Plus className="w-8 h-8 text-primary" />}
+                        {editingInspiration ? "Edit Inspiration" : "Add New Inspiration"}
+                      </h2>
+                      {editingInspiration && (
+                        <Button variant="ghost" onClick={() => { setEditingInspiration(null); setNewInspiration({ name: "", image: "", hint: "" }); }} className="text-muted-foreground">
+                          <X className="w-5 h-5 mr-2" /> Cancel Edit
+                        </Button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-6">
-                        <Input placeholder="Category Name (e.g. Biryani)" value={newInspiration.name} onChange={e => setNewInspiration({...newInspiration, name: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
-                        <Input placeholder="AI Hint (e.g. chicken biryani)" value={newInspiration.hint} onChange={e => setNewInspiration({...newInspiration, hint: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Category Name</Label>
+                          <Input placeholder="e.g. Biryani" value={newInspiration.name} onChange={e => setNewInspiration({...newInspiration, name: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">AI Search Hint</Label>
+                          <Input placeholder="e.g. chicken biryani" value={newInspiration.hint} onChange={e => setNewInspiration({...newInspiration, hint: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                        </div>
                       </div>
                       <div className="space-y-6">
-                        <Input placeholder="Image URL" value={newInspiration.image} onChange={e => setNewInspiration({...newInspiration, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
+                          <Input placeholder="URL for photo" value={newInspiration.image} onChange={e => setNewInspiration({...newInspiration, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
+                        </div>
                         {newInspiration.image && (
-                           <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border">
+                           <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-lg">
                              <Image src={newInspiration.image} alt="Preview" fill unoptimized className="object-cover" />
                            </div>
                         )}
                       </div>
                     </div>
-                    <Button onClick={handleAddInspiration} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary text-white">Save Inspiration</Button>
+                    <Button onClick={handleSaveInspiration} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary text-white shadow-xl shadow-primary/20">
+                      {editingInspiration ? "Update Inspiration" : "Save Inspiration"}
+                    </Button>
                   </Card>
 
                   <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
@@ -528,12 +568,15 @@ function AdminDashboardContent() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {inspirations?.map((item) => (
-                        <div key={item.id} className="bg-muted/10 p-6 rounded-[2rem] border border-border flex flex-col items-center gap-4 text-center">
-                          <div className="relative w-32 h-32 rounded-[2rem] overflow-hidden shadow-xl border border-border">
+                        <div key={item.id} className="bg-muted/10 p-6 rounded-[2rem] border border-border flex flex-col items-center gap-4 text-center group transition-all hover:bg-muted/20">
+                          <div className="relative w-32 h-32 rounded-[2rem] overflow-hidden shadow-xl border border-border group-hover:scale-105 transition-transform">
                             <Image src={item.image} alt={item.name} fill unoptimized className="object-cover" />
                           </div>
                           <h4 className="font-black text-xl uppercase italic text-primary">{item.name}</h4>
-                          <Button onClick={() => handleDeleteInspiration(item.id)} variant="destructive" size="sm" className="rounded-xl px-6 uppercase text-[10px] font-black">Remove</Button>
+                          <div className="flex gap-2 w-full">
+                            <Button onClick={() => handleEditInspiration(item)} variant="outline" size="sm" className="flex-1 rounded-xl uppercase text-[10px] font-black border-primary/20 text-primary">Edit</Button>
+                            <Button onClick={() => handleDeleteInspiration(item.id)} variant="destructive" size="sm" className="flex-1 rounded-xl uppercase text-[10px] font-black">Remove</Button>
+                          </div>
                         </div>
                       ))}
                     </div>
