@@ -70,6 +70,9 @@ function AdminDashboardContent() {
     inStock: true
   });
 
+  // Track image data locally to avoid overwriting with placeholder text
+  const dishImageRefs = useRef<Record<string, string>>({});
+
   const [wingoPeriod, setWingoPeriod] = useState("");
   const [wingoNumber, setWingoNumber] = useState("");
 
@@ -183,13 +186,13 @@ function AdminDashboardContent() {
       if (isNewItem) {
         setNewDish({ ...newDish, image: base64String });
       } else if (dishId) {
-        const imgInput = document.getElementById(`img-input-${dishId}`) as HTMLInputElement;
-        if (imgInput) imgInput.value = base64String;
+        // Store the actual base64 in our ref to avoid input text confusion
+        dishImageRefs.current[dishId] = base64String;
         
         const previewImg = document.getElementById(`preview-${dishId}`) as HTMLImageElement;
         if (previewImg) previewImg.src = base64String;
 
-        toast({ title: "Local Photo Prepared! 📸", description: "Click Update Selection to save." });
+        toast({ title: "Local Photo Ready! 📸", description: "Click Update Selection to save." });
       }
     };
     reader.readAsDataURL(file);
@@ -225,13 +228,20 @@ function AdminDashboardContent() {
   const handleUpdateDishFull = async (dishId: string, updatedData: Partial<Dish>) => {
     if (!firestore || !selectedResId || !selectedRestaurant) return;
 
+    // Use the base64 from our ref if it exists, otherwise use the existing one or URL from input
+    const finalImage = dishImageRefs.current[dishId] || updatedData.image;
+
     const updatedDishes = (selectedRestaurant.dishes || []).map(d => 
-      d.id === dishId ? { ...d, ...updatedData } : d
+      d.id === dishId ? { ...d, ...updatedData, image: finalImage } : d
     );
 
     updateDoc(doc(firestore, "restaurants", selectedResId), {
       dishes: updatedDishes
     });
+    
+    // Clear the ref after saving
+    delete dishImageRefs.current[dishId];
+    
     toast({ title: "Item Updated Successfully! ✨" });
   };
 
@@ -679,6 +689,15 @@ function AdminDashboardContent() {
                               </div>
                             </div>
 
+                            <div className="space-y-1">
+                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Description</Label>
+                              <Input 
+                                defaultValue={dish.description}
+                                id={`desc-input-${dish.id}`}
+                                className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
+                              />
+                            </div>
+
                             <Button 
                               size="sm" 
                               className="w-full rounded-2xl h-12 font-black uppercase text-[10px] tracking-widest mt-2"
@@ -691,10 +710,14 @@ function AdminDashboardContent() {
                                 const stockSwitch = document.getElementById(`stock-switch-${dish.id}`) as HTMLButtonElement;
                                 const inStock = stockSwitch.getAttribute('data-state') === 'checked';
                                 
+                                // If input value is not our placeholder, use the input value (URL). 
+                                // Otherwise, use existing or uploaded data from handleImageUpload.
+                                const finalImgValue = imgInput.value !== 'Local Photo Saved' ? imgInput.value : dish.image;
+
                                 handleUpdateDishFull(dish.id, {
                                   name: nameInput.value,
                                   price: parseFloat(priceInput.value),
-                                  image: imgInput.value,
+                                  image: finalImgValue,
                                   description: descInput.value,
                                   category: catInput.value,
                                   inStock: inStock
