@@ -30,7 +30,8 @@ import {
   Image as ImageIcon,
   Save,
   Settings2,
-  Trash2
+  Trash2,
+  Edit3
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -184,17 +185,17 @@ export default function AdminPage() {
     setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300" });
   };
 
-  const handleUpdateDishImage = async (dishId: string, newImageUrl: string) => {
+  const handleUpdateDishFull = async (dishId: string, updatedData: Partial<Dish>) => {
     if (!firestore || !selectedResId || !selectedRestaurant) return;
 
     const updatedDishes = (selectedRestaurant.dishes || []).map(d => 
-      d.id === dishId ? { ...d, image: newImageUrl } : d
+      d.id === dishId ? { ...d, ...updatedData } : d
     );
 
     updateDoc(doc(firestore, "restaurants", selectedResId), {
       dishes: updatedDishes
     });
-    toast({ title: "Manual Photo Update Saved! 📸" });
+    toast({ title: "Item Updated Successfully! ✨" });
   };
 
   const handleDeleteDish = async (dishId: string) => {
@@ -534,51 +535,96 @@ export default function AdminPage() {
                 </Button>
               </Card>
 
-              {/* Manage Existing Dishes */}
+              {/* Manage & Full Edit Existing Dishes */}
               {selectedRestaurant && (
                 <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                   <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                    <ImageIcon className="w-8 h-8 text-primary" /> Manual Item Image Editor
+                    <Edit3 className="w-8 h-8 text-primary" /> Item Editor Master
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {selectedRestaurant.dishes?.map((dish) => (
-                      <div key={dish.id} className="bg-[#0a0a0a] p-6 rounded-[2rem] border border-border/50 flex flex-col gap-4 group hover:border-primary/30 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
+                      <div key={dish.id} className="bg-[#0a0a0a] p-8 rounded-[3rem] border border-border/50 flex flex-col gap-6 group hover:border-primary/30 transition-all">
+                        <div className="flex items-start gap-6">
+                          <div className="relative w-28 h-28 rounded-3xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
                             <Image src={dish.image} alt={dish.name} fill className="object-cover" unoptimized />
                           </div>
-                          <div className="flex-1 overflow-hidden">
-                            <div className="flex justify-between items-start">
-                                <h4 className="font-black text-sm uppercase italic leading-none truncate">{dish.name}</h4>
-                                <button onClick={() => handleDeleteDish(dish.id)} className="text-destructive hover:scale-110 transition-transform">
-                                    <Trash2 className="w-4 h-4" />
+                          <div className="flex-1 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h4 className="font-black text-lg uppercase italic text-primary">{dish.name}</h4>
+                                <button onClick={() => handleDeleteDish(dish.id)} className="text-destructive hover:scale-110 transition-transform p-2 bg-destructive/10 rounded-xl">
+                                    <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
-                            <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">{dish.category}</p>
-                            <p className="text-primary font-black text-lg tracking-tighter mt-1 italic">₹{(dish.price || 0) * 80}</p>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                               <div className="space-y-1">
+                                 <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Name</Label>
+                                 <Input 
+                                   defaultValue={dish.name}
+                                   id={`name-input-${dish.id}`}
+                                   className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
+                                 />
+                               </div>
+                               <div className="space-y-1">
+                                 <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Price (₹)</Label>
+                                 <Input 
+                                   defaultValue={dish.price}
+                                   id={`price-input-${dish.id}`}
+                                   type="number"
+                                   className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
+                                 />
+                               </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Category</Label>
+                              <Input 
+                                defaultValue={dish.category}
+                                id={`cat-input-${dish.id}`}
+                                className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Description</Label>
+                              <Input 
+                                defaultValue={dish.description}
+                                id={`desc-input-${dish.id}`}
+                                className="h-10 rounded-xl bg-card border-white/10 text-xs font-black"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Image URL</Label>
+                              <Input 
+                                defaultValue={dish.image}
+                                id={`img-input-${dish.id}`}
+                                className="h-10 rounded-xl bg-card border-white/10 text-[10px] font-black"
+                              />
+                            </div>
+
+                            <Button 
+                              size="sm" 
+                              className="w-full rounded-2xl h-12 font-black uppercase text-[10px] tracking-widest mt-2"
+                              onClick={() => {
+                                const nameInput = document.getElementById(`name-input-${dish.id}`) as HTMLInputElement;
+                                const priceInput = document.getElementById(`price-input-${dish.id}`) as HTMLInputElement;
+                                const imgInput = document.getElementById(`img-input-${dish.id}`) as HTMLInputElement;
+                                const descInput = document.getElementById(`desc-input-${dish.id}`) as HTMLInputElement;
+                                const catInput = document.getElementById(`cat-input-${dish.id}`) as HTMLInputElement;
+                                
+                                handleUpdateDishFull(dish.id, {
+                                  name: nameInput.value,
+                                  price: parseFloat(priceInput.value),
+                                  image: imgInput.value,
+                                  description: descInput.value,
+                                  category: catInput.value
+                                });
+                              }}
+                            >
+                              <Save className="w-4 h-4 mr-2" /> Update Selection
+                            </Button>
                           </div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="space-y-1">
-                            <Label className="text-[8px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Update Image URL</Label>
-                            <Input 
-                              defaultValue={dish.image}
-                              id={`img-input-${dish.id}`}
-                              className="h-10 rounded-xl bg-card border-white/10 text-[10px] font-black"
-                              placeholder="Paste manual image URL..."
-                            />
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="secondary"
-                            className="w-full rounded-xl h-10 font-black uppercase text-[9px] tracking-widest"
-                            onClick={() => {
-                              const input = document.getElementById(`img-input-${dish.id}`) as HTMLInputElement;
-                              if (input) handleUpdateDishImage(dish.id, input.value);
-                            }}
-                          >
-                            <Save className="w-3 h-3 mr-2" /> Save Photo
-                          </Button>
                         </div>
                       </div>
                     ))}
