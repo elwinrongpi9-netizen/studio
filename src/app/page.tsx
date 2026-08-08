@@ -24,12 +24,36 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
 const INSPIRATIONS = [
-  { name: "Biryani", img: PlaceHolderImages.find(img => img.id === "inspiration-biryani")?.imageUrl || "https://picsum.photos/seed/biryani/200/200", hint: "biryani rice" },
-  { name: "Chilli", img: PlaceHolderImages.find(img => img.id === "inspiration-chilli")?.imageUrl || "https://picsum.photos/seed/chilli/200/200", hint: "chilli chicken" },
-  { name: "Noodles", img: PlaceHolderImages.find(img => img.id === "inspiration-noodles")?.imageUrl || "https://picsum.photos/seed/noodles/200/200", hint: "chinese noodles" },
-  { name: "Lollipop", img: PlaceHolderImages.find(img => img.id === "inspiration-lollipop")?.imageUrl || "https://picsum.photos/seed/lolly/200/200", hint: "chicken lollipop" },
-  { name: "Rice", img: PlaceHolderImages.find(img => img.id === "inspiration-rice")?.imageUrl || "https://picsum.photos/seed/rice/200/200", hint: "fried rice" },
-  { name: "Soup", img: PlaceHolderImages.find(img => img.id === "inspiration-soup")?.imageUrl || "https://picsum.photos/seed/soup/200/200", hint: "chinese soup" },
+  { 
+    name: "Biryani", 
+    img: PlaceHolderImages.find(img => img.id === "inspiration-biryani")?.imageUrl || "https://picsum.photos/seed/biry1/200/200", 
+    hint: "biryani rice" 
+  },
+  { 
+    name: "Chilli", 
+    img: PlaceHolderImages.find(img => img.id === "inspiration-chilli")?.imageUrl || "https://picsum.photos/seed/chilli1/200/200", 
+    hint: "chilli chicken" 
+  },
+  { 
+    name: "Noodles", 
+    img: PlaceHolderImages.find(img => img.id === "inspiration-noodles")?.imageUrl || "https://picsum.photos/seed/noodle1/200/200", 
+    hint: "chinese noodles" 
+  },
+  { 
+    name: "Lollipop", 
+    img: PlaceHolderImages.find(img => img.id === "inspiration-lollipop")?.imageUrl || "https://picsum.photos/seed/lolly1/200/200", 
+    hint: "chicken lollipop" 
+  },
+  { 
+    name: "Rice", 
+    img: PlaceHolderImages.find(img => img.id === "inspiration-rice")?.imageUrl || "https://picsum.photos/seed/rice1/200/200", 
+    hint: "fried rice" 
+  },
+  { 
+    name: "Soup", 
+    img: PlaceHolderImages.find(img => img.id === "inspiration-soup")?.imageUrl || "https://picsum.photos/seed/soup1/200/200", 
+    hint: "chinese soup" 
+  },
 ];
 
 export default function Home() {
