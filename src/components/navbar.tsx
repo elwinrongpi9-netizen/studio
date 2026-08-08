@@ -100,7 +100,7 @@ export function Navbar() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      toast({ title: "Welcome back!", description: "Successfully signed in." });
+      toast({ title: "Welcome back!", description: "Successfully signed in with Gmail." });
       setIsLoginOpen(false);
     } catch (error: any) {
       toast({ title: "Auth Failed", description: error.message, variant: "destructive" });
@@ -120,7 +120,6 @@ export function Navbar() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
         
-        // Save mobile number to Firestore profile immediately
         await setDoc(doc(firestore, "users", newUser.uid), {
           displayName: email.split('@')[0],
           email: email,

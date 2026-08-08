@@ -118,11 +118,10 @@ export default function CartPage() {
     setDoc(doc(firestore, "users", user.uid, "orders", orderId), orderData);
 
     const message = constructWhatsAppMessage(orderData);
-    const whatsappUrl = `https://wa.me/${MERCHANT_WHATSAPP}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/91${MERCHANT_WHATSAPP}?text=${encodeURIComponent(message)}`;
     
     clearCart();
-    
-    window.open(whatsappUrl, '_blank');
+    window.location.href = whatsappUrl;
   };
 
   return (
