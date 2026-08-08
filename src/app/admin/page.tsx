@@ -186,13 +186,14 @@ function AdminDashboardContent() {
       if (isNewItem) {
         setNewDish({ ...newDish, image: base64String });
       } else if (dishId) {
-        // Store the actual base64 in our ref to avoid input text confusion
         dishImageRefs.current[dishId] = base64String;
-        
         const previewImg = document.getElementById(`preview-${dishId}`) as HTMLImageElement;
         if (previewImg) previewImg.src = base64String;
 
-        toast({ title: "Local Photo Ready! 📸", description: "Click Update Selection to save." });
+        const imgInput = document.getElementById(`img-input-${dishId}`) as HTMLInputElement;
+        if (imgInput) imgInput.value = "Local Photo Ready";
+
+        toast({ title: "Local Photo Ready! 📸", description: "Click Update Selection to save to all users." });
       }
     };
     reader.readAsDataURL(file);
@@ -221,15 +222,20 @@ function AdminDashboardContent() {
       dishes: updatedDishes
     });
     
-    toast({ title: "Item Added! 🎉" });
+    toast({ title: "Item Added for All Users! 🎉" });
     setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300", inStock: true });
   };
 
   const handleUpdateDishFull = async (dishId: string, updatedData: Partial<Dish>) => {
     if (!firestore || !selectedResId || !selectedRestaurant) return;
 
-    // Use the base64 from our ref if it exists, otherwise use the existing one or URL from input
-    const finalImage = dishImageRefs.current[dishId] || updatedData.image;
+    // Correctly determine which image to use:
+    // 1. If we have a newly uploaded base64 in the ref, use it.
+    // 2. Otherwise, if the updatedData.image is a valid string and not our placeholder text, use it.
+    // 3. Otherwise, use the original dish image.
+    const originalDish = selectedRestaurant.dishes?.find(d => d.id === dishId);
+    const finalImage = dishImageRefs.current[dishId] || 
+                       (updatedData.image && updatedData.image !== "Local Photo Ready" && updatedData.image !== "Local Photo Saved" ? updatedData.image : originalDish?.image);
 
     const updatedDishes = (selectedRestaurant.dishes || []).map(d => 
       d.id === dishId ? { ...d, ...updatedData, image: finalImage } : d
@@ -242,7 +248,7 @@ function AdminDashboardContent() {
     // Clear the ref after saving
     delete dishImageRefs.current[dishId];
     
-    toast({ title: "Item Updated Successfully! ✨" });
+    toast({ title: "Item Updated for All Users! ✨" });
   };
 
   const handleDeleteDish = async (dishId: string) => {
@@ -253,13 +259,13 @@ function AdminDashboardContent() {
     updateDoc(doc(firestore, "restaurants", selectedResId), {
       dishes: updatedDishes
     });
-    toast({ title: "Item Removed from Menu" });
+    toast({ title: "Item Removed for All Users" });
   };
 
   const handleUpdateRestaurant = async (data: Partial<Restaurant>) => {
     if (!firestore || !selectedResId) return;
     updateDoc(doc(firestore, "restaurants", selectedResId), data);
-    toast({ title: "Restaurant Updated! ✨" });
+    toast({ title: "Restaurant Updated Globally! ✨" });
   };
 
   const handleSetWingoResult = async () => {
@@ -457,7 +463,6 @@ function AdminDashboardContent() {
 
           <TabsContent value="menu">
             <div className="space-y-8">
-              {/* Restaurant Settings */}
               <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                 <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
                   <Settings2 className="w-8 h-8 text-primary" /> Restaurant Details
@@ -518,7 +523,6 @@ function AdminDashboardContent() {
                 </div>
               </Card>
 
-              {/* Add New Dish */}
               <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                 <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
                   <Plus className="w-8 h-8 text-primary" /> Add New Manual Item
@@ -599,7 +603,6 @@ function AdminDashboardContent() {
                 </Button>
               </Card>
 
-              {/* Manage & Full Edit Existing Dishes */}
               {selectedRestaurant && (
                 <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                   <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
@@ -611,7 +614,7 @@ function AdminDashboardContent() {
                         <div className="flex items-start gap-6">
                           <div className="relative w-28 h-28 rounded-3xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
                             <Image id={`preview-${dish.id}`} src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
-                            {!dish.inStock && (
+                            {dish.inStock === false && (
                               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-white rotate-12 border-2 border-white px-2">Out</span>
                               </div>
@@ -709,22 +712,18 @@ function AdminDashboardContent() {
                                 const catInput = document.getElementById(`cat-input-${dish.id}`) as HTMLInputElement;
                                 const stockSwitch = document.getElementById(`stock-switch-${dish.id}`) as HTMLButtonElement;
                                 const inStock = stockSwitch.getAttribute('data-state') === 'checked';
-                                
-                                // If input value is not our placeholder, use the input value (URL). 
-                                // Otherwise, use existing or uploaded data from handleImageUpload.
-                                const finalImgValue = imgInput.value !== 'Local Photo Saved' ? imgInput.value : dish.image;
 
                                 handleUpdateDishFull(dish.id, {
                                   name: nameInput.value,
                                   price: parseFloat(priceInput.value),
-                                  image: finalImgValue,
+                                  image: imgInput.value,
                                   description: descInput.value,
                                   category: catInput.value,
                                   inStock: inStock
                                 });
                               }}
                             >
-                              <Save className="w-4 h-4 mr-2" /> Update Selection
+                              <Save className="w-4 h-4 mr-2" /> Update Selection for All Users
                             </Button>
                           </div>
                         </div>
