@@ -1,4 +1,3 @@
-
 "use client";
 
 import { use, useState, useMemo } from "react";
@@ -79,7 +78,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
             src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
             alt="Menu Background"
             fill
-            className="object-cover opacity-60"
+            className="object-cover opacity-80"
             priority
             unoptimized
           />
