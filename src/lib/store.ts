@@ -11,32 +11,37 @@ export function useAppStore() {
 
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem('karbi_cart');
-      const savedOrders = localStorage.getItem('karbi_orders');
+      const savedCart = typeof window !== 'undefined' ? localStorage.getItem('karbi_cart') : null;
+      const savedOrders = typeof window !== 'undefined' ? localStorage.getItem('karbi_orders') : null;
       
-      if (savedCart && savedCart.trim() !== "") {
-        setCart(JSON.parse(savedCart));
+      if (savedCart && savedCart.trim() !== "" && savedCart !== "undefined") {
+        const parsedCart = JSON.parse(savedCart);
+        if (Array.isArray(parsedCart)) setCart(parsedCart);
       }
-      if (savedOrders && savedOrders.trim() !== "") {
-        setOrders(JSON.parse(savedOrders));
+      
+      if (savedOrders && savedOrders.trim() !== "" && savedOrders !== "undefined") {
+        const parsedOrders = JSON.parse(savedOrders);
+        if (Array.isArray(parsedOrders)) setOrders(parsedOrders);
       }
     } catch (e) {
       console.error("Failed to parse cart/orders from localStorage", e);
-      // Fallback: clear invalid data
-      localStorage.removeItem('karbi_cart');
-      localStorage.removeItem('karbi_orders');
+      // Fallback: clear invalid data to stop repeating the error
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('karbi_cart');
+        localStorage.removeItem('karbi_orders');
+      }
     }
     setIsHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && typeof window !== 'undefined') {
       localStorage.setItem('karbi_cart', JSON.stringify(cart));
     }
   }, [cart, isHydrated]);
 
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && typeof window !== 'undefined') {
       localStorage.setItem('karbi_orders', JSON.stringify(orders));
     }
   }, [orders, isHydrated]);

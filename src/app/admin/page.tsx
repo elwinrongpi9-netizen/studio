@@ -7,7 +7,7 @@ import { collection, doc, updateDoc, query, orderBy, setDoc, limit, onSnapshot }
 import { useMemo, useState, useEffect, useRef } from "react";
 import { Restaurant, WithdrawalRequest, Dish } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
@@ -22,7 +22,6 @@ import {
   VolumeX,
   BellRing,
   ShoppingBag,
-  Clock,
   CheckCircle2,
   Truck,
   Package,
@@ -30,7 +29,8 @@ import {
   Flame,
   Image as ImageIcon,
   Save,
-  Settings2
+  Settings2,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -170,7 +170,8 @@ export default function AdminPage() {
     const dishToAdd = { 
       ...newDish, 
       id: `dish_${Date.now()}`,
-      description: newDish.description || ""
+      description: newDish.description || "",
+      price: newDish.price || 0
     } as Dish;
     
     const updatedDishes = [...(res.dishes || []), dishToAdd];
@@ -186,14 +187,25 @@ export default function AdminPage() {
   const handleUpdateDishImage = async (dishId: string, newImageUrl: string) => {
     if (!firestore || !selectedResId || !selectedRestaurant) return;
 
-    const updatedDishes = selectedRestaurant.dishes.map(d => 
+    const updatedDishes = (selectedRestaurant.dishes || []).map(d => 
       d.id === dishId ? { ...d, image: newImageUrl } : d
     );
 
     updateDoc(doc(firestore, "restaurants", selectedResId), {
       dishes: updatedDishes
     });
-    toast({ title: "Image Updated! 📸" });
+    toast({ title: "Manual Photo Update Saved! 📸" });
+  };
+
+  const handleDeleteDish = async (dishId: string) => {
+    if (!firestore || !selectedResId || !selectedRestaurant) return;
+
+    const updatedDishes = (selectedRestaurant.dishes || []).filter(d => d.id !== dishId);
+
+    updateDoc(doc(firestore, "restaurants", selectedResId), {
+      dishes: updatedDishes
+    });
+    toast({ title: "Item Removed from Menu" });
   };
 
   const handleUpdateRestaurant = async (data: Partial<Restaurant>) => {
@@ -278,7 +290,7 @@ export default function AdminPage() {
               <ShoppingBag className="w-4 h-4" /> Orders
             </TabsTrigger>
             <TabsTrigger value="menu" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
-              <Utensils className="w-4 h-4" /> Menu
+              <Utensils className="w-4 h-4" /> Menu Manager
             </TabsTrigger>
             <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary">
               <Zap className="w-4 h-4" /> Wingo
@@ -409,7 +421,7 @@ export default function AdminPage() {
                       <select 
                         value={selectedResId} 
                         onChange={(e) => setSelectedResId(e.target.value)}
-                        className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black"
+                        className="w-full h-14 rounded-2xl bg-[#0a0a0a] border-2 border-border/50 px-4 font-black text-white"
                       >
                         <option value="">Choose Restaurant</option>
                         {restaurants?.map(r => (
@@ -424,7 +436,7 @@ export default function AdminPage() {
                           <Input 
                             defaultValue={selectedRestaurant.name}
                             onBlur={(e) => handleUpdateRestaurant({ name: e.target.value })}
-                            className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                           />
                         </div>
                         <div className="space-y-2">
@@ -432,7 +444,7 @@ export default function AdminPage() {
                           <Input 
                             defaultValue={selectedRestaurant.cuisine}
                             onBlur={(e) => handleUpdateRestaurant({ cuisine: e.target.value })}
-                            className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                           />
                         </div>
                       </>
@@ -446,7 +458,7 @@ export default function AdminPage() {
                           <Input 
                             defaultValue={selectedRestaurant.image}
                             onBlur={(e) => handleUpdateRestaurant({ image: e.target.value })}
-                            className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                           />
                         </div>
                         <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-4 border-primary/20">
@@ -461,7 +473,7 @@ export default function AdminPage() {
               {/* Add New Dish */}
               <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                 <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                  <Plus className="w-8 h-8 text-primary" /> Add New Item
+                  <Plus className="w-8 h-8 text-primary" /> Add New Manual Item
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
@@ -471,16 +483,16 @@ export default function AdminPage() {
                         placeholder="e.g. Chilli Chicken" 
                         value={newDish.name}
                         onChange={e => setNewDish({...newDish, name: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price (₹)</Label>
                       <Input 
                         type="number" 
                         value={newDish.price}
                         onChange={e => setNewDish({...newDish, price: parseFloat(e.target.value) || 0})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                       />
                     </div>
                     <div className="space-y-2">
@@ -489,76 +501,79 @@ export default function AdminPage() {
                         placeholder="e.g. Starters" 
                         value={newDish.category}
                         onChange={e => setNewDish({...newDish, category: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                       />
                     </div>
                   </div>
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Manual Image URL</Label>
                       <Input 
-                        placeholder="https://..." 
+                        placeholder="Paste image link here..." 
                         value={newDish.image}
                         onChange={e => setNewDish({...newDish, image: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Description</Label>
                       <Input 
-                        placeholder="Dish Details" 
+                        placeholder="Dish details..." 
                         value={newDish.description}
                         onChange={e => setNewDish({...newDish, description: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
                       />
                     </div>
-                    <div className="relative aspect-square w-full max-w-[150px] rounded-3xl overflow-hidden border-2 border-border/50 mx-auto">
+                    <div className="relative aspect-square w-full max-w-[150px] rounded-3xl overflow-hidden border-2 border-border/50 mx-auto bg-muted">
                        <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill className="object-cover" unoptimized />
                     </div>
                   </div>
                 </div>
                 <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90 shadow-2xl">
-                  Add Item to Menu
+                  Save Item to Menu
                 </Button>
               </Card>
 
+              {/* Manage Existing Dishes */}
               {selectedRestaurant && (
                 <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                   <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                    <ImageIcon className="w-8 h-8 text-primary" /> Manage Menu Items
+                    <ImageIcon className="w-8 h-8 text-primary" /> Manual Item Image Editor
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {selectedRestaurant.dishes?.map((dish) => (
                       <div key={dish.id} className="bg-[#0a0a0a] p-6 rounded-[2rem] border border-border/50 flex flex-col gap-4 group hover:border-primary/30 transition-all">
                         <div className="flex items-center gap-4">
-                          <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10">
+                          <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10 bg-muted">
                             <Image src={dish.image} alt={dish.name} fill className="object-cover" unoptimized />
                           </div>
                           <div className="flex-1 overflow-hidden">
-                            <h4 className="font-black text-sm uppercase italic leading-none truncate">{dish.name}</h4>
+                            <div className="flex justify-between items-start">
+                                <h4 className="font-black text-sm uppercase italic leading-none truncate">{dish.name}</h4>
+                                <button onClick={() => handleDeleteDish(dish.id)} className="text-destructive hover:scale-110 transition-transform">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
                             <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">{dish.category}</p>
-                            <p className="text-primary font-black text-lg tracking-tighter mt-1 italic">₹{dish.price * 80}</p>
+                            <p className="text-primary font-black text-lg tracking-tighter mt-1 italic">₹{(dish.price || 0) * 80}</p>
                           </div>
                         </div>
                         <div className="space-y-3">
                           <div className="space-y-1">
-                            <Label className="text-[8px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
-                            <div className="flex gap-2">
-                              <Input 
-                                defaultValue={dish.image}
-                                className="h-10 rounded-xl bg-card border-border/50 text-[10px] font-black dish-image-input"
-                                placeholder="Update Image URL..."
-                                onBlur={(e) => handleUpdateDishImage(dish.id, e.target.value)}
-                              />
-                            </div>
+                            <Label className="text-[8px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Update Image URL</Label>
+                            <Input 
+                              defaultValue={dish.image}
+                              id={`img-input-${dish.id}`}
+                              className="h-10 rounded-xl bg-card border-white/10 text-[10px] font-black"
+                              placeholder="Paste manual image URL..."
+                            />
                           </div>
                           <Button 
                             size="sm" 
                             variant="secondary"
                             className="w-full rounded-xl h-10 font-black uppercase text-[9px] tracking-widest"
-                            onClick={(e) => {
-                              const container = e.currentTarget.parentElement;
-                              const input = container?.querySelector('.dish-image-input') as HTMLInputElement;
+                            onClick={() => {
+                              const input = document.getElementById(`img-input-${dish.id}`) as HTMLInputElement;
                               if (input) handleUpdateDishImage(dish.id, input.value);
                             }}
                           >
