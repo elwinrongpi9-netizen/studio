@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Loader2, CheckCircle2, Hash } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Loader2, CheckCircle2, Hash, Plus } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs, updateDoc } from "firebase/firestore";
@@ -22,37 +22,34 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
+import { Card } from "@/components/ui/card";
 
 const INSPIRATIONS = [
   { 
     name: "Biryani", 
-    img: PlaceHolderImages.find(img => img.id === "inspiration-biryani")?.imageUrl || "https://picsum.photos/seed/biry1/200/200", 
-    hint: "biryani rice" 
+    img: PlaceHolderImages.find(img => img.id === "biryani")?.imageUrl || "https://picsum.photos/seed/biry/400/300", 
+    hint: "chicken biryani" 
   },
   { 
     name: "Chilli", 
-    img: PlaceHolderImages.find(img => img.id === "inspiration-chilli")?.imageUrl || "https://picsum.photos/seed/chilli1/200/200", 
+    img: PlaceHolderImages.find(img => img.id === "chilli-chicken")?.imageUrl || "https://picsum.photos/seed/chilli/400/300", 
     hint: "chilli chicken" 
   },
   { 
     name: "Noodles", 
-    img: PlaceHolderImages.find(img => img.id === "inspiration-noodles")?.imageUrl || "https://picsum.photos/seed/noodle1/200/200", 
+    img: PlaceHolderImages.find(img => img.id === "noodles")?.imageUrl || "https://picsum.photos/seed/cn/400/300", 
     hint: "chinese noodles" 
   },
   { 
-    name: "Lollipop", 
-    img: PlaceHolderImages.find(img => img.id === "inspiration-lollipop")?.imageUrl || "https://picsum.photos/seed/lolly1/200/200", 
-    hint: "chicken lollipop" 
+    name: "Chicken 65", 
+    img: PlaceHolderImages.find(img => img.id === "chicken-65")?.imageUrl || "https://picsum.photos/seed/c65/400/300", 
+    hint: "fried chicken" 
   },
   { 
-    name: "Rice", 
-    img: PlaceHolderImages.find(img => img.id === "inspiration-rice")?.imageUrl || "https://picsum.photos/seed/rice1/200/200", 
+    name: "Fried Rice", 
+    img: PlaceHolderImages.find(img => img.id === "fried-rice")?.imageUrl || "https://picsum.photos/seed/cfr/400/300", 
     hint: "fried rice" 
-  },
-  { 
-    name: "Soup", 
-    img: PlaceHolderImages.find(img => img.id === "inspiration-soup")?.imageUrl || "https://picsum.photos/seed/soup1/200/200", 
-    hint: "chinese soup" 
   },
 ];
 
@@ -76,6 +73,9 @@ export default function Home() {
   }, [firestore]);
 
   const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
+
+  const isSuperAdmin = user?.email === "junakipi@gmail.com";
+  const isRestaurantAdmin = !!profile?.managedRestaurantId;
 
   useEffect(() => {
     const seedData = async () => {
@@ -172,7 +172,7 @@ export default function Home() {
               src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
               alt="Authentic Chinese Noodles"
               fill
-              className="object-cover opacity-60 grayscale-[0.2]"
+              className="object-cover opacity-60"
               priority
               unoptimized
               data-ai-hint="chinese noodles"
@@ -350,6 +350,18 @@ export default function Home() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-16">
+                {(isSuperAdmin || isRestaurantAdmin) && !searchQuery && (
+                  <Link href={isSuperAdmin ? "/admin" : `/admin?resId=${profile?.managedRestaurantId}`} className="group h-full">
+                    <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[400px] shadow-sm">
+                      <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform group-hover:rotate-90">
+                        <Plus className="w-12 h-12 text-primary" />
+                      </div>
+                      <h3 className="font-black text-3xl italic uppercase tracking-tighter text-primary">Add Item</h3>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-4 opacity-60">Expand Main Menu</p>
+                    </Card>
+                  </Link>
+                )}
+                
                 {filteredDishes.length > 0 ? (
                   filteredDishes.map((dish) => (
                     <DishCard key={dish.id} dish={dish} />

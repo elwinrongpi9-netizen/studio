@@ -1,3 +1,4 @@
+
 "use client";
 
 import { use, useState, useMemo } from "react";
@@ -11,6 +12,7 @@ import Link from "next/link";
 import { Dish, Restaurant } from "@/lib/types";
 import { useDoc, useFirestore, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { Card } from "@/components/ui/card";
 
 export default function RestaurantPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -20,14 +22,19 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
   const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const isAdmin = user?.email === "junakipi@gmail.com";
-
   const restaurantRef = useMemo(() => {
     if (!firestore || !id) return null;
     return doc(firestore, "restaurants", id);
   }, [firestore, id]);
 
   const { data: restaurant, loading } = useDoc<Restaurant>(restaurantRef);
+
+  const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
+  const { data: profile } = useDoc<any>(userRef);
+
+  const isSuperAdmin = user?.email === "junakipi@gmail.com";
+  const isManagedAdmin = profile?.managedRestaurantId === id;
+  const canManage = isSuperAdmin || isManagedAdmin;
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -148,6 +155,18 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                           <div className="h-0.5 w-full bg-gradient-to-r from-primary/30 to-transparent" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                          {canManage && (activeCategory === "All" || activeCategory === cat) && (
+                            <Link href={`/admin?resId=${id}`} className="group h-full">
+                              <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[300px] shadow-sm">
+                                <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform group-hover:rotate-90">
+                                  <Plus className="w-10 h-10 text-primary" />
+                                </div>
+                                <h3 className="font-black text-2xl italic uppercase tracking-tighter text-primary">Add New Item</h3>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-2 opacity-60">To {cat} Category</p>
+                              </Card>
+                            </Link>
+                          )}
+                          
                           {restaurant.dishes.filter(d => d.category === cat).map((dish) => (
                             <div key={dish.id} className={`bg-card rounded-[3rem] p-6 shadow-2xl border-2 border-border/50 flex flex-col sm:flex-row gap-6 group hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 relative overflow-hidden ${dish.inStock === false ? 'opacity-60 grayscale-[0.5]' : ''}`}>
                               <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
@@ -155,7 +174,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                 <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform duration-700" />
                                 
                                 {/* Admin Edit Overlay */}
-                                {isAdmin && (
+                                {canManage && (
                                   <Link href={`/admin?resId=${id}`} className="absolute top-2 right-2 z-40">
                                     <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-md border border-white/20 text-white rounded-xl hover:bg-primary h-8 w-8">
                                       <Settings className="w-4 h-4" />
@@ -176,7 +195,6 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                   <p className="text-xs text-muted-foreground mb-4 line-clamp-2 italic font-medium opacity-60">{dish.description}</p>
                                 </div>
                                 <div className="flex flex-col gap-4 mt-auto">
-                                  {/* In Stock Indicator at the bottom */}
                                   <div className="flex items-center gap-2">
                                     {dish.inStock !== false ? (
                                       <>
