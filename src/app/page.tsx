@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Loader2, CheckCircle2 } from "lucide-react";
+import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Loader2, CheckCircle2, Hash } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, setDoc, doc, getDocs, updateDoc } from "firebase/firestore";
@@ -36,6 +36,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [manualAddress, setManualAddress] = useState("");
+  const [pincode, setPincode] = useState("");
   
   const firestore = useFirestore();
   const { user } = useUser();
@@ -74,7 +75,6 @@ export default function Home() {
       return;
     }
     try {
-      // Use setDoc with merge to ensure doc exists
       await setDoc(doc(firestore, "users", user.uid), {
         address: address
       }, { merge: true });
@@ -82,6 +82,7 @@ export default function Home() {
       toast({ title: "Location Updated! 📍", description: address });
       setIsLocationOpen(false);
       setManualAddress("");
+      setPincode("");
     } catch (e) {
       toast({ variant: "destructive", title: "Failed to update location" });
     }
@@ -173,14 +174,14 @@ export default function Home() {
                       <ChevronDown className="w-5 h-5 ml-auto text-muted-foreground opacity-50" />
                     </div>
                   </DialogTrigger>
-                  <DialogContent className="rounded-[3rem] p-10 bg-card border-none shadow-2xl sm:max-w-[450px]">
-                    <DialogHeader className="mb-8">
+                  <DialogContent className="rounded-[3rem] p-10 bg-card border-none shadow-2xl sm:max-w-[480px]">
+                    <DialogHeader className="mb-6">
                       <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter text-center">Select Delivery Area</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6">
                       <Button 
                         onClick={detectLocation}
-                        className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-3"
+                        className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-3"
                       >
                         <Navigation className="w-5 h-5" />
                         Detect My Location (GPS)
@@ -188,7 +189,31 @@ export default function Home() {
                       
                       <div className="relative">
                         <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50"></span></div>
-                        <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-card px-4 text-muted-foreground tracking-[0.5em]">OR MANUAL</span></div>
+                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-card px-4 text-muted-foreground tracking-[0.5em]">OR SEARCH BY PIN</span></div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <div className="relative flex-1">
+                          <Input 
+                            placeholder="6-Digit PIN Code" 
+                            type="number"
+                            value={pincode}
+                            onChange={(e) => setPincode(e.target.value)}
+                            className="h-14 rounded-2xl bg-muted/30 border-none ring-2 ring-border focus:ring-primary font-black px-6"
+                          />
+                        </div>
+                        <Button 
+                          onClick={() => handleUpdateLocation(`PIN: ${pincode}`)}
+                          disabled={pincode.length < 6}
+                          className="h-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-black uppercase tracking-widest px-8"
+                        >
+                          Apply
+                        </Button>
+                      </div>
+
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border/50"></span></div>
+                        <div className="relative flex justify-center text-[8px] uppercase font-black"><span className="bg-card px-4 text-muted-foreground tracking-[0.5em]">OR MANUAL ADDRESS</span></div>
                       </div>
 
                       <div className="space-y-4">
@@ -197,15 +222,15 @@ export default function Home() {
                             placeholder="Enter area or building..." 
                             value={manualAddress}
                             onChange={(e) => setManualAddress(e.target.value)}
-                            className="h-16 rounded-2xl bg-muted/30 border-none ring-2 ring-border focus:ring-primary font-bold px-6"
+                            className="h-14 rounded-2xl bg-muted/30 border-none ring-2 ring-border focus:ring-primary font-bold px-6"
                           />
                         </div>
                         <Button 
                           onClick={() => handleUpdateLocation(manualAddress)}
                           disabled={!manualAddress}
-                          className="w-full h-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-black uppercase tracking-widest"
+                          className="w-full h-12 rounded-2xl bg-muted hover:bg-muted/80 text-foreground font-black uppercase tracking-widest text-xs"
                         >
-                          Apply Manually
+                          Save Address
                         </Button>
                       </div>
                     </div>
