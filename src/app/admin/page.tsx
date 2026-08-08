@@ -31,7 +31,9 @@ import {
   Settings2,
   Trash2,
   Edit3,
-  Loader2
+  Loader2,
+  Image as ImageIcon,
+  Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -166,6 +168,24 @@ function AdminDashboardContent() {
     }
 
     toast({ title: `Order ${newStatus}` });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isNewItem: boolean, dishId?: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      if (isNewItem) {
+        setNewDish({ ...newDish, image: base64String });
+      } else if (dishId) {
+        const imgInput = document.getElementById(`img-input-${dishId}`) as HTMLInputElement;
+        if (imgInput) imgInput.value = base64String;
+        toast({ title: "Local Photo Prepared! 📸", description: "Click Update Selection to save." });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAddDish = async () => {
@@ -517,13 +537,26 @@ function AdminDashboardContent() {
                   </div>
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Manual Image URL</Label>
-                      <Input 
-                        placeholder="Paste image link here..." 
-                        value={newDish.image}
-                        onChange={e => setNewDish({...newDish, image: e.target.value})}
-                        className="h-14 rounded-2xl font-black bg-[#0a0a0a] border-white/10"
-                      />
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image Source</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input 
+                          placeholder="Paste image link here..." 
+                          value={newDish.image?.startsWith('data:') ? 'Local Image Attached' : newDish.image}
+                          onChange={e => setNewDish({...newDish, image: e.target.value})}
+                          className="h-12 rounded-xl font-black bg-[#0a0a0a] border-white/10"
+                        />
+                        <div className="relative">
+                           <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={(e) => handleImageUpload(e, true)}
+                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                           />
+                           <Button variant="outline" className="w-full h-12 rounded-xl border-dashed border-primary/40 font-black text-[10px] flex gap-2">
+                             <Upload className="w-3 h-3" /> Upload Local
+                           </Button>
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Description</Label>
@@ -604,12 +637,25 @@ function AdminDashboardContent() {
                             </div>
 
                             <div className="space-y-1">
-                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Image URL</Label>
-                              <Input 
-                                defaultValue={dish.image}
-                                id={`img-input-${dish.id}`}
-                                className="h-10 rounded-xl bg-card border-white/10 text-[10px] font-black"
-                              />
+                              <Label className="text-[8px] font-black uppercase text-muted-foreground ml-1">Image Control</Label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Input 
+                                  defaultValue={dish.image?.startsWith('data:') ? 'Local Photo Saved' : dish.image}
+                                  id={`img-input-${dish.id}`}
+                                  className="h-10 rounded-xl bg-card border-white/10 text-[9px] font-black"
+                                />
+                                <div className="relative">
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={(e) => handleImageUpload(e, false, dish.id)}
+                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                  />
+                                  <Button variant="outline" size="sm" className="w-full h-10 rounded-xl border-dashed border-primary/20 text-[8px] font-black flex gap-1">
+                                    <Upload className="w-3 h-3" /> Local
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
 
                             <Button 
