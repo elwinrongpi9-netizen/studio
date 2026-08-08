@@ -2,7 +2,21 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, UtensilsCrossed, LogOut, Lock, Mail, Loader2, ShieldCheck, Wallet, Zap, Sparkles, UserPlus } from "lucide-react";
+import { 
+  ShoppingBag, 
+  UtensilsCrossed, 
+  LogOut, 
+  Lock, 
+  Mail, 
+  Loader2, 
+  ShieldCheck, 
+  Wallet, 
+  Zap, 
+  Sparkles, 
+  UserPlus, 
+  Eye, 
+  EyeOff 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
@@ -40,6 +54,7 @@ export function Navbar() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
@@ -68,7 +83,6 @@ export function Navbar() {
             };
             await setDoc(uRef, userData);
           } else {
-            // Update last login
             await setDoc(uRef, { lastLogin: serverTimestamp() }, { merge: true });
           }
         } catch (e) {
@@ -223,7 +237,23 @@ export function Navbar() {
                     </div>
                     <div className="space-y-3">
                       <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Security Password</Label>
-                      <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6" required />
+                      <div className="relative">
+                        <Input 
+                          id="password" 
+                          type={showPassword ? "text" : "password"} 
+                          value={password} 
+                          onChange={(e) => setPassword(e.target.value)} 
+                          className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6 pr-14" 
+                          required 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
                     
                     <Button type="submit" className="w-full h-18 rounded-[1.5rem] font-black text-xl shadow-2xl bg-primary hover:bg-primary/90 py-8 uppercase tracking-widest mt-4" disabled={isAuthLoading}>
@@ -233,7 +263,10 @@ export function Navbar() {
 
                   <div className="text-center mt-6">
                     <button 
-                      onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                      onClick={() => {
+                        setAuthMode(authMode === 'login' ? 'register' : 'login');
+                        setShowPassword(false);
+                      }}
                       className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-2 mx-auto"
                     >
                       {authMode === 'login' ? <UserPlus className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
