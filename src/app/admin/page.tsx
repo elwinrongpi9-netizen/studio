@@ -29,7 +29,8 @@ import {
   Plus,
   Flame,
   Image as ImageIcon,
-  Save
+  Save,
+  Settings2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -51,6 +52,18 @@ export default function AdminPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastOrderIdRef = useRef<string | null>(null);
 
+  const [selectedResId, setSelectedResId] = useState("");
+  const [newDish, setNewDish] = useState<Partial<Dish>>({
+    name: "",
+    description: "",
+    price: 0,
+    category: "Starters",
+    image: "https://picsum.photos/seed/newdish/400/300"
+  });
+
+  const [wingoPeriod, setWingoPeriod] = useState("");
+  const [wingoNumber, setWingoNumber] = useState("");
+
   const restaurantsQuery = useMemo(() => {
     if (!firestore) return null;
     return query(collection(firestore, "restaurants"), orderBy("name"));
@@ -70,6 +83,10 @@ export default function AdminPage() {
   const { data: withdrawals } = useCollection<WithdrawalRequest>(withdrawalsQuery);
   const { data: phonepeOrders } = useCollection<any>(phonepeOrdersQuery);
   
+  const selectedRestaurant = useMemo(() => {
+    return restaurants?.find(r => r.id === selectedResId);
+  }, [restaurants, selectedResId]);
+
   useEffect(() => {
     if (!firestore || !user || user.email !== ADMIN_EMAIL) return;
 
@@ -127,74 +144,43 @@ export default function AdminPage() {
 
   const updateOrderStatus = async (order: any, newStatus: string) => {
     if (!firestore) return;
-    try {
-      const orderId = order.order_id || order.id;
-      const userId = order.userId;
+    const orderId = order.order_id || order.id;
+    const userId = order.userId;
 
-      const globalRef = doc(firestore, "phonepe_orders", orderId);
-      updateDoc(globalRef, { status: newStatus });
+    const globalRef = doc(firestore, "phonepe_orders", orderId);
+    updateDoc(globalRef, { status: newStatus });
 
-      if (userId) {
-        const userOrderRef = doc(firestore, "users", userId, "orders", orderId);
-        updateDoc(userOrderRef, { status: newStatus });
-      }
-
-      toast({ title: `Order ${newStatus}` });
-    } catch (e) {
-      toast({ title: "Update Failed", variant: "destructive" });
+    if (userId) {
+      const userOrderRef = doc(firestore, "users", userId, "orders", orderId);
+      updateDoc(userOrderRef, { status: newStatus });
     }
+
+    toast({ title: `Order ${newStatus}` });
   };
 
-  const [selectedResId, setSelectedResId] = useState("");
-  const [newDish, setNewDish] = useState<Partial<Dish>>({
-    name: "",
-    description: "",
-    price: 0,
-    category: "Starters",
-    image: "https://picsum.photos/seed/newdish/400/300"
-  });
-
-  const [wingoPeriod, setWingoPeriod] = useState("");
-  const [wingoNumber, setWingoNumber] = useState("");
-
-  const selectedRestaurant = useMemo(() => {
-    return restaurants?.find(r => r.id === selectedResId);
-  }, [restaurants, selectedResId]);
-
-  if (!userLoading && (!user || user.email !== ADMIN_EMAIL)) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
-        <div className="flex-1 container mx-auto px-4 py-20 text-center">
-          <ShieldAlert className="w-20 h-20 text-destructive mx-auto mb-6" />
-          <h1 className="text-4xl font-black mb-4 uppercase italic tracking-tighter text-white">Access Denied</h1>
-          <Button onClick={() => router.push("/")} className="rounded-2xl px-12 h-14 font-black">Return Home</Button>
-        </div>
-      </div>
-    );
-  }
-
   const handleAddDish = async () => {
-    if (!firestore || !selectedResId || !newDish.name) {
-      toast({ title: "Details missing", variant: "destructive" });
+    if (!firestore || !selectedResId || !newDish.name || !newDish.image) {
+      toast({ title: "Details or Image missing", variant: "destructive" });
       return;
     }
 
-    const res = restaurants.find(r => r.id === selectedResId);
+    const res = restaurants?.find(r => r.id === selectedResId);
     if (!res) return;
 
-    const dishToAdd = { ...newDish, id: `dish_${Date.now()}` } as Dish;
+    const dishToAdd = { 
+      ...newDish, 
+      id: `dish_${Date.now()}`,
+      description: newDish.description || ""
+    } as Dish;
+    
     const updatedDishes = [...(res.dishes || []), dishToAdd];
 
-    try {
-      updateDoc(doc(firestore, "restaurants", selectedResId), {
-        dishes: updatedDishes
-      });
-      toast({ title: "Item Added! 🎉" });
-      setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300" });
-    } catch (e) {
-      toast({ title: "Failed to add", variant: "destructive" });
-    }
+    updateDoc(doc(firestore, "restaurants", selectedResId), {
+      dishes: updatedDishes
+    });
+    
+    toast({ title: "Item Added! 🎉" });
+    setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300" });
   };
 
   const handleUpdateDishImage = async (dishId: string, newImageUrl: string) => {
@@ -204,14 +190,16 @@ export default function AdminPage() {
       d.id === dishId ? { ...d, image: newImageUrl } : d
     );
 
-    try {
-      updateDoc(doc(firestore, "restaurants", selectedResId), {
-        dishes: updatedDishes
-      });
-      toast({ title: "Image Updated! 📸" });
-    } catch (e) {
-      toast({ title: "Update Failed", variant: "destructive" });
-    }
+    updateDoc(doc(firestore, "restaurants", selectedResId), {
+      dishes: updatedDishes
+    });
+    toast({ title: "Image Updated! 📸" });
+  };
+
+  const handleUpdateRestaurant = async (data: Partial<Restaurant>) => {
+    if (!firestore || !selectedResId) return;
+    updateDoc(doc(firestore, "restaurants", selectedResId), data);
+    toast({ title: "Restaurant Updated! ✨" });
   };
 
   const handleSetWingoResult = async () => {
@@ -232,6 +220,19 @@ export default function AdminPage() {
       setWingoNumber("");
     });
   };
+
+  if (!userLoading && (!user || user.email !== ADMIN_EMAIL)) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="flex-1 container mx-auto px-4 py-20 text-center">
+          <ShieldAlert className="w-20 h-20 text-destructive mx-auto mb-6" />
+          <h1 className="text-4xl font-black mb-4 uppercase italic tracking-tighter text-white">Access Denied</h1>
+          <Button onClick={() => router.push("/")} className="rounded-2xl px-12 h-14 font-black">Return Home</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
@@ -396,14 +397,15 @@ export default function AdminPage() {
 
           <TabsContent value="menu">
             <div className="space-y-8">
+              {/* Restaurant Settings */}
               <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                 <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                  <Plus className="w-8 h-8 text-primary" /> Add New Item
+                  <Settings2 className="w-8 h-8 text-primary" /> Restaurant Details
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Restaurant</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Select Restaurant</Label>
                       <select 
                         value={selectedResId} 
                         onChange={(e) => setSelectedResId(e.target.value)}
@@ -415,8 +417,56 @@ export default function AdminPage() {
                         ))}
                       </select>
                     </div>
+                    {selectedRestaurant && (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Restaurant Name</Label>
+                          <Input 
+                            defaultValue={selectedRestaurant.name}
+                            onBlur={(e) => handleUpdateRestaurant({ name: e.target.value })}
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Cuisine Style</Label>
+                          <Input 
+                            defaultValue={selectedRestaurant.cuisine}
+                            onBlur={(e) => handleUpdateRestaurant({ cuisine: e.target.value })}
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-6">
+                    {selectedRestaurant && (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Main Image URL</Label>
+                          <Input 
+                            defaultValue={selectedRestaurant.image}
+                            onBlur={(e) => handleUpdateRestaurant({ image: e.target.value })}
+                            className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
+                          />
+                        </div>
+                        <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl border-4 border-primary/20">
+                           <Image src={selectedRestaurant.image} alt="Restaurant" fill className="object-cover" unoptimized />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Add New Dish */}
+              <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
+                <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
+                  <Plus className="w-8 h-8 text-primary" /> Add New Item
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Item Name</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Item Name</Label>
                       <Input 
                         placeholder="e.g. Chilli Chicken" 
                         value={newDish.name}
@@ -425,7 +475,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Price</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Price</Label>
                       <Input 
                         type="number" 
                         value={newDish.price}
@@ -433,10 +483,8 @@ export default function AdminPage() {
                         className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                       />
                     </div>
-                  </div>
-                  <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Category</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Category</Label>
                       <Input 
                         placeholder="e.g. Starters" 
                         value={newDish.category}
@@ -444,8 +492,10 @@ export default function AdminPage() {
                         className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                       />
                     </div>
+                  </div>
+                  <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Image URL</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
                       <Input 
                         placeholder="https://..." 
                         value={newDish.image}
@@ -454,59 +504,66 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Description</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Description</Label>
                       <Input 
-                        placeholder="Details" 
+                        placeholder="Dish Details" 
                         value={newDish.description}
                         onChange={e => setNewDish({...newDish, description: e.target.value})}
                         className="h-14 rounded-2xl font-black bg-[#0a0a0a]"
                       />
                     </div>
+                    <div className="relative aspect-square w-full max-w-[150px] rounded-3xl overflow-hidden border-2 border-border/50 mx-auto">
+                       <Image src={newDish.image || "https://placehold.co/400x400"} alt="Preview" fill className="object-cover" unoptimized />
+                    </div>
                   </div>
                 </div>
-                <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90">
-                  Add Item
+                <Button onClick={handleAddDish} className="w-full h-18 rounded-2xl font-black text-xl mt-10 bg-primary hover:bg-primary/90 shadow-2xl">
+                  Add Item to Menu
                 </Button>
               </Card>
 
               {selectedRestaurant && (
                 <Card className="rounded-[3rem] bg-card p-10 border border-border/50">
                   <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter">
-                    <ImageIcon className="w-8 h-8 text-primary" /> Manage Existing Items
+                    <ImageIcon className="w-8 h-8 text-primary" /> Manage Menu Items
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {selectedRestaurant.dishes?.map((dish) => (
-                      <div key={dish.id} className="bg-[#0a0a0a] p-6 rounded-[2rem] border border-border/50 flex flex-col gap-4">
+                      <div key={dish.id} className="bg-[#0a0a0a] p-6 rounded-[2rem] border border-border/50 flex flex-col gap-4 group hover:border-primary/30 transition-all">
                         <div className="flex items-center gap-4">
-                          <div className="relative w-16 h-16 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
-                            <Image src={dish.image} alt={dish.name} fill className="object-cover" />
+                          <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg flex-shrink-0 border border-white/10">
+                            <Image src={dish.image} alt={dish.name} fill className="object-cover" unoptimized />
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 overflow-hidden">
                             <h4 className="font-black text-sm uppercase italic leading-none truncate">{dish.name}</h4>
                             <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-1">{dish.category}</p>
+                            <p className="text-primary font-black text-lg tracking-tighter mt-1 italic">₹{dish.price * 80}</p>
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-[8px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
-                          <div className="flex gap-2">
-                            <Input 
-                              defaultValue={dish.image}
-                              onBlur={(e) => handleUpdateDishImage(dish.id, e.target.value)}
-                              className="h-10 rounded-xl bg-card border-border/50 text-[10px] font-black"
-                              placeholder="Update Image URL..."
-                            />
-                            <Button 
-                              size="sm" 
-                              className="rounded-xl h-10 w-10 flex-shrink-0"
-                              variant="secondary"
-                              onClick={(e) => {
-                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                                handleUpdateDishImage(dish.id, input.value);
-                              }}
-                            >
-                              <Save className="w-4 h-4" />
-                            </Button>
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-[8px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Image URL</Label>
+                            <div className="flex gap-2">
+                              <Input 
+                                defaultValue={dish.image}
+                                className="h-10 rounded-xl bg-card border-border/50 text-[10px] font-black dish-image-input"
+                                placeholder="Update Image URL..."
+                                onBlur={(e) => handleUpdateDishImage(dish.id, e.target.value)}
+                              />
+                            </div>
                           </div>
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            className="w-full rounded-xl h-10 font-black uppercase text-[9px] tracking-widest"
+                            onClick={(e) => {
+                              const container = e.currentTarget.parentElement;
+                              const input = container?.querySelector('.dish-image-input') as HTMLInputElement;
+                              if (input) handleUpdateDishImage(dish.id, input.value);
+                            }}
+                          >
+                            <Save className="w-3 h-3 mr-2" /> Save Photo
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -581,4 +638,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
