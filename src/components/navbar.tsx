@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag, UtensilsCrossed, LogOut, Lock, Mail, Loader2, ShieldCheck, Wallet, Zap, Sparkles } from "lucide-react";
+import { ShoppingBag, UtensilsCrossed, LogOut, Lock, Mail, Loader2, ShieldCheck, Wallet, Zap, Sparkles, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
@@ -36,6 +37,7 @@ export function Navbar() {
   const { toast } = useToast();
   
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -53,23 +55,22 @@ export function Navbar() {
           const uRef = doc(firestore, "users", user.uid);
           const snap = await getDoc(uRef);
           
-          const userData: any = {
-            displayName: user.displayName || user.email?.split('@')[0],
-            email: user.email,
-            photoURL: user.photoURL,
-            lastLogin: serverTimestamp(),
-            role: user.email === ADMIN_EMAIL ? "admin" : "user"
-          };
-
-          const existingData = snap.data();
-          if (!snap.exists() || existingData?.walletBalance === undefined) {
-            userData.walletBalance = 0;
+          if (!snap.exists()) {
+            const userData = {
+              displayName: user.displayName || user.email?.split('@')[0],
+              email: user.email,
+              photoURL: user.photoURL,
+              lastLogin: serverTimestamp(),
+              role: user.email === ADMIN_EMAIL ? "admin" : "user",
+              walletBalance: 0,
+              wingoBalance: 0,
+              createdAt: serverTimestamp()
+            };
+            await setDoc(uRef, userData);
+          } else {
+            // Update last login
+            await setDoc(uRef, { lastLogin: serverTimestamp() }, { merge: true });
           }
-          if (!snap.exists() || existingData?.wingoBalance === undefined) {
-            userData.wingoBalance = 0;
-          }
-
-          await setDoc(uRef, userData, { merge: true });
         } catch (e) {
           console.warn("User init delayed: Client might be offline.", e);
         }
@@ -92,25 +93,24 @@ export function Navbar() {
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: "Logged in successfully" });
+      if (authMode === 'login') {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast({ title: "Logged in successfully" });
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+        toast({ title: "Account Created! Welcome." });
+      }
       setIsLoginOpen(false);
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        try {
-          await createUserWithEmailAndPassword(auth, email, password);
-          toast({ title: "Account Created" });
-          setIsLoginOpen(false);
-        } catch (regError: any) {
-          toast({ title: "Registration Failed", description: regError.message, variant: "destructive" });
-        }
-      } else {
-        toast({ title: "Login Failed", description: error.message, variant: "destructive" });
-      }
+      let msg = error.message;
+      if (error.code === 'auth/invalid-credential') msg = "Invalid email or password.";
+      if (error.code === 'auth/email-already-in-use') msg = "Email already registered. Try logging in.";
+      
+      toast({ title: authMode === 'login' ? "Login Failed" : "Sign Up Failed", description: msg, variant: "destructive" });
     } finally {
       setIsAuthLoading(false);
     }
@@ -209,25 +209,43 @@ export function Navbar() {
                         <Sparkles className="w-8 h-8 text-primary" />
                       </div>
                     </div>
-                    <DialogTitle className="text-4xl font-black text-center italic tracking-tighter uppercase leading-[0.8]">Welcome to<br/><span className="text-primary not-italic">Premium Dining</span></DialogTitle>
+                    <DialogTitle className="text-4xl font-black text-center italic tracking-tighter uppercase leading-[0.8]">
+                      {authMode === 'login' ? 'Welcome Back to' : 'Join the'}
+                      <br/>
+                      <span className="text-primary not-italic">Premium Dining</span>
+                    </DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleEmailLogin} className="space-y-8">
+                  
+                  <form onSubmit={handleEmailAuth} className="space-y-6">
                     <div className="space-y-3">
-                      <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Credentials: Email</Label>
-                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6" placeholder="admin@premium.com" required />
+                      <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Email Address</Label>
+                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6" placeholder="your@email.com" required />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Credentials: Password</Label>
+                      <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest ml-3 text-muted-foreground">Security Password</Label>
                       <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-[1.5rem] h-16 bg-muted/30 border-none ring-2 ring-border focus:ring-primary text-base font-bold px-6" required />
                     </div>
-                    <Button type="submit" className="w-full h-18 rounded-[1.5rem] font-black text-xl shadow-2xl bg-primary hover:bg-primary/90 py-8 uppercase tracking-widest" disabled={isAuthLoading}>
-                      {isAuthLoading ? <Loader2 className="animate-spin" /> : "Authorize Access"}
+                    
+                    <Button type="submit" className="w-full h-18 rounded-[1.5rem] font-black text-xl shadow-2xl bg-primary hover:bg-primary/90 py-8 uppercase tracking-widest mt-4" disabled={isAuthLoading}>
+                      {isAuthLoading ? <Loader2 className="animate-spin" /> : authMode === 'login' ? "Authorize Login" : "Create Account"}
                     </Button>
                   </form>
-                  <div className="relative my-12">
-                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t-2 border-border/20"></span></div>
-                    <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-card px-6 text-muted-foreground tracking-[0.5em]">Global ID</span></div>
+
+                  <div className="text-center mt-6">
+                    <button 
+                      onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                      className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-2 mx-auto"
+                    >
+                      {authMode === 'login' ? <UserPlus className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                      {authMode === 'login' ? 'Need an account? Sign Up' : 'Already have an account? Login'}
+                    </button>
                   </div>
+
+                  <div className="relative my-10">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t-2 border-border/20"></span></div>
+                    <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-card px-6 text-muted-foreground tracking-[0.5em]">Global Auth</span></div>
+                  </div>
+                  
                   <Button variant="outline" onClick={handleGoogleLogin} className="w-full h-18 rounded-[1.5rem] border-2 border-border/50 font-black flex items-center justify-center gap-5 bg-background hover:bg-muted/50 py-8 transition-all group">
                     <svg className="w-7 h-7 group-hover:scale-110 transition-transform" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.64 0 3.12.56 4.28 1.67l3.2-3.2C17.52 1.6 14.96 0 12 0 7.31 0 3.33 2.69 1.39 6.6l3.86 3c.94-2.82 3.56-4.96 6.75-4.96z"/><path fill="#4285F4" d="M23.49 12.27c0-.8-.07-1.57-.21-2.32H12v4.39h6.44c-.28 1.48-1.12 2.74-2.37 3.58l3.69 2.86c2.16-1.99 3.41-4.92 3.41-8.51z"/><path fill="#FBBC05" d="M5.25 14.61c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29l-3.86-3C.51 8.5 0 10.19 0 12c0 1.81.51 3.5 1.39 4.98l3.86-2.99z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.69-2.86c-1.11.75-2.52 1.19-4.26 1.19-3.19 0-5.81-2.14-6.75-4.96l-3.86 3C3.33 21.31 7.31 24 12 24z"/></svg>
                     Continue with Google
