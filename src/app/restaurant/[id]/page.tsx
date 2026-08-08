@@ -1,3 +1,4 @@
+
 "use client";
 
 import { use, useState, useMemo } from "react";
@@ -159,13 +160,16 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                   </Link>
                                 )}
 
-                                <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                                <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                                   ₹{dish.price.toFixed(0)}
                                 </div>
                               </div>
                               <div className="flex-1 flex flex-col justify-between py-2 relative z-10">
                                 <div>
-                                  <h4 className="font-black text-2xl group-hover:text-primary transition-colors mb-2 uppercase italic tracking-tighter">{dish.name}</h4>
+                                  <div className="flex justify-between items-start gap-2 mb-2">
+                                    <h4 className="font-black text-2xl group-hover:text-primary transition-colors uppercase italic tracking-tighter leading-none">{dish.name}</h4>
+                                    <span className="font-black text-primary text-xl italic whitespace-nowrap">₹{dish.price}</span>
+                                  </div>
                                   <p className="text-xs text-muted-foreground mb-6 line-clamp-2 italic font-medium opacity-60">{dish.description}</p>
                                 </div>
                                 <div className="flex items-center justify-between mt-auto">

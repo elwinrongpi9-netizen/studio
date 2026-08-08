@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -89,7 +90,10 @@ export function DishCard({ dish }: DishCardProps) {
       
       <CardContent className="p-10 pt-2">
         <div className="flex flex-col gap-2 mb-6">
-          <h3 className="font-black text-3xl group-hover:text-primary transition-colors truncate tracking-tighter italic uppercase leading-none">{dish.name}</h3>
+          <div className="flex justify-between items-start gap-4">
+            <h3 className="font-black text-3xl group-hover:text-primary transition-colors truncate tracking-tighter italic uppercase leading-none">{dish.name}</h3>
+            <span className="text-xl font-black text-primary italic whitespace-nowrap">₹{dish.price}</span>
+          </div>
           <div className="flex items-center gap-3">
              <span className="text-[9px] font-black uppercase text-primary tracking-[0.3em]">Signature Dish</span>
              <div className="h-1 w-1 bg-muted-foreground rounded-full opacity-30" />
