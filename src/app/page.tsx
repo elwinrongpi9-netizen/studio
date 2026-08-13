@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, UtensilsCrossed, ChevronDown, MapPin, Star, Clock, Zap, Flame, Sparkles, Navigation, Plus, Store, Info } from "lucide-react";
+import { Search, ChevronDown, MapPin, Sparkles, Navigation, Plus, Info } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, doc } from "firebase/firestore";
@@ -57,12 +57,7 @@ export default function Home() {
       toast({ title: "Please login to save location" });
       return;
     }
-    try {
-      // Logic for updating user address in Firestore can be added here
-      setIsLocationOpen(false);
-    } catch (e) {
-      toast({ variant: "destructive", title: "Failed to update location" });
-    }
+    setIsLocationOpen(false);
   };
 
   const allDishes = useMemo(() => {
@@ -91,7 +86,8 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  const heroBackground = restaurants?.[0]?.image || "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920";
+  // If no restaurants exist, show a clean placeholder background
+  const heroBackground = restaurants?.[0]?.image || "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1920";
 
   return (
     <>
@@ -114,7 +110,7 @@ export default function Home() {
             <div className="flex flex-col items-center text-center">
               <div className="inline-flex items-center gap-2 bg-primary/20 px-4 py-2 rounded-full border border-primary/30 mb-8 animate-in fade-in slide-in-from-top-4 duration-700 backdrop-blur-sm">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Managed Official Kitchen</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Official Local Delivery</span>
               </div>
               
               <h1 className="text-6xl md:text-9xl font-black mb-6 tracking-tighter italic uppercase leading-[0.9] drop-shadow-sm text-foreground">
@@ -123,7 +119,7 @@ export default function Home() {
               </h1>
               
               <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/40 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40 shadow-sm">
-                Experience premium authentic flavors from <span className="text-primary font-black italic">{restaurants?.[0]?.name || "Diphu's Master of the Wok"}</span>.
+                Discover the finest authentic flavors in Karbi Anglong, curated for your premium taste.
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-4xl glass-effect rounded-[3rem] shadow-2xl overflow-hidden ring-4 ring-primary/5 transition-all group">
@@ -134,7 +130,7 @@ export default function Home() {
                       <div className="flex flex-col items-start">
                         <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none mb-1">Current Area</span>
                         <span className="text-base font-black truncate uppercase tracking-tighter max-w-[150px]">
-                          {profile?.address || "Diphu, Karbi Anglong"}
+                          {profile?.address || "Set Your Location"}
                         </span>
                       </div>
                       <ChevronDown className="w-5 h-5 ml-auto text-muted-foreground opacity-50" />
@@ -145,7 +141,7 @@ export default function Home() {
                       <DialogTitle className="text-3xl font-black italic uppercase text-center">Select Delivery Area</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6">
-                      <Button onClick={() => handleUpdateLocation("Detected Location (GPS)")} className="w-full h-14 rounded-2xl bg-primary font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 text-white">
+                      <Button onClick={() => handleUpdateLocation("Detected Location")} className="w-full h-14 rounded-2xl bg-primary font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 text-white">
                         <Navigation className="w-5 h-5" /> Detect My Location
                       </Button>
                       <div className="flex gap-3">
@@ -161,7 +157,7 @@ export default function Home() {
                   <input 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search signature dishes, appetizers..." 
+                    placeholder="Search dishes or restaurants..." 
                     className="w-full pl-20 pr-8 py-7 bg-transparent focus:outline-none text-xl font-bold placeholder:italic text-foreground"
                   />
                 </div>
@@ -195,7 +191,7 @@ export default function Home() {
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
                 <div className="bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 flex-1">
                   <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4 text-foreground">The Master Menu</h2>
-                  <p className="text-muted-foreground font-medium italic">Handpicked premium dishes for the finest taste in Diphu.</p>
+                  <p className="text-muted-foreground font-medium italic">Handpicked premium dishes curated by our expert partners.</p>
                 </div>
                 {categories.length > 1 && (
                   <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
@@ -221,7 +217,7 @@ export default function Home() {
                         <Plus className="w-12 h-12 text-primary" />
                       </div>
                       <h3 className="font-black text-3xl italic uppercase tracking-tighter text-primary">Manage Shop</h3>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-4">Expand the Gallery</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-4">Expand Your Kitchen</p>
                     </Card>
                   </Link>
                 )}
@@ -231,10 +227,11 @@ export default function Home() {
                     <DishCard key={dish.id} dish={dish} />
                   ))
                 ) : (
-                  !isSuperAdmin && !isRestaurantAdmin && (
+                  (!isSuperAdmin && !isRestaurantAdmin) && (
                     <div className="col-span-full py-20 text-center bg-white/40 backdrop-blur-md rounded-[3rem] border border-white/20">
                       <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
-                      <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">No signature items available yet</p>
+                      <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">No active items available right now</p>
+                      <p className="text-[10px] text-muted-foreground mt-2 font-bold">Check back soon for fresh updates!</p>
                     </div>
                   )
                 )}
@@ -249,7 +246,7 @@ export default function Home() {
                  <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive Diphu market priority. Your meal arrives in peak condition.</p>
                  <div className="flex items-center gap-3 bg-green-500/10 w-fit px-4 py-2 rounded-full border border-green-500/20">
                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                   <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Now Delivering</span>
+                   <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">System Active</span>
                  </div>
               </div>
             </aside>
