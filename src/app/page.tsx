@@ -86,8 +86,8 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  // Premium background: Noodle image at 80% opacity as requested
-  const heroBackground = restaurants?.[0]?.image || "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920";
+  // Use the noodle background as requested at 80% opacity
+  const heroBackground = "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920";
 
   return (
     <>
@@ -190,8 +190,8 @@ export default function Home() {
             <div className="lg:col-span-9">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
                 <div className="bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 flex-1">
-                  <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4 text-foreground">The Master Menu</h2>
-                  <p className="text-muted-foreground font-medium italic">Handpicked premium dishes curated by our expert partners.</p>
+                  <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4 text-foreground">Master Menu</h2>
+                  <p className="text-muted-foreground font-medium italic">Official items curated by our expert partners.</p>
                 </div>
                 {categories.length > 1 && (
                   <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
