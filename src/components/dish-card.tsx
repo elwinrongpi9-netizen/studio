@@ -2,16 +2,17 @@
 "use client";
 
 import Image from "next/image";
-import { Plus, Minus, MoreVertical, CheckCircle2, Sparkles, Ban } from "lucide-react";
+import { Plus, Minus, MoreVertical, Sparkles, Ban } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dish } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { useMemo } from "react";
-import { useUser } from "@/firebase";
+import { useUser, useFirestore, useDoc } from "@/firebase";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { doc } from "firebase/firestore";
 
 interface DishCardProps {
   dish: Dish & { restaurantId: string; restaurantName: string };
@@ -20,9 +21,16 @@ interface DishCardProps {
 export function DishCard({ dish }: DishCardProps) {
   const { cart, addToCart, removeFromCart } = useAppStore();
   const { user } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   
-  const isAdmin = user?.email === "junakipi@gmail.com";
+  const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
+  const { data: profile } = useDoc<any>(userRef);
+
+  const isSuperAdmin = user?.email === "junakipi@gmail.com";
+  const isManagedAdmin = profile?.managedRestaurantId === dish.restaurantId;
+  const canManage = isSuperAdmin || isManagedAdmin;
+  
   const inStock = dish.inStock !== false;
 
   const cartItem = useMemo(() => 
@@ -43,14 +51,15 @@ export function DishCard({ dish }: DishCardProps) {
 
   return (
     <Card 
-      className={`border-none bg-card hover:bg-muted/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden group shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-2 ring-border/20 cursor-pointer active:scale-[0.98] relative ${!inStock ? 'grayscale-[0.5] opacity-80' : ''}`}
+      className={`border-none bg-card hover:bg-muted/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden group shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-2 ring-border/20 relative ${!inStock ? 'grayscale-[0.5] opacity-80' : ''}`}
     >
       <div className="relative aspect-square overflow-hidden rounded-[2.5rem] m-5 shadow-2xl">
         <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover scale-105 group-hover:scale-110 transition-transform duration-1000" />
         
-        {isAdmin && (
+        {/* Admin Edit Overlay - 3 Dots Style */}
+        {canManage && (
           <Link href={`/admin?resId=${dish.restaurantId}`} className="absolute top-4 right-4 z-40" onClick={(e) => e.stopPropagation()}>
-            <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full hover:bg-primary transition-all h-10 w-10">
+            <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full hover:bg-primary transition-all h-10 w-10 shadow-2xl">
               <MoreVertical className="w-6 h-6" />
             </Button>
           </Link>
