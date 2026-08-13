@@ -6,18 +6,12 @@ import {
   ShoppingBag, 
   UtensilsCrossed, 
   LogOut, 
-  Lock, 
-  Mail, 
-  Loader2, 
-  ShieldCheck, 
+  LayoutDashboard,
+  ShieldCheck,
   Wallet, 
-  Zap, 
-  Sparkles, 
-  UserPlus, 
+  Loader2, 
   Eye, 
-  EyeOff,
-  Smartphone,
-  LayoutDashboard
+  EyeOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
@@ -42,7 +36,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const ADMIN_EMAIL = "junakipi@gmail.com";
 
@@ -56,9 +49,7 @@ export function Navbar() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
@@ -128,7 +119,6 @@ export function Navbar() {
         await setDoc(doc(firestore, "users", newUser.uid), {
           displayName: email.split('@')[0],
           email: email,
-          phoneNumber: phone,
           role: "user",
           walletBalance: 0,
           wingoBalance: 0,
@@ -159,15 +149,26 @@ export function Navbar() {
     <nav className="w-full border-b-2 border-primary/10 bg-background/90 backdrop-blur-2xl z-[100] sticky top-0 shadow-2xl">
       <div className="container mx-auto px-4 h-24 flex items-center justify-between">
         <div className="flex items-center gap-10">
-          <Link href="/" className="flex items-center gap-4 group">
-             <div className="p-3 bg-primary rounded-[1.5rem] group-hover:rotate-12 transition-all duration-500 shadow-xl shadow-primary/20">
-               <UtensilsCrossed className="w-8 h-8 text-white" />
-             </div>
-             <div className="flex flex-col">
+          <div className="flex items-center gap-4 group">
+             <Link href={hasControlAccess ? "/admin" : "/"} className="relative">
+               <div className="p-3 bg-primary rounded-[1.5rem] group-hover:rotate-12 transition-all duration-500 shadow-xl shadow-primary/20 flex items-center justify-center">
+                 {hasControlAccess ? (
+                   <ShieldCheck className="w-8 h-8 text-white animate-pulse" />
+                 ) : (
+                   <UtensilsCrossed className="w-8 h-8 text-white" />
+                 )}
+               </div>
+               {hasControlAccess && (
+                 <div className="absolute -top-2 -right-2 bg-black text-white p-1 rounded-full shadow-lg">
+                    <LayoutDashboard className="w-3 h-3" />
+                 </div>
+               )}
+             </Link>
+             <Link href="/" className="flex flex-col">
                <span className="text-3xl font-black tracking-tighter italic uppercase leading-none">KARBI</span>
                <span className="text-[10px] font-black tracking-[0.5em] text-primary uppercase ml-1">ZOMATO</span>
-             </div>
-          </Link>
+             </Link>
+          </div>
         </div>
 
         <div className="flex items-center gap-6">
@@ -200,23 +201,14 @@ export function Navbar() {
             {userLoading ? (
               <div className="w-12 h-12 rounded-[1.5rem] bg-muted animate-pulse" />
             ) : user ? (
-              <div className="flex items-center gap-6">
-                {hasControlAccess && (
-                  <Link href="/admin">
-                    <Button variant="ghost" className="hidden xl:flex items-center gap-3 text-primary font-black uppercase text-[10px] tracking-[0.2em] border-2 border-primary/30 rounded-[1.2rem] h-12 px-6 hover:bg-primary/5 transition-all">
-                      <LayoutDashboard className="w-4 h-4" /> Partner Dashboard
-                    </Button>
-                  </Link>
-                )}
-                <div className="flex items-center gap-4 bg-muted/20 p-1.5 rounded-[1.8rem] border border-border/50">
-                  <Avatar className="w-11 h-11 border-2 border-primary/30 p-0.5 rounded-[1.2rem]">
-                    <AvatarImage src={user.photoURL || ""} className="rounded-[1rem]" />
-                    <AvatarFallback className="bg-primary text-white font-black rounded-[1rem] text-sm uppercase">{user.displayName?.charAt(0) || "U"}</AvatarFallback>
-                  </Avatar>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:text-destructive hover:bg-destructive/10 rounded-[1.2rem] h-11 w-11 transition-all">
-                    <LogOut className="w-5 h-5" />
-                  </Button>
-                </div>
+              <div className="flex items-center gap-4 bg-muted/20 p-1.5 rounded-[1.8rem] border border-border/50">
+                <Avatar className="w-11 h-11 border-2 border-primary/30 p-0.5 rounded-[1.2rem]">
+                  <AvatarImage src={user.photoURL || ""} className="rounded-[1rem]" />
+                  <AvatarFallback className="bg-primary text-white font-black rounded-[1rem] text-sm uppercase">{user.displayName?.charAt(0) || "U"}</AvatarFallback>
+                </Avatar>
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:text-destructive hover:bg-destructive/10 rounded-[1.2rem] h-11 w-11 transition-all">
+                  <LogOut className="w-5 h-5" />
+                </Button>
               </div>
             ) : (
               <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>

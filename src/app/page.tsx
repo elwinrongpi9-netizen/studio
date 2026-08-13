@@ -51,7 +51,6 @@ export default function Home() {
       toast({ title: "Please login to save location" });
       return;
     }
-    // Location update logic handled here
     setIsLocationOpen(false);
   };
 
@@ -75,7 +74,7 @@ export default function Home() {
         const matchesCategory = activeCategory === "All" || dish.category === activeCategory;
         return matchesSearch && matchesCategory;
       })
-      .sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z by name
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [allDishes, searchQuery, activeCategory]);
 
   const categories = useMemo(() => {
@@ -83,7 +82,6 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  // Premium background
   const heroBackground = "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&q=80&w=1920";
 
   return (
@@ -183,7 +181,7 @@ export default function Home() {
             
             <aside className="lg:col-span-3 space-y-12">
               <AIRecommendations />
-              <div className="bg-white/60 backdrop-blur-2xl rounded-[3.5rem] p-10 border border-white/30 shadow-2xl relative overflow-hidden">
+              <div className="bg-white/60 backdrop-blur-2xl rounded-[3.5rem] p-10 border border-white/30 shadow-2xl relative overflow-hidden group">
                  <Zap className="w-12 h-12 text-primary mb-6" />
                  <h3 className="font-black text-2xl italic mb-4 uppercase tracking-tighter">Elite Delivery</h3>
                  <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest opacity-70">Official Karbi Anglong priority logistics.</p>

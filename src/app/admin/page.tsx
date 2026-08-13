@@ -516,7 +516,9 @@ function AdminDashboardContent() {
         {/* Camera Dialog */}
         <Dialog open={showCamera} onOpenChange={(open) => !open && stopCamera()}>
           <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-black">
-            <DialogTitle className="sr-only">Camera</DialogTitle>
+            <DialogHeader>
+              <DialogTitle className="sr-only">Camera</DialogTitle>
+            </DialogHeader>
             <div className="relative aspect-[3/4] w-full bg-black flex items-center justify-center">
               <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               <canvas ref={canvasRef} className="hidden" />
