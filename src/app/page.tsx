@@ -51,6 +51,7 @@ export default function Home() {
       toast({ title: "Please login to save location" });
       return;
     }
+    // Location update logic handled here
     setIsLocationOpen(false);
   };
 
@@ -66,13 +67,15 @@ export default function Home() {
   }, [restaurants]);
 
   const filteredDishes = useMemo(() => {
-    return allDishes.filter((dish) => {
-      const matchesSearch = 
-        dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        dish.restaurantName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = activeCategory === "All" || dish.category === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
+    return allDishes
+      .filter((dish) => {
+        const matchesSearch = 
+          dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          dish.restaurantName.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = activeCategory === "All" || dish.category === activeCategory;
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name)); // Sort A-Z by name
   }, [allDishes, searchQuery, activeCategory]);
 
   const categories = useMemo(() => {
@@ -169,6 +172,12 @@ export default function Home() {
                 {filteredDishes.length > 0 && filteredDishes.map((dish) => (
                   <DishCard key={dish.id} dish={dish} />
                 ))}
+
+                {filteredDishes.length === 0 && searchQuery !== "" && (
+                  <div className="col-span-full py-20 text-center">
+                    <p className="text-2xl font-black italic uppercase tracking-tighter opacity-20">No matching items found</p>
+                  </div>
+                )}
               </div>
             </div>
             
