@@ -2,7 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import { Plus, Minus, Settings, CheckCircle2, Sparkles, Ban } from "lucide-react";
+import { Plus, Minus, MoreVertical, CheckCircle2, Sparkles, Ban } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dish } from "@/lib/types";
@@ -50,8 +50,8 @@ export function DishCard({ dish }: DishCardProps) {
         
         {isAdmin && (
           <Link href={`/admin?resId=${dish.restaurantId}`} className="absolute top-4 right-4 z-40" onClick={(e) => e.stopPropagation()}>
-            <Button size="icon" variant="ghost" className="bg-black/40 backdrop-blur-xl border border-white/20 text-white rounded-full hover:bg-primary transition-all">
-              <Settings className="w-5 h-5" />
+            <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full hover:bg-primary transition-all h-10 w-10">
+              <MoreVertical className="w-6 h-6" />
             </Button>
           </Link>
         )}

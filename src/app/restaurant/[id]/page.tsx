@@ -1,9 +1,10 @@
+
 "use client";
 
 import { use, useState, useMemo } from "react";
 import Image from "next/image";
 import { Navbar } from "@/components/navbar";
-import { Star, Clock, Info, Search, Plus, ShoppingCart, ArrowLeft, Loader2, Sparkles, Flame, ShieldCheck, Settings } from "lucide-react";
+import { Star, Clock, Info, Search, Plus, ShoppingCart, ArrowLeft, Loader2, Sparkles, Flame, ShieldCheck, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -189,7 +190,7 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                                 {canManage && (
                                   <Link href={`/admin?resId=${id}`} className="absolute top-2 right-2 z-40">
                                     <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-md border border-white/20 text-white rounded-xl hover:bg-primary h-8 w-8">
-                                      <Settings className="w-4 h-4" />
+                                      <MoreVertical className="w-5 h-5" />
                                     </Button>
                                   </Link>
                                 )}
