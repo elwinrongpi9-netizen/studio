@@ -80,6 +80,8 @@ function AdminDashboardContent() {
   const lastOrderIdRef = useRef<string | null>(null);
 
   const [selectedResId, setSelectedResId] = useState("");
+  const [showCreateResDialog, setShowCreateResDialog] = useState(false);
+  const [newResData, setNewResData] = useState({ name: "", cuisine: "", image: "" });
   
   // Shop Edit State
   const [shopEdit, setShopEdit] = useState({
@@ -107,7 +109,7 @@ function AdminDashboardContent() {
 
   // Camera State
   const [showCamera, setShowCamera] = useState(false);
-  const [cameraTarget, setCameraTarget] = useState<"dish" | "inspiration" | "shop">("dish");
+  const [cameraTarget, setCameraTarget] = useState<"dish" | "inspiration" | "shop" | "newRes">("dish");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -239,6 +241,30 @@ function AdminDashboardContent() {
     toast({ title: `Order ${newStatus}` });
   };
 
+  const handleCreateRestaurant = async () => {
+    if (!firestore || !newResData.name || !newResData.image) {
+      toast({ title: "Details or Image missing", variant: "destructive" });
+      return;
+    }
+
+    const resId = `res_${Date.now()}`;
+    await setDoc(doc(firestore, "restaurants", resId), {
+      id: resId,
+      name: newResData.name,
+      cuisine: newResData.cuisine,
+      image: newResData.image,
+      rating: 4.5,
+      deliveryTime: "30 min",
+      priceRange: "₹₹",
+      dishes: []
+    });
+
+    toast({ title: "Restaurant Created! 🏪" });
+    setNewResData({ name: "", cuisine: "", image: "" });
+    setShowCreateResDialog(false);
+    setSelectedResId(resId);
+  };
+
   const handleUpdateShopProfile = async () => {
     if (!firestore || !selectedResId || !shopEdit.name || !shopEdit.image) {
       toast({ title: "Name or Image missing", variant: "destructive" });
@@ -342,7 +368,7 @@ function AdminDashboardContent() {
     return url.startsWith('http://') || url.startsWith('https://');
   };
 
-  const startCamera = async (target: "dish" | "inspiration" | "shop") => {
+  const startCamera = async (target: "dish" | "inspiration" | "shop" | "newRes") => {
     setCameraTarget(target);
     setShowCamera(true);
     
@@ -406,6 +432,8 @@ function AdminDashboardContent() {
           setNewDish({ ...newDish, image: dataUrl });
         } else if (cameraTarget === "shop") {
           setShopEdit({ ...shopEdit, image: dataUrl });
+        } else if (cameraTarget === "newRes") {
+          setNewResData({ ...newResData, image: dataUrl });
         } else {
           setNewInspiration({ ...newInspiration, image: dataUrl });
         }
@@ -527,7 +555,7 @@ function AdminDashboardContent() {
                           <td className="p-6">
                             <div className="flex items-center gap-2">
                               <Store className="w-4 h-4 text-primary" />
-                              <span className="font-black text-xs uppercase italic text-foreground">{order.restaurantName || "Rongpi Chinese Wok"}</span>
+                              <span className="font-black text-xs uppercase italic text-foreground">{order.restaurantName}</span>
                             </div>
                           </td>
                         )}
@@ -584,15 +612,22 @@ function AdminDashboardContent() {
                  <h2 className="text-3xl font-black italic flex items-center gap-3 uppercase tracking-tighter text-foreground">
                    <Store className="w-8 h-8 text-primary" /> Shop Profile Management
                  </h2>
-                 {isSuperAdmin && (
-                   <div className="flex items-center gap-3 bg-muted/30 px-6 py-3 rounded-2xl border border-border">
-                     <Label className="text-[10px] font-black uppercase text-muted-foreground whitespace-nowrap">Select Shop</Label>
-                     <select value={selectedResId} onChange={(e) => setSelectedResId(e.target.value)} className="bg-transparent font-black text-sm text-primary focus:outline-none">
-                       <option value="">Choose Restaurant</option>
-                       {visibleRestaurants?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                     </select>
-                   </div>
-                 )}
+                 <div className="flex gap-4">
+                   {isSuperAdmin && (
+                     <Button onClick={() => setShowCreateResDialog(true)} className="rounded-2xl font-black uppercase tracking-widest h-14 px-8 flex gap-2">
+                       <Plus className="w-5 h-5" /> New Shop
+                     </Button>
+                   )}
+                   {isSuperAdmin && (
+                     <div className="flex items-center gap-3 bg-muted/30 px-6 py-3 rounded-2xl border border-border">
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground whitespace-nowrap">Select Shop</Label>
+                       <select value={selectedResId} onChange={(e) => setSelectedResId(e.target.value)} className="bg-transparent font-black text-sm text-primary focus:outline-none">
+                         <option value="">Choose Restaurant</option>
+                         {visibleRestaurants?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                       </select>
+                     </div>
+                   )}
+                 </div>
                </div>
 
                {selectedRestaurant ? (
@@ -631,7 +666,10 @@ function AdminDashboardContent() {
                ) : (
                  <div className="text-center py-20 bg-muted/10 rounded-[2.5rem] border-2 border-dashed">
                     <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-                    <p className="font-black text-muted-foreground uppercase text-xs">Please select a shop to manage its profile</p>
+                    <p className="font-black text-muted-foreground uppercase text-xs">Please select or create a shop to manage</p>
+                    {isSuperAdmin && (
+                      <Button onClick={() => setShowCreateResDialog(true)} variant="link" className="mt-4 font-black text-primary">Create Your First Shop Now</Button>
+                    )}
                  </div>
                )}
              </Card>
@@ -801,6 +839,38 @@ function AdminDashboardContent() {
           )}
         </Tabs>
 
+        {/* Create Restaurant Dialog */}
+        <Dialog open={showCreateResDialog} onOpenChange={setShowCreateResDialog}>
+          <DialogContent className="rounded-[3rem] p-10 max-w-2xl bg-card border-none shadow-2xl">
+            <DialogHeader className="mb-8">
+              <DialogTitle className="text-4xl font-black italic uppercase tracking-tighter flex items-center gap-4">
+                <Store className="w-10 h-10 text-primary" /> Create New Shop
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <Input placeholder="Shop Name" value={newResData.name} onChange={e => setNewResData({...newResData, name: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 border-none" />
+                <Input placeholder="Cuisine / Tagline" value={newResData.cuisine} onChange={e => setNewResData({...newResData, cuisine: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 border-none" />
+                <Button onClick={handleCreateRestaurant} className="w-full h-16 rounded-2xl font-black text-xl bg-primary text-white">Create Official Shop</Button>
+              </div>
+              <div className="space-y-6">
+                <div className="flex gap-2">
+                  <Input placeholder="Header Image URL" value={newResData.image} onChange={e => setNewResData({...newResData, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 border-none flex-1" />
+                  <Button variant="outline" onClick={() => startCamera("newRes")} className="h-14 rounded-2xl border-primary/20 text-primary px-4"><Camera className="w-5 h-5" /></Button>
+                </div>
+                {isValidUrl(newResData.image) ? (
+                  <div className="relative aspect-video rounded-2xl overflow-hidden border border-border">
+                    <Image src={newResData.image} alt="New Shop Preview" fill unoptimized className="object-cover" />
+                  </div>
+                ) : (
+                  <div className="aspect-video rounded-2xl bg-muted/20 border-2 border-dashed flex items-center justify-center text-[10px] font-black uppercase text-muted-foreground opacity-30">Image Preview</div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Camera Dialog */}
         <Dialog open={showCamera} onOpenChange={(open) => !open && stopCamera()}>
           <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-black border-none">
             <DialogHeader className="p-6 bg-background/10 backdrop-blur-md absolute top-0 w-full z-10">
