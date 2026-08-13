@@ -36,7 +36,7 @@ const personalizeMealSuggestionsPrompt = ai.definePrompt({
   {{{popularLocalDishes}}}
   
   Instructions:
-  - Suggest 2-3 items from the provided context.
+  - Suggest items from the provided context only.
   - Do not hallucinate items that aren't in the provided history or local list.
   - If no context is given, return an empty list.
   `,

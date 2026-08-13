@@ -22,7 +22,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// SYNCED WITH PHP LOGIC MERCHANT UPI
 const MERCHANT_UPI_ID = "Q297152786@ybl";
 const MERCHANT_NAME = "KARBI ZOMATO";
 
@@ -100,18 +99,12 @@ export default function WalletPage() {
     };
 
     try {
-      // Record in Global PhonePe Orders
       await setDoc(doc(firestore, "phonepe_orders", requestId), requestData);
-      
-      // Record Withdrawal Request
       await addDoc(collection(firestore, "withdrawalRequests"), requestData);
-
-      // Deduct Wallet Balance
       await updateDoc(doc(firestore, "users", user.uid), {
         walletBalance: increment(-withdrawAmount)
       });
 
-      // Show Success Animation
       setTimeout(() => {
         setTransferState("success");
         setIsSubmitting(false);

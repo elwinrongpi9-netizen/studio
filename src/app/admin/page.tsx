@@ -493,7 +493,9 @@ function AdminDashboardContent() {
         {/* Create Restaurant Dialog */}
         <Dialog open={showCreateResDialog} onOpenChange={setShowCreateResDialog}>
           <DialogContent className="rounded-[3rem] p-10 max-w-2xl">
-            <DialogHeader className="mb-8"><DialogTitle className="text-4xl font-black italic uppercase">New Shop</DialogTitle></DialogHeader>
+            <DialogHeader className="mb-8">
+              <DialogTitle className="text-4xl font-black italic uppercase">New Shop</DialogTitle>
+            </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <Input placeholder="Shop Name" value={newResData.name} onChange={e => setNewResData({...newResData, name: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10" />
@@ -514,6 +516,7 @@ function AdminDashboardContent() {
         {/* Camera Dialog */}
         <Dialog open={showCamera} onOpenChange={(open) => !open && stopCamera()}>
           <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-black">
+            <DialogTitle className="sr-only">Camera</DialogTitle>
             <div className="relative aspect-[3/4] w-full bg-black flex items-center justify-center">
               <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               <canvas ref={canvasRef} className="hidden" />

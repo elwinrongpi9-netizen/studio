@@ -10,7 +10,7 @@ import { Search, ChevronDown, MapPin, Sparkles, Navigation, Plus, Zap } from "lu
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, doc } from "firebase/firestore";
-import { Restaurant, Inspiration } from "@/lib/types";
+import { Restaurant } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -80,6 +80,7 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
+  // Premium background
   const heroBackground = "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&q=80&w=1920";
 
   return (
@@ -120,7 +121,9 @@ export default function Home() {
                     </div>
                   </DialogTrigger>
                   <DialogContent className="rounded-[3rem] p-10 bg-white">
-                    <DialogHeader className="mb-6"><DialogTitle className="text-3xl font-black italic uppercase text-center">Select Area</DialogTitle></DialogHeader>
+                    <DialogHeader className="mb-6">
+                      <DialogTitle className="text-3xl font-black italic uppercase text-center">Select Area</DialogTitle>
+                    </DialogHeader>
                     <div className="space-y-6">
                       <Button onClick={() => handleUpdateLocation("Detected")} className="w-full h-14 rounded-2xl bg-primary font-black uppercase shadow-xl text-white"><Navigation className="w-5 h-5 mr-3" /> Detect Location</Button>
                       <div className="flex gap-3">
