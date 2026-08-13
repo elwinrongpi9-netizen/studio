@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronDown, MapPin, Sparkles, Navigation, Plus, Info } from "lucide-react";
+import { Search, ChevronDown, MapPin, Sparkles, Navigation, Plus, Info, Zap } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, doc } from "firebase/firestore";
@@ -86,7 +86,7 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  // If no restaurants exist, show a clean placeholder background
+  // Premium background: Uses the first admin-added restaurant image or a clean default if empty
   const heroBackground = restaurants?.[0]?.image || "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1920";
 
   return (
