@@ -1,34 +1,3 @@
 {
-  "placeholderImages": [
-    {
-      "id": "chilli-chicken",
-      "description": "Spicy Chilli Chicken",
-      "imageUrl": "https://picsum.photos/seed/chilli/400/300",
-      "imageHint": "chilli chicken"
-    },
-    {
-      "id": "chicken-65",
-      "description": "Chicken 65 Appetizer",
-      "imageUrl": "https://picsum.photos/seed/c65/400/300",
-      "imageHint": "fried chicken"
-    },
-    {
-      "id": "biryani",
-      "description": "Chicken Dum Biryani",
-      "imageUrl": "https://picsum.photos/seed/biry/400/300",
-      "imageHint": "chicken biryani"
-    },
-    {
-      "id": "noodles",
-      "description": "Chicken Stir-fry Noodles",
-      "imageUrl": "https://picsum.photos/seed/cn/400/300",
-      "imageHint": "chicken noodles"
-    },
-    {
-      "id": "fried-rice",
-      "description": "Chicken Fried Rice",
-      "imageUrl": "https://picsum.photos/seed/cfr/400/300",
-      "imageHint": "fried rice"
-    }
-  ]
+  "placeholderImages": []
 }

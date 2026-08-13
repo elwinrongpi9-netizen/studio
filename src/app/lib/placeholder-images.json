@@ -1,35 +1,4 @@
 
 {
-  "placeholderImages": [
-    {
-      "id": "biryani",
-      "description": "Authentic Chicken Biryani",
-      "imageUrl": "https://picsum.photos/seed/biryani123/600/400",
-      "imageHint": "chicken biryani"
-    },
-    {
-      "id": "chilli-chicken",
-      "description": "Spicy Chilli Chicken",
-      "imageUrl": "https://picsum.photos/seed/chilli456/600/400",
-      "imageHint": "chilli chicken"
-    },
-    {
-      "id": "noodles",
-      "description": "Wok-fried Chinese Noodles",
-      "imageUrl": "https://picsum.photos/seed/noodle789/600/400",
-      "imageHint": "chinese noodles"
-    },
-    {
-      "id": "chicken-65",
-      "description": "Deep Fried Chicken 65",
-      "imageUrl": "https://picsum.photos/seed/c65item/600/400",
-      "imageHint": "fried chicken"
-    },
-    {
-      "id": "fried-rice",
-      "description": "Signature Fried Rice",
-      "imageUrl": "https://picsum.photos/seed/riceitem/600/400",
-      "imageHint": "fried rice"
-    }
-  ]
+  "placeholderImages": []
 }

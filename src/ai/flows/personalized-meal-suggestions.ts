@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for generating personalized meal suggestions.
@@ -56,24 +57,25 @@ const personalizeMealSuggestionsFlow = ai.defineFlow(
 );
 
 /**
- * Fallback suggestions to use if the AI service fails (e.g., invalid API key).
+ * Fallback suggestions to use if the AI service fails.
+ * Updated to be generic as per admin request to remove mock items.
  */
 const fallbackSuggestions: PersonalizedMealSuggestionsOutput = {
   suggestions: [
     {
-      mealName: "Signature Violet Risotto",
-      description: "A vibrant, creamy risotto infused with roasted beets and goat cheese, matching our theme colors.",
-      cuisine: "Italian Fusion"
+      mealName: "Chef's Daily Special",
+      description: "A fresh and unique preparation using local seasonal ingredients.",
+      cuisine: "Fusion"
     },
     {
-      mealName: "Blue Ocean Sushi Platter",
-      description: "Fresh Atlantic salmon and tuna rolls served with butterfly pea flower infused rice.",
-      cuisine: "Japanese"
+      mealName: "Premium House Platter",
+      description: "A selection of our kitchen's best offerings curated just for you.",
+      cuisine: "Gourmet"
     },
     {
-      mealName: "Karbi Tandoori Platter",
-      description: "A spicy selection of local favorites prepared in a traditional tandoor oven.",
-      cuisine: "North Indian"
+      mealName: "Local Favorite Dish",
+      description: "The most popular dish currently trending in the Diphu market.",
+      cuisine: "Traditional"
     }
   ]
 };
@@ -82,7 +84,7 @@ export async function personalizeMealSuggestions(input: PersonalizedMealSuggesti
   try {
     return await personalizeMealSuggestionsFlow(input);
   } catch (error) {
-    console.error("GenAI Error: Falling back to static suggestions.", error);
+    console.error("GenAI Error: Falling back to generic suggestions.", error);
     return fallbackSuggestions;
   }
 }

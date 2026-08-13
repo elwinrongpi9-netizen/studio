@@ -86,8 +86,8 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  // Premium background: Uses the first admin-added restaurant image or a clean default if empty
-  const heroBackground = restaurants?.[0]?.image || "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1920";
+  // Premium background: Noodle image at 80% opacity as requested
+  const heroBackground = restaurants?.[0]?.image || "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920";
 
   return (
     <>
