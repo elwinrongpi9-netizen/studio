@@ -85,7 +85,8 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  const heroBackground = "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920";
+  // Clean background without mock images.
+  const heroBackground = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1920";
 
   return (
     <>
@@ -208,7 +209,7 @@ export default function Home() {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-16">
-                {(isSuperAdmin || isRestaurantAdmin) && !searchQuery && (
+                {(isSuperAdmin || isRestaurantAdmin) && (
                   <Link href={isSuperAdmin ? "/admin" : `/admin?resId=${profile?.managedRestaurantId}`} className="group h-full">
                     <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-500 rounded-[3.5rem] overflow-hidden h-full flex flex-col items-center justify-center p-12 text-center min-h-[400px] backdrop-blur-sm">
                       <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-90 transition-all">
@@ -241,7 +242,7 @@ export default function Home() {
               <div className="bg-white/60 backdrop-blur-2xl rounded-[3.5rem] p-10 border border-white/30 shadow-2xl relative overflow-hidden group">
                  <Zap className="w-12 h-12 text-primary mb-6" />
                  <h3 className="font-black text-2xl italic mb-4 uppercase tracking-tighter">Elite Delivery</h3>
-                 <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive Diphu market priority. Your meal arrives in peak condition.</p>
+                 <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive local priority. Your meal arrives in peak condition.</p>
                  <div className="flex items-center gap-3 bg-green-500/10 w-fit px-4 py-2 rounded-full border border-green-500/20">
                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                    <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">System Active</span>

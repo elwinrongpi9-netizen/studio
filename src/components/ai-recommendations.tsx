@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -27,24 +26,31 @@ export function AIRecommendations() {
   const { data: pastOrders } = useCollection<any>(ordersQuery);
 
   const fetchSuggestions = async () => {
-    const historyString = pastOrders?.length 
-      ? pastOrders.map(o => o.items.map((i: any) => i.name).join(", ")).join("; ")
-      : "No order history yet. User is looking for local favorites.";
+    if (!pastOrders || pastOrders.length === 0) {
+      setSuggestions({ suggestions: [] });
+      return;
+    }
+
+    const historyString = pastOrders.map(o => o.items.map((i: any) => i.name).join(", ")).join("; ");
 
     try {
       const result = await personalizeMealSuggestions({
         pastOrderHistory: historyString,
-        popularLocalDishes: "Local Karbi favorites and trending items from Diphu market."
+        popularLocalDishes: "Local favorites added by the admin."
       });
       setSuggestions(result);
     } catch (error) {
       console.error("AI flow error:", error);
+      setSuggestions({ suggestions: [] });
     }
   };
 
   useEffect(() => {
     fetchSuggestions();
   }, [pastOrders]);
+
+  // Hide the component if there are no suggestions to keep the UI blank as requested.
+  if (!suggestions || suggestions.suggestions.length === 0) return null;
 
   return (
     <Card className="bg-white border-none shadow-xl overflow-hidden relative rounded-3xl group">
@@ -62,7 +68,7 @@ export function AIRecommendations() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {suggestions?.suggestions.map((item, idx) => (
+          {suggestions.suggestions.map((item, idx) => (
             <div key={idx} className="bg-primary/[0.03] p-4 rounded-2xl hover:bg-primary/[0.08] transition-all cursor-pointer group/item border border-primary/5 hover:scale-[1.02] active:scale-[0.98]">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-black text-sm group-hover/item:text-primary transition-colors uppercase italic">{item.mealName}</h4>
@@ -74,7 +80,7 @@ export function AIRecommendations() {
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed font-medium italic opacity-70">{item.description}</p>
             </div>
-          )) || <p className="text-xs font-bold text-muted-foreground animate-pulse text-center py-4 uppercase">Personalizing...</p>}
+          ))}
           <Button 
             variant="outline" 
             className="w-full rounded-2xl border-primary/20 hover:bg-primary hover:text-white transition-all text-xs font-black uppercase tracking-widest py-6 mt-2 shadow-sm"

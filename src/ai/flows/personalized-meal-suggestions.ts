@@ -56,34 +56,19 @@ const personalizeMealSuggestionsFlow = ai.defineFlow(
 );
 
 /**
- * Fallback suggestions to use if the AI service fails.
- * Updated to be generic as per admin request to remove mock items.
+ * Fallback suggestions to use if the AI service fails or no data exists.
+ * Set to empty to ensure only admin-added or real history items appear.
  */
 const fallbackSuggestions: PersonalizedMealSuggestionsOutput = {
-  suggestions: [
-    {
-      mealName: "Chef's Daily Special",
-      description: "A fresh and unique preparation using local seasonal ingredients.",
-      cuisine: "Fusion"
-    },
-    {
-      mealName: "Premium House Platter",
-      description: "A selection of our kitchen's best offerings curated just for you.",
-      cuisine: "Gourmet"
-    },
-    {
-      mealName: "Local Favorite Dish",
-      description: "The most popular dish currently trending in the Diphu market.",
-      cuisine: "Traditional"
-    }
-  ]
+  suggestions: []
 };
 
 export async function personalizeMealSuggestions(input: PersonalizedMealSuggestionsInput): Promise<PersonalizedMealSuggestionsOutput> {
   try {
-    return await personalizeMealSuggestionsFlow(input);
+    const result = await personalizeMealSuggestionsFlow(input);
+    return result;
   } catch (error) {
-    console.error("GenAI Error: Falling back to generic suggestions.", error);
+    console.error("GenAI Error: No suggestions found or service unavailable.");
     return fallbackSuggestions;
   }
 }
