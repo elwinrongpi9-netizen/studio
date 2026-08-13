@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -86,7 +85,6 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  // Use the noodle background as requested at 80% opacity
   const heroBackground = "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920";
 
   return (
@@ -119,7 +117,7 @@ export default function Home() {
               </h1>
               
               <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/40 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40 shadow-sm">
-                Discover the finest authentic flavors in Karbi Anglong, curated for your premium taste.
+                Authentic flavors curated by our local partners.
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-4xl glass-effect rounded-[3rem] shadow-2xl overflow-hidden ring-4 ring-primary/5 transition-all group">
