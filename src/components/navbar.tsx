@@ -9,9 +9,7 @@ import {
   LayoutDashboard,
   ShieldCheck,
   Wallet, 
-  Loader2, 
-  Eye, 
-  EyeOff
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/lib/store";
@@ -58,7 +56,7 @@ export function Navbar() {
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   
   const isSuperAdmin = user?.email === ADMIN_EMAIL;
-  const isRestaurantAdmin = !!profile?.managedRestaurantId;
+  const isRestaurantAdmin = profile?.role === 'restaurant_admin' || !!profile?.managedRestaurantId;
   const hasControlAccess = isSuperAdmin || isRestaurantAdmin;
 
   useEffect(() => {

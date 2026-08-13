@@ -6,7 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { DishCard } from "@/components/dish-card";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronDown, MapPin, Sparkles, Navigation, Plus, Zap } from "lucide-react";
+import { Search, ChevronDown, MapPin, Sparkles, Navigation, Plus } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, doc } from "firebase/firestore";
@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+
+const ADMIN_EMAIL = "junakipi@gmail.com";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,8 +45,9 @@ export default function Home() {
 
   const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
 
-  const isSuperAdmin = user?.email === "junakipi@gmail.com";
-  const isRestaurantAdmin = !!profile?.managedRestaurantId;
+  const isSuperAdmin = user?.email === ADMIN_EMAIL;
+  const isRestaurantAdmin = profile?.role === 'restaurant_admin' || !!profile?.managedRestaurantId;
+  const hasControlAccess = isSuperAdmin || isRestaurantAdmin;
 
   const handleUpdateLocation = async (address: string) => {
     if (!user || !firestore) {
@@ -158,7 +161,8 @@ export default function Home() {
               )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-16">
-                {(isSuperAdmin || isRestaurantAdmin) && (
+                {/* ADMIN ONLY CARD */}
+                {hasControlAccess && (
                   <Link href={isSuperAdmin ? "/admin" : `/admin?resId=${profile?.managedRestaurantId}`} className="group h-full">
                     <Card className="border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all rounded-[3.5rem] flex flex-col items-center justify-center p-12 text-center min-h-[400px] backdrop-blur-sm">
                       <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-90 transition-all"><Plus className="w-12 h-12 text-primary" /></div>
@@ -182,7 +186,7 @@ export default function Home() {
             <aside className="lg:col-span-3 space-y-12">
               <AIRecommendations />
               <div className="bg-white/60 backdrop-blur-2xl rounded-[3.5rem] p-10 border border-white/30 shadow-2xl relative overflow-hidden group">
-                 <Zap className="w-12 h-12 text-primary mb-6" />
+                 <Sparkles className="w-12 h-12 text-primary mb-6" />
                  <h3 className="font-black text-2xl italic mb-4 uppercase tracking-tighter">Elite Delivery</h3>
                  <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest opacity-70">Official Karbi Anglong priority logistics.</p>
               </div>

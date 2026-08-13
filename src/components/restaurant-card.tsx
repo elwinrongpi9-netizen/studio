@@ -15,6 +15,8 @@ interface RestaurantCardProps {
   restaurant: Restaurant;
 }
 
+const ADMIN_EMAIL = "junakipi@gmail.com";
+
 export function RestaurantCard({ restaurant }: RestaurantCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -22,7 +24,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
   const { data: profile } = useDoc<any>(userRef);
 
-  const isSuperAdmin = user?.email === "junakipi@gmail.com";
+  const isSuperAdmin = user?.email === ADMIN_EMAIL;
   const isManagedAdmin = profile?.managedRestaurantId === restaurant.id;
   const canManage = isSuperAdmin || isManagedAdmin;
 
@@ -61,7 +63,7 @@ export function RestaurantCard({ restaurant }: RestaurantCardProps) {
         </Card>
       </Link>
 
-      {/* Admin Edit Overlay - 3 Dots Style */}
+      {/* Admin Edit Overlay - ONLY FOR ADMINS */}
       {canManage && (
         <Link href={`/admin?resId=${restaurant.id}`} className="absolute top-6 right-6 z-40">
           <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full hover:bg-primary transition-all h-10 w-10 shadow-2xl">

@@ -18,6 +18,8 @@ interface DishCardProps {
   dish: Dish & { restaurantId: string; restaurantName: string };
 }
 
+const ADMIN_EMAIL = "junakipi@gmail.com";
+
 export function DishCard({ dish }: DishCardProps) {
   const { cart, addToCart, removeFromCart } = useAppStore();
   const { user } = useUser();
@@ -27,7 +29,7 @@ export function DishCard({ dish }: DishCardProps) {
   const userRef = useMemo(() => (user && firestore) ? doc(firestore, "users", user.uid) : null, [user, firestore]);
   const { data: profile } = useDoc<any>(userRef);
 
-  const isSuperAdmin = user?.email === "junakipi@gmail.com";
+  const isSuperAdmin = user?.email === ADMIN_EMAIL;
   const isManagedAdmin = profile?.managedRestaurantId === dish.restaurantId;
   const canManage = isSuperAdmin || isManagedAdmin;
   
@@ -56,7 +58,7 @@ export function DishCard({ dish }: DishCardProps) {
       <div className="relative aspect-square overflow-hidden rounded-[2.5rem] m-5 shadow-2xl">
         <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover scale-105 group-hover:scale-110 transition-transform duration-1000" />
         
-        {/* Admin Edit Overlay - 3 Dots Style */}
+        {/* Admin Edit Overlay - ONLY FOR ADMINS */}
         {canManage && (
           <Link href={`/admin?resId=${dish.restaurantId}`} className="absolute top-4 right-4 z-40" onClick={(e) => e.stopPropagation()}>
             <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-xl border border-white/20 text-white rounded-full hover:bg-primary transition-all h-10 w-10 shadow-2xl">
