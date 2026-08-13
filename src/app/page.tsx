@@ -80,8 +80,7 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  // Clean background focus.
-  const heroBackground = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1920";
+  const heroBackground = "https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&q=80&w=1920";
 
   return (
     <>
@@ -113,7 +112,7 @@ export default function Home() {
               </h1>
               
               <p className="text-foreground text-xl md:text-2xl mb-12 max-w-3xl font-bold tracking-tight bg-white/40 backdrop-blur-md px-6 py-4 rounded-3xl border border-white/40 shadow-sm">
-                Authentic flavors curated by our local partners.
+                Taste the authenticity of Karbi Anglong.
               </p>
 
               <div className="flex flex-col md:flex-row w-full max-w-4xl glass-effect rounded-[3rem] shadow-2xl overflow-hidden ring-4 ring-primary/5 transition-all group">
@@ -199,7 +198,7 @@ export default function Home() {
                   (!isSuperAdmin && !isRestaurantAdmin) && (
                     <div className="col-span-full py-20 text-center bg-white/40 backdrop-blur-md rounded-[3rem] border border-white/20">
                       <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
-                      <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">No active items available right now</p>
+                      <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">Awaiting new arrivals from our partners</p>
                     </div>
                   )
                 )}
@@ -211,7 +210,7 @@ export default function Home() {
               <div className="bg-white/60 backdrop-blur-2xl rounded-[3.5rem] p-10 border border-white/30 shadow-2xl relative overflow-hidden group">
                  <Zap className="w-12 h-12 text-primary mb-6" />
                  <h3 className="font-black text-2xl italic mb-4 uppercase tracking-tighter">Elite Delivery</h3>
-                 <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive local priority. Your meal arrives in peak condition.</p>
+                 <p className="text-[11px] font-bold text-muted-foreground leading-relaxed uppercase tracking-widest mb-8 opacity-70">Exclusive Diphu market priority. Your meal arrives in peak condition.</p>
                  <div className="flex items-center gap-3 bg-green-500/10 w-fit px-4 py-2 rounded-full border border-green-500/20">
                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                    <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">System Active</span>

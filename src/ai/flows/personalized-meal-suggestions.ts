@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for generating personalized meal suggestions.
@@ -29,8 +30,8 @@ const personalizeMealSuggestionsPrompt = ai.definePrompt({
   name: 'personalizeMealSuggestionsPrompt',
   input: {schema: PersonalizedMealSuggestionsInputSchema},
   output: {schema: PersonalizedMealSuggestionsOutputSchema},
-  prompt: `You are a helpful AI assistant specialized in recommending food.
-  Your goal is to provide personalized meal suggestions based on the user's past order history and popular local dishes.
+  prompt: `You are a helpful AI assistant specialized in recommending food for users in Karbi Anglong.
+  Your goal is to provide personalized meal suggestions based strictly on the user's past order history and the local dishes provided.
   
   User's Past Order History:
   {{{pastOrderHistory}}}
@@ -38,8 +39,10 @@ const personalizeMealSuggestionsPrompt = ai.definePrompt({
   Popular Local Dishes:
   {{{popularLocalDishes}}}
   
-  Based on this information, suggest 3-5 meal options that the user might enjoy. For each suggestion, provide the meal name, a brief description, and its cuisine type.
-  The suggestions should be new and exciting options while still aligning with the user's likely preferences.
+  Instructions:
+  - If the User's Past Order History is empty, return an empty list of suggestions.
+  - Do not suggest generic items like "Margherita Pizza" or "Truffle Mushroom" unless they are in the user's history or local dishes.
+  - Provide 2-3 suggestions that align with the user's likely preferences based ONLY on the provided context.
   `,
 });
 
@@ -50,6 +53,10 @@ const personalizeMealSuggestionsFlow = ai.defineFlow(
     outputSchema: PersonalizedMealSuggestionsOutputSchema,
   },
   async (input) => {
+    // Return empty if no history to avoid hallucinations
+    if (!input.pastOrderHistory || input.pastOrderHistory.trim() === "") {
+      return { suggestions: [] };
+    }
     const {output} = await personalizeMealSuggestionsPrompt(input);
     return output!;
   }
