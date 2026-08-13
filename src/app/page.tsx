@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -9,7 +10,7 @@ import { Search, ChevronDown, MapPin, Sparkles, Navigation, Plus, Info, Zap } fr
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, doc } from "firebase/firestore";
-import { Restaurant, Inspiration } from "@/lib/types";
+import { Restaurant } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -40,13 +41,7 @@ export default function Home() {
     return query(collection(firestore, "restaurants"), orderBy("name"));
   }, [firestore]);
 
-  const inspirationsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "inspirations"), orderBy("name"));
-  }, [firestore]);
-
   const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
-  const { data: dbInspirations } = useCollection<Inspiration>(inspirationsQuery);
 
   const isSuperAdmin = user?.email === "junakipi@gmail.com";
   const isRestaurantAdmin = !!profile?.managedRestaurantId;
@@ -85,7 +80,7 @@ export default function Home() {
     return ["All", ...Array.from(cats)];
   }, [allDishes]);
 
-  // Clean background without mock images.
+  // Clean background focus.
   const heroBackground = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1920";
 
   return (
@@ -104,7 +99,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-br from-background/95 via-background/80 to-primary/5" />
         </div>
 
-        <section className="relative pt-24 pb-32 overflow-hidden min-h-[85vh] flex items-center z-10">
+        <section className="relative pt-24 pb-20 overflow-hidden flex items-center z-10">
           <div className="container mx-auto px-4 max-w-7xl relative z-10">
             <div className="flex flex-col items-center text-center">
               <div className="inline-flex items-center gap-2 bg-primary/20 px-4 py-2 rounded-full border border-primary/30 mb-8 animate-in fade-in slide-in-from-top-4 duration-700 backdrop-blur-sm">
@@ -165,48 +160,23 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="container mx-auto px-4 py-20 max-w-7xl relative z-10">
-          {dbInspirations && dbInspirations.length > 0 && (
-            <section className="mb-24">
-              <div className="flex items-center justify-between mb-12">
-                <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-foreground bg-white/40 backdrop-blur-md px-8 py-4 rounded-full border border-white/20">Signature Inspirations</h2>
-                <div className="h-0.5 flex-1 mx-10 bg-gradient-to-r from-border/20 via-primary/20 to-border/20 rounded-full" />
-              </div>
-              <div className="flex gap-10 md:gap-14 overflow-x-auto no-scrollbar pb-8">
-                {dbInspirations.map((item) => (
-                  <div key={item.id} className="flex flex-col items-center gap-6 cursor-pointer group flex-shrink-0" onClick={() => setSearchQuery(item.name)}>
-                    <div className="relative w-36 h-36 md:w-48 md:h-48 rounded-[3rem] overflow-hidden shadow-xl ring-4 ring-transparent group-hover:ring-primary transition-all duration-500 bg-white/20 backdrop-blur-md border border-white/30">
-                      <Image src={item.image} alt={item.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform duration-700" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground group-hover:text-primary transition-colors bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full">{item.name}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
+        <div className="container mx-auto px-4 py-10 max-w-7xl relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-9">
-              <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
-                <div className="bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 flex-1">
-                  <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-[0.8] mb-4 text-foreground">Master Menu</h2>
-                  <p className="text-muted-foreground font-medium italic">Official items curated by our expert partners.</p>
+              {categories.length > 1 && (
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-8 mb-8">
+                  {categories.map(cat => (
+                    <Button 
+                      key={cat}
+                      variant={activeCategory === cat ? "default" : "outline"}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`rounded-[1.2rem] font-black uppercase text-[10px] px-8 h-12 tracking-widest shadow-sm ${activeCategory === cat ? 'bg-primary text-white shadow-xl' : 'bg-white/60 backdrop-blur-md border-white/40 opacity-80'}`}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
                 </div>
-                {categories.length > 1 && (
-                  <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                    {categories.map(cat => (
-                      <Button 
-                        key={cat}
-                        variant={activeCategory === cat ? "default" : "outline"}
-                        onClick={() => setActiveCategory(cat)}
-                        className={`rounded-[1.2rem] font-black uppercase text-[10px] px-8 h-12 tracking-widest shadow-sm ${activeCategory === cat ? 'bg-primary text-white shadow-xl' : 'bg-white/60 backdrop-blur-md border-white/40 opacity-80'}`}
-                      >
-                        {cat}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-10 gap-y-16">
                 {(isSuperAdmin || isRestaurantAdmin) && (
@@ -230,7 +200,6 @@ export default function Home() {
                     <div className="col-span-full py-20 text-center bg-white/40 backdrop-blur-md rounded-[3rem] border border-white/20">
                       <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-30" />
                       <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">No active items available right now</p>
-                      <p className="text-[10px] text-muted-foreground mt-2 font-bold">Check back soon for fresh updates!</p>
                     </div>
                   )
                 )}
