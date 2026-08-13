@@ -39,7 +39,9 @@ import {
   Sparkles,
   X,
   Camera,
-  RotateCw
+  RotateCw,
+  Home,
+  Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -78,6 +80,14 @@ function AdminDashboardContent() {
   const lastOrderIdRef = useRef<string | null>(null);
 
   const [selectedResId, setSelectedResId] = useState("");
+  
+  // Shop Edit State
+  const [shopEdit, setShopEdit] = useState({
+    name: "",
+    cuisine: "",
+    image: ""
+  });
+
   const [newDish, setNewDish] = useState<Partial<Dish>>({
     name: "",
     description: "",
@@ -95,12 +105,9 @@ function AdminDashboardContent() {
   });
   const [editingInspiration, setEditingInspiration] = useState<string | null>(null);
 
-  const [wingoPeriod, setWingoPeriod] = useState("");
-  const [wingoNumber, setWingoNumber] = useState("");
-
   // Camera State
   const [showCamera, setShowCamera] = useState(false);
-  const [cameraTarget, setCameraTarget] = useState<"dish" | "inspiration">("dish");
+  const [cameraTarget, setCameraTarget] = useState<"dish" | "inspiration" | "shop">("dish");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -147,6 +154,16 @@ function AdminDashboardContent() {
       setSelectedResId(paramResId);
     }
   }, [paramResId, managedResId, isRestaurantAdmin]);
+
+  useEffect(() => {
+    if (selectedRestaurant) {
+      setShopEdit({
+        name: selectedRestaurant.name || "",
+        cuisine: selectedRestaurant.cuisine || "",
+        image: selectedRestaurant.image || ""
+      });
+    }
+  }, [selectedRestaurant]);
 
   useEffect(() => {
     if (!firestore || !user || (!isSuperAdmin && !isRestaurantAdmin)) return;
@@ -220,6 +237,21 @@ function AdminDashboardContent() {
     }
 
     toast({ title: `Order ${newStatus}` });
+  };
+
+  const handleUpdateShopProfile = async () => {
+    if (!firestore || !selectedResId || !shopEdit.name || !shopEdit.image) {
+      toast({ title: "Name or Image missing", variant: "destructive" });
+      return;
+    }
+
+    await updateDoc(doc(firestore, "restaurants", selectedResId), {
+      name: shopEdit.name,
+      cuisine: shopEdit.cuisine,
+      image: shopEdit.image
+    });
+
+    toast({ title: "Shop Profile Updated! 🏪" });
   };
 
   const handleAddDish = async () => {
@@ -310,12 +342,12 @@ function AdminDashboardContent() {
     return url.startsWith('http://') || url.startsWith('https://');
   };
 
-  const startCamera = async (target: "dish" | "inspiration") => {
+  const startCamera = async (target: "dish" | "inspiration" | "shop") => {
     setCameraTarget(target);
     setShowCamera(true);
     
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast({ title: "Camera Not Supported", description: "Browser does not support camera access.", variant: "destructive" });
+      toast({ title: "Camera Not Supported", variant: "destructive" });
       setShowCamera(false);
       return;
     }
@@ -341,7 +373,7 @@ function AdminDashboardContent() {
         }
       } catch (err2) {
         console.error("Camera access error:", err2);
-        toast({ title: "Camera Permission Denied", description: "Please allow camera access in settings.", variant: "destructive" });
+        toast({ title: "Camera Permission Denied", variant: "destructive" });
         setShowCamera(false);
       }
     }
@@ -372,6 +404,8 @@ function AdminDashboardContent() {
         const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
         if (cameraTarget === "dish") {
           setNewDish({ ...newDish, image: dataUrl });
+        } else if (cameraTarget === "shop") {
+          setShopEdit({ ...shopEdit, image: dataUrl });
         } else {
           setNewInspiration({ ...newInspiration, image: dataUrl });
         }
@@ -407,7 +441,7 @@ function AdminDashboardContent() {
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4 text-foreground">
               <ShieldCheck className="w-12 h-12 text-primary" />
-              {isSuperAdmin ? "Master Control" : "Partner Dashboard"}
+              {isSuperAdmin ? "Master Control" : "Partner Profile"}
             </h1>
             <div className="flex items-center gap-3 mt-4">
               <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">
@@ -442,6 +476,9 @@ function AdminDashboardContent() {
             <TabsTrigger value="payments" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
               <ShoppingBag className="w-4 h-4" /> Orders
             </TabsTrigger>
+            <TabsTrigger value="profile" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
+              <Store className="w-4 h-4" /> Shop Profile
+            </TabsTrigger>
             <TabsTrigger value="menu" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
               <Utensils className="w-4 h-4" /> Menu
             </TabsTrigger>
@@ -449,9 +486,6 @@ function AdminDashboardContent() {
               <>
                 <TabsTrigger value="inspirations" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
                   <Sparkles className="w-4 h-4" /> Inspirations
-                </TabsTrigger>
-                <TabsTrigger value="wingo" className="rounded-xl font-black px-8 h-12 flex gap-2 data-[state=active]:bg-primary shrink-0">
-                  <Zap className="w-4 h-4" /> Wingo
                 </TabsTrigger>
                 <TabsTrigger value="withdrawals" className="rounded-xl font-black px-8 h-12 data-[state=active]:bg-primary shrink-0">Withdrawals</TabsTrigger>
               </>
@@ -544,32 +578,72 @@ function AdminDashboardContent() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="profile">
+             <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
+               <div className="flex items-center justify-between mb-10">
+                 <h2 className="text-3xl font-black italic flex items-center gap-3 uppercase tracking-tighter text-foreground">
+                   <Store className="w-8 h-8 text-primary" /> Shop Profile Management
+                 </h2>
+                 {isSuperAdmin && (
+                   <div className="flex items-center gap-3 bg-muted/30 px-6 py-3 rounded-2xl border border-border">
+                     <Label className="text-[10px] font-black uppercase text-muted-foreground whitespace-nowrap">Select Shop</Label>
+                     <select value={selectedResId} onChange={(e) => setSelectedResId(e.target.value)} className="bg-transparent font-black text-sm text-primary focus:outline-none">
+                       <option value="">Choose Restaurant</option>
+                       {visibleRestaurants?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                     </select>
+                   </div>
+                 )}
+               </div>
+
+               {selectedRestaurant ? (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                   <div className="space-y-6">
+                     <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Restaurant Name</Label>
+                       <Input value={shopEdit.name} onChange={e => setShopEdit({...shopEdit, name: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 border-none" placeholder="e.g. Rongpi Chinese Wok" />
+                     </div>
+                     <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Cuisine / Tagline</Label>
+                       <Input value={shopEdit.cuisine} onChange={e => setShopEdit({...shopEdit, cuisine: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 border-none" placeholder="e.g. Authentic Chinese • North Indian" />
+                     </div>
+                     <Button onClick={handleUpdateShopProfile} className="w-full h-16 rounded-2xl bg-primary text-white font-black text-xl shadow-xl shadow-primary/20">
+                       <Save className="w-6 h-6 mr-3" /> Save Shop Profile
+                     </Button>
+                   </div>
+                   <div className="space-y-6">
+                     <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Header Image</Label>
+                       <div className="flex gap-2">
+                         <Input value={shopEdit.image} onChange={e => setShopEdit({...shopEdit, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 border-none flex-1" placeholder="Image URL" />
+                         <Button variant="outline" onClick={() => startCamera("shop")} className="h-14 rounded-2xl border-primary/20 text-primary px-4"><Camera className="w-5 h-5" /></Button>
+                       </div>
+                     </div>
+                     {isValidUrl(shopEdit.image) && (
+                       <div className="relative aspect-[16/9] rounded-[2.5rem] overflow-hidden border-4 border-primary/20 shadow-2xl">
+                         <Image src={shopEdit.image} alt="Shop Preview" fill unoptimized className="object-cover" />
+                         <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                            <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Official Shop Image</span>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               ) : (
+                 <div className="text-center py-20 bg-muted/10 rounded-[2.5rem] border-2 border-dashed">
+                    <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+                    <p className="font-black text-muted-foreground uppercase text-xs">Please select a shop to manage its profile</p>
+                 </div>
+               )}
+             </Card>
+          </TabsContent>
+
           <TabsContent value="menu">
              <div className="space-y-8">
-                <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
-                  <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
-                    <Settings2 className="w-8 h-8 text-primary" /> Restaurant Selection
-                  </h2>
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-muted-foreground">Managing Restaurant</Label>
-                      {isSuperAdmin ? (
-                        <select value={selectedResId} onChange={(e) => setSelectedResId(e.target.value)} className="w-full h-14 rounded-2xl bg-muted/20 border-2 border-border px-4 font-black text-foreground">
-                          <option value="">Choose Restaurant</option>
-                          {visibleRestaurants?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                        </select>
-                      ) : (
-                        <div className="h-14 rounded-2xl bg-muted/20 border-2 border-border px-4 flex items-center font-black text-primary">{selectedRestaurant?.name || "Loading..."}</div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-
-                {selectedRestaurant && (
+                {selectedRestaurant ? (
                   <>
                     <Card className="rounded-[3rem] bg-card p-10 border border-border shadow-xl">
                       <h2 className="text-3xl font-black italic mb-8 flex items-center gap-3 uppercase tracking-tighter text-foreground">
-                        <Plus className="w-8 h-8 text-primary" /> Add New Item
+                        <Plus className="w-8 h-8 text-primary" /> Add New Item to {selectedRestaurant.name}
                       </h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-6">
@@ -619,6 +693,10 @@ function AdminDashboardContent() {
                       </div>
                     </Card>
                   </>
+                ) : (
+                  <div className="text-center py-20 bg-card rounded-[2.5rem] border border-border">
+                    <p className="font-black text-muted-foreground uppercase text-xs tracking-widest">Select a shop to manage menu items</p>
+                  </div>
                 )}
              </div>
           </TabsContent>
@@ -697,24 +775,6 @@ function AdminDashboardContent() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="wingo">
-                <Card className="border border-border bg-card rounded-[4rem] p-12 shadow-2xl max-w-2xl mx-auto">
-                  <div className="flex flex-col items-center text-center space-y-4 mb-10">
-                    <Zap className="w-12 h-12 text-primary" />
-                    <h2 className="text-4xl font-black italic tracking-tighter uppercase text-foreground">Wingo Master</h2>
-                  </div>
-                  <div className="space-y-8">
-                    <Input placeholder="Period ID" value={wingoPeriod} onChange={e => setWingoPeriod(e.target.value)} className="h-14 rounded-2xl font-black bg-muted/20 border-border" />
-                    <Input type="number" placeholder="Winning Number (0-9)" value={wingoNumber} onChange={e => setWingoNumber(e.target.value)} className="h-14 rounded-2xl font-black bg-muted/20 border-border" />
-                    <Button onClick={() => {
-                      if (!firestore || !wingoPeriod) return;
-                      setDoc(doc(firestore, "wingoConfig", wingoPeriod), { periodId: wingoPeriod, number: parseInt(wingoNumber) })
-                      .then(() => toast({ title: "Result Set!" }));
-                    }} className="w-full h-16 rounded-2xl font-black text-xl text-white">Set Result</Button>
-                  </div>
-                </Card>
-              </TabsContent>
-
               <TabsContent value="withdrawals">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {withdrawals?.map((req) => (
@@ -745,7 +805,7 @@ function AdminDashboardContent() {
           <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-black border-none">
             <DialogHeader className="p-6 bg-background/10 backdrop-blur-md absolute top-0 w-full z-10">
               <DialogTitle className="text-white font-black italic uppercase tracking-tighter flex items-center justify-between">
-                <span>Capture Item Photo</span>
+                <span>Capture Photo</span>
                 <Button variant="ghost" size="icon" onClick={stopCamera} className="text-white hover:bg-white/20 rounded-full">
                   <X className="w-5 h-5" />
                 </Button>
