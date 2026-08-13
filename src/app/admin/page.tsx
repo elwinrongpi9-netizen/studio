@@ -23,7 +23,8 @@ import {
   Camera,
   X,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  MoreVertical
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -188,7 +189,7 @@ function AdminDashboardContent() {
       orderDocs.forEach(d => batch.delete(d.ref));
 
       await batch.commit();
-      toast({ title: "DATABASE NUKED! 💥", description: "All mock items have been deleted." });
+      toast({ title: "DATABASE NUKED! 💥", description: "All items have been deleted." });
       setSelectedResId("");
     } catch (e) {
       console.error(e);
@@ -277,7 +278,14 @@ function AdminDashboardContent() {
     setCameraTarget(target);
     setShowCamera(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }, 
+        audio: false 
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -300,16 +308,24 @@ function AdminDashboardContent() {
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
+      // Capture at full resolution of the video stream
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
       const ctx = canvas.getContext("2d");
-      ctx?.drawImage(videoRef.current, 0, 0);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-      if (cameraTarget === "dish") setNewDish({ ...newDish, image: dataUrl });
-      else if (cameraTarget === "shop") setShopEdit({ ...shopEdit, image: dataUrl });
-      else if (cameraTarget === "newRes") setNewResData({ ...newResData, image: dataUrl });
-      else setNewInspiration({ ...newInspiration, image: dataUrl });
-      stopCamera();
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        // Use high quality setting for the data URL
+        const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
+        
+        if (cameraTarget === "dish") setNewDish({ ...newDish, image: dataUrl });
+        else if (cameraTarget === "shop") setShopEdit({ ...shopEdit, image: dataUrl });
+        else if (cameraTarget === "newRes") setNewResData({ ...newResData, image: dataUrl });
+        else setNewInspiration({ ...newInspiration, image: dataUrl });
+        
+        stopCamera();
+      }
     }
   };
 
@@ -415,7 +431,9 @@ function AdminDashboardContent() {
                        <Button variant="outline" onClick={() => startCamera("shop")} className="h-14 rounded-2xl"><Camera className="w-5 h-5" /></Button>
                      </div>
                      {shopEdit.image?.startsWith("http") || shopEdit.image?.startsWith("data") ? (
-                        <div className="relative aspect-video rounded-3xl overflow-hidden border-4 border-primary/20"><Image src={shopEdit.image} alt="Shop" fill unoptimized className="object-cover" /></div>
+                        <div className="relative aspect-video rounded-3xl overflow-hidden border-4 border-primary/20">
+                          <Image src={shopEdit.image} alt="Shop" fill unoptimized className="object-cover" />
+                        </div>
                      ) : null}
                    </div>
                  </div>
@@ -439,7 +457,11 @@ function AdminDashboardContent() {
                             <Input placeholder="Image URL" value={newDish.image} onChange={e => setNewDish({...newDish, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 flex-1" />
                             <Button variant="outline" onClick={() => startCamera("dish")} className="h-14 rounded-2xl"><Camera className="w-5 h-5" /></Button>
                           </div>
-                          {newDish.image?.startsWith("http") || newDish.image?.startsWith("data") ? <div className="relative w-24 h-24 rounded-2xl overflow-hidden border"><Image src={newDish.image!} alt="dish" fill unoptimized className="object-cover" /></div> : null}
+                          {newDish.image?.startsWith("http") || newDish.image?.startsWith("data") ? (
+                            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border">
+                              <Image src={newDish.image!} alt="dish" fill unoptimized className="object-cover" />
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                       <Button onClick={handleAddDish} className="w-full h-16 rounded-2xl font-black text-xl mt-10">Add To Menu</Button>
@@ -447,7 +469,9 @@ function AdminDashboardContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {selectedRestaurant.dishes?.map((dish) => (
                         <Card key={dish.id} className="p-6 rounded-[2rem] flex items-center gap-6">
-                          <div className="relative w-20 h-20 rounded-xl overflow-hidden"><Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover" /></div>
+                          <div className="relative w-20 h-20 rounded-xl overflow-hidden">
+                            <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover" />
+                          </div>
                           <div className="flex-1"><h4 className="font-black text-lg text-primary">{dish.name}</h4><p className="text-xs font-bold">Rs. {dish.price}</p></div>
                           <Button onClick={() => handleDeleteDish(dish.id)} variant="ghost" className="text-destructive"><Trash2 className="w-5 h-5" /></Button>
                         </Card>
@@ -471,12 +495,18 @@ function AdminDashboardContent() {
                     </div>
                     <Button onClick={handleSaveInspiration} className="w-full h-16 rounded-2xl font-black uppercase">{editingInspiration ? "Update" : "Add"} Inspiration</Button>
                   </div>
-                  {newInspiration.image?.startsWith("http") || newInspiration.image?.startsWith("data") ? <div className="relative aspect-video rounded-3xl overflow-hidden border-4 border-primary/20"><Image src={newInspiration.image!} alt="insp" fill unoptimized className="object-cover" /></div> : null}
+                  {newInspiration.image?.startsWith("http") || newInspiration.image?.startsWith("data") ? (
+                    <div className="relative aspect-video rounded-3xl overflow-hidden border-4 border-primary/20">
+                      <Image src={newInspiration.image!} alt="insp" fill unoptimized className="object-cover" />
+                    </div>
+                  ) : null}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {inspirations?.map((item) => (
                     <Card key={item.id} className="p-6 rounded-[2rem] flex flex-col items-center gap-4 text-center">
-                      <div className="relative w-32 h-32 rounded-[2rem] overflow-hidden"><Image src={item.image} alt={item.name} fill unoptimized className="object-cover" /></div>
+                      <div className="relative w-32 h-32 rounded-[2rem] overflow-hidden">
+                        <Image src={item.image} alt={item.name} fill unoptimized className="object-cover" />
+                      </div>
                       <h4 className="font-black text-xl italic text-primary uppercase">{item.name}</h4>
                       <div className="flex gap-2 w-full">
                         <Button onClick={() => { setEditingInspiration(item.id); setNewInspiration({ name: item.name, image: item.image }); }} variant="outline" size="sm" className="flex-1 font-black text-[10px]">Edit</Button>
@@ -507,7 +537,11 @@ function AdminDashboardContent() {
                   <Input placeholder="Image URL" value={newResData.image} onChange={e => setNewResData({...newResData, image: e.target.value})} className="h-14 rounded-2xl font-black bg-muted/10 flex-1" />
                   <Button variant="outline" onClick={() => startCamera("newRes")} className="h-14 rounded-2xl"><Camera className="w-5 h-5" /></Button>
                 </div>
-                {newResData.image?.startsWith("http") || newResData.image?.startsWith("data") ? <div className="relative aspect-video rounded-2xl overflow-hidden border"><Image src={newResData.image} alt="preview" fill unoptimized className="object-cover" /></div> : null}
+                {newResData.image?.startsWith("http") || newResData.image?.startsWith("data") ? (
+                  <div className="relative aspect-video rounded-2xl overflow-hidden border">
+                    <Image src={newResData.image} alt="preview" fill unoptimized className="object-cover" />
+                  </div>
+                ) : null}
               </div>
             </div>
           </DialogContent>
