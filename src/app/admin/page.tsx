@@ -83,7 +83,7 @@ function AdminDashboardContent() {
     description: "",
     price: 0,
     category: "Starters",
-    image: "https://picsum.photos/seed/newdish/400/300",
+    image: "",
     inStock: true
   });
 
@@ -246,7 +246,7 @@ function AdminDashboardContent() {
     });
     
     toast({ title: "Item Added! 🎉" });
-    setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "https://picsum.photos/seed/newdish/400/300", inStock: true });
+    setNewDish({ name: "", description: "", price: 0, category: "Starters", image: "", inStock: true });
   };
 
   const handleDeleteDish = async (dishId: string) => {
@@ -272,7 +272,7 @@ function AdminDashboardContent() {
         image: newInspiration.image,
         hint: newInspiration.hint || ""
       });
-      toast({ title: "Inspiration Updated! ✨" });
+      toast({ title: "Inspiration Updated Globally! ✨" });
     } else {
       const id = `insp_${Date.now()}`;
       await setDoc(doc(firestore, "inspirations", id), {
@@ -281,7 +281,7 @@ function AdminDashboardContent() {
         image: newInspiration.image,
         hint: newInspiration.hint || ""
       });
-      toast({ title: "Inspiration Added! ✨" });
+      toast({ title: "Inspiration Added Globally! ✨" });
     }
     
     setNewInspiration({ name: "", image: "", hint: "" });
@@ -310,7 +310,6 @@ function AdminDashboardContent() {
     return url.startsWith('http://') || url.startsWith('https://');
   };
 
-  // Camera Functions Optimized for Mobile
   const startCamera = async (target: "dish" | "inspiration") => {
     setCameraTarget(target);
     setShowCamera(true);
@@ -322,7 +321,6 @@ function AdminDashboardContent() {
     }
 
     try {
-      // Prefer Rear Camera on Mobile
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: { ideal: "environment" } },
         audio: false 
@@ -335,7 +333,6 @@ function AdminDashboardContent() {
     } catch (err) {
       console.warn("Rear camera failed, trying fallback:", err);
       try {
-        // Fallback to any camera
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         streamRef.current = stream;
         if (videoRef.current) {
@@ -363,7 +360,6 @@ function AdminDashboardContent() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       
-      // Use high quality dimensions
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
@@ -664,18 +660,14 @@ function AdminDashboardContent() {
                             </Button>
                           </div>
                         </div>
-                        {isValidUrl(newInspiration.image) ? (
+                        {isValidUrl(newInspiration.image) && (
                            <div className="relative w-48 h-48 rounded-[2rem] overflow-hidden border-4 border-primary/20 shadow-2xl mt-4">
                              <Image src={newInspiration.image!} alt="Preview" fill unoptimized className="object-cover" />
                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                <span className="text-[8px] font-black text-white uppercase tracking-widest">Global Live Preview</span>
                              </div>
                            </div>
-                        ) : newInspiration.image ? (
-                           <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-black uppercase tracking-widest text-center">
-                             Please enter a valid URL (starting with http)
-                           </div>
-                        ) : null}
+                        )}
                       </div>
                     </div>
                     <Button onClick={handleSaveInspiration} className="w-full h-16 rounded-2xl font-black text-xl mt-10 bg-primary text-white shadow-xl shadow-primary/20">
@@ -749,7 +741,6 @@ function AdminDashboardContent() {
           )}
         </Tabs>
 
-        {/* Camera Dialog Optimized for Mobile */}
         <Dialog open={showCamera} onOpenChange={(open) => !open && stopCamera()}>
           <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-black border-none">
             <DialogHeader className="p-6 bg-background/10 backdrop-blur-md absolute top-0 w-full z-10">
