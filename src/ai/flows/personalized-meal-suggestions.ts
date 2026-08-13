@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for generating personalized meal suggestions.
+ * @fileOverview A flow for generating personalized meal suggestions based strictly on history.
  */
 
 import {ai} from '@/ai/genkit';
@@ -38,7 +38,7 @@ const personalizeMealSuggestionsPrompt = ai.definePrompt({
   Instructions:
   - Suggest 2-3 items from the provided context.
   - Do not hallucinate items that aren't in the provided history or local list.
-  - If no context is given, return empty.
+  - If no context is given, return an empty list.
   `,
 });
 

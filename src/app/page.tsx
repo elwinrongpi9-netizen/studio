@@ -41,13 +41,7 @@ export default function Home() {
     return query(collection(firestore, "restaurants"), orderBy("name"));
   }, [firestore]);
 
-  const inspirationsQuery = useMemo(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "inspirations"), orderBy("name"));
-  }, [firestore]);
-
   const { data: restaurants } = useCollection<Restaurant>(restaurantsQuery);
-  const { data: inspirations } = useCollection<Inspiration>(inspirationsQuery);
 
   const isSuperAdmin = user?.email === "junakipi@gmail.com";
   const isRestaurantAdmin = !!profile?.managedRestaurantId;
@@ -147,19 +141,6 @@ export default function Home() {
         </section>
 
         <div className="container mx-auto px-4 py-10 max-w-7xl z-10 relative">
-          {inspirations && inspirations.length > 0 && (
-            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-10 mb-10">
-              {inspirations.map(insp => (
-                <div key={insp.id} className="flex-shrink-0 flex flex-col items-center gap-3 group">
-                   <div className="relative w-24 h-24 rounded-[2rem] overflow-hidden border-4 border-white shadow-xl group-hover:scale-110 transition-transform">
-                      <Image src={insp.image} alt={insp.name} fill unoptimized className="object-cover" />
-                   </div>
-                   <span className="text-[10px] font-black uppercase tracking-widest italic">{insp.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
             <div className="lg:col-span-9">
               {categories.length > 1 && (
