@@ -24,7 +24,8 @@ import {
   X,
   AlertTriangle,
   RefreshCw,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -37,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import Link from "next/link";
 
 const ADMIN_EMAIL = "junakipi@gmail.com";
 const RINGTONE_URL = "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"; 
@@ -308,7 +310,6 @@ function AdminDashboardContent() {
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
-      // Capture at full resolution of the video stream
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
       const ctx = canvas.getContext("2d");
@@ -316,7 +317,6 @@ function AdminDashboardContent() {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        // Use high quality setting for the data URL
         const dataUrl = canvas.toDataURL("image/jpeg", 1.0);
         
         if (cameraTarget === "dish") setNewDish({ ...newDish, image: dataUrl });
@@ -339,6 +339,14 @@ function AdminDashboardContent() {
       <audio ref={audioRef} src={RINGTONE_URL} preload="auto" />
 
       <main className="flex-1 container mx-auto px-4 py-12 max-w-7xl">
+        <div className="mb-8">
+          <Link href="/">
+            <Button variant="ghost" className="rounded-full bg-white/50 border shadow-sm hover:bg-white px-6 font-black uppercase text-[10px] tracking-widest gap-2">
+              <ArrowLeft className="w-4 h-4" /> Back to Home
+            </Button>
+          </Link>
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>
             <h1 className="text-5xl font-black italic tracking-tighter flex items-center gap-4">

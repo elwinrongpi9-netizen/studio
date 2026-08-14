@@ -73,7 +73,6 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
     <>
       <Navbar />
       <main className="flex-1 pb-32 relative min-h-screen">
-        {/* Full Page Fixed Background */}
         <div className="fixed inset-0 z-0">
           <Image 
             src="https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=1920" 
@@ -101,8 +100,8 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                 <div className="container mx-auto px-4 py-16 max-w-7xl">
                   <div className="flex flex-col gap-8">
                     <Link href="/">
-                      <Button variant="ghost" size="sm" className="text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full px-8 h-12 font-black uppercase tracking-widest text-[10px]">
-                        <ArrowLeft className="w-4 h-4 mr-3" /> Discover More
+                      <Button variant="ghost" size="sm" className="text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full px-8 h-12 font-black uppercase tracking-widest text-[10px] gap-2">
+                        <ArrowLeft className="w-4 h-4" /> Back to Home
                       </Button>
                     </Link>
                     
@@ -186,7 +185,6 @@ export default function RestaurantPage({ params }: { params: Promise<{ id: strin
                               <div className="relative w-full sm:w-40 h-40 rounded-[2rem] overflow-hidden flex-shrink-0 shadow-xl border border-white/20">
                                 <Image src={dish.image} alt={dish.name} fill unoptimized className="object-cover group-hover:scale-110 transition-transform duration-700" />
                                 
-                                {/* Admin Edit Overlay */}
                                 {canManage && (
                                   <Link href={`/admin?resId=${id}`} className="absolute top-2 right-2 z-40">
                                     <Button size="icon" variant="ghost" className="bg-black/60 backdrop-blur-md border border-white/20 text-white rounded-xl hover:bg-primary h-8 w-8">

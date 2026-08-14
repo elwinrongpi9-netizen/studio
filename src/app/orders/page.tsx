@@ -3,7 +3,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Clock, CheckCircle2, Truck, Package, Calendar, CreditCard, ShoppingBag, Info, Flame, Timer, Store } from "lucide-react";
+import { Clock, CheckCircle2, Truck, Package, Calendar, CreditCard, ShoppingBag, Info, Flame, Timer, Store, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useUser, useFirestore, useCollection } from "@/firebase";
@@ -52,6 +52,14 @@ export default function OrdersPage() {
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-6">
+            <Link href="/">
+              <Button variant="ghost" className="rounded-full bg-white/50 border shadow-sm hover:bg-white px-6 font-black uppercase text-[10px] tracking-widest gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back to Home
+              </Button>
+            </Link>
+          </div>
+
           <div className="flex items-center justify-between mb-10">
             <div>
               <h1 className="text-4xl font-black mb-2">My Orders</h1>

@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/navbar";
 import { useAppStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Trash2, ShoppingBag, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Info, MessageSquare } from "lucide-react";
+import { Trash2, ShoppingBag, CreditCard, Wallet, QrCode, Timer, Sparkles, CheckCircle, Info, MessageSquare, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useFirestore, useUser, useDoc } from "@/firebase";
@@ -129,6 +129,14 @@ export default function CartPage() {
       <Navbar />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto">
+          <div className="mb-6">
+            <Link href="/">
+              <Button variant="ghost" className="rounded-full bg-white/50 border shadow-sm hover:bg-white px-6 font-black uppercase text-[10px] tracking-widest gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back to Home
+              </Button>
+            </Link>
+          </div>
+
           <div className="flex items-center gap-4 mb-8">
             <ShoppingBag className="w-10 h-10 text-primary" />
             <h1 className="text-4xl font-black italic tracking-tighter">Review & <span className="text-primary not-italic">Order</span></h1>
